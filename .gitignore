@@ -1,0 +1,17 @@
+.vs/
+**/bin/
+**/obj/
+**/artifacts/
+**/publish/
+guiLogs/
+guiConfigs/
+guiTemps/
+binConfigs/
+*.user
+*.suo
+*.log
+*.tmp
+*.pdb
+*.zip
+*.7z
+*.rar

@@ -1,0 +1,220 @@
+namespace ServiceLib.Handler.Builder;
+
+public record NodeValidatorResult(List<string> Errors, List<string> Warnings)
+{
+    public bool Success => Errors.Count == 0;
+
+    public static NodeValidatorResult Empty()
+    {
+        return new NodeValidatorResult([], []);
+    }
+}
+
+public class NodeValidator
+{
+    // Static validator rules
+    private static readonly HashSet<string> SingboxUnsupportedTransports =
+        [nameof(ETransport.kcp), nameof(ETransport.xhttp)];
+
+    private static readonly HashSet<EConfigType> SingboxTransportSupportedProtocols =
+        [EConfigType.VMess, EConfigType.VLESS, EConfigType.Trojan, EConfigType.Shadowsocks];
+
+    private static readonly HashSet<string> SingboxShadowsocksAllowedTransports =
+        [nameof(ETransport.raw), nameof(ETransport.ws)];
+
+    public static NodeValidatorResult Validate(ProfileItem item, ECoreType coreType)
+    {
+        var v = new ValidationContext();
+        ValidateNodeAndCoreSupport(item, coreType, v);
+        return v.ToResult();
+    }
+
+    private static void ValidateNodeAndCoreSupport(ProfileItem item, ECoreType coreType, ValidationContext v)
+    {
+        if (item.ConfigType is EConfigType.Custom)
+        {
+            return;
+        }
+
+        if (item.ConfigType.IsGroupType())
+        {
+            // Group logic is handled in ValidateGroupNode
+            return;
+        }
+
+        // Basic Property Validation
+        v.Assert(!item.Address.IsNullOrEmpty(), string.Format(ResUI.MsgInvalidProperty, "Address"));
+        v.Assert(item.Port is > 0 and <= 65535, string.Format(ResUI.MsgInvalidProperty, "Port"));
+
+        // Network & Core Logic
+        var net = item.GetNetwork();
+        if (coreType == ECoreType.sing_box)
+        {
+            var transportError = ValidateSingboxTransport(item.ConfigType, net);
+            if (transportError != null)
+            {
+                v.Error(transportError);
+            }
+
+            if (!Global.SingboxSupportConfigType.Contains(item.ConfigType))
+            {
+                v.Error(string.Format(ResUI.MsgCoreNotSupportProtocol, nameof(ECoreType.sing_box), item.ConfigType));
+            }
+        }
+        else if (coreType is ECoreType.Xray)
+        {
+            if (!Global.XraySupportConfigType.Contains(item.ConfigType))
+            {
+                v.Error(string.Format(ResUI.MsgCoreNotSupportProtocol, nameof(ECoreType.Xray), item.ConfigType));
+            }
+        }
+
+        // Protocol Specifics
+        var protocolExtra = item.GetProtocolExtra();
+        switch (item.ConfigType)
+        {
+            case EConfigType.VMess:
+                v.Assert(!item.Password.IsNullOrEmpty() && Utils.IsGuidByParse(item.Password),
+                    string.Format(ResUI.MsgInvalidProperty, "Password"));
+                break;
+
+            case EConfigType.VLESS:
+                v.Assert(
+                    !item.Password.IsNullOrEmpty()
+                    && (Utils.IsGuidByParse(item.Password) || item.Password.Length <= 30),
+                    string.Format(ResUI.MsgInvalidProperty, "Password")
+                );
+                v.Assert(Global.Flows.Contains(protocolExtra.Flow ?? string.Empty),
+                    string.Format(ResUI.MsgInvalidProperty, "Flow"));
+                break;
+
+            case EConfigType.Shadowsocks:
+                v.Assert(!item.Password.IsNullOrEmpty(), string.Format(ResUI.MsgInvalidProperty, "Password"));
+                v.Assert(
+                    !string.IsNullOrEmpty(protocolExtra.SsMethod) &&
+                    Global.SsSecuritiesInSingbox.Contains(protocolExtra.SsMethod),
+                    string.Format(ResUI.MsgInvalidProperty, "SsMethod"));
+                break;
+        }
+
+        if (coreType is ECoreType.Xray
+            && (protocolExtra.Flow ?? string.Empty).StartsWith("xtls", StringComparison.OrdinalIgnoreCase)
+            && item.MuxEnabled == true)
+        {
+            v.Warning(string.Format(ResUI.MsgOptionsConflict, "XTLS", "Mux.Cool"));
+        }
+
+        if (item.GetNetwork() is nameof(ETransport.ws)
+            && item.EchConfigList.IsNullOrEmpty()
+            && item.GetAlpn()?.FirstOrDefault() == "h3")
+        {
+            v.Warning(
+                "WebSocket but ALPN is set to h3, the core may ignore the ALPN setting or cause unexpected issues.");
+        }
+
+        // TLS & Security
+        if (item.StreamSecurity == Global.StreamSecurity)
+        {
+            if (!item.Cert.IsNullOrEmpty() && CertPemManager.ParsePemChain(item.Cert).Count == 0 &&
+                !item.CertSha.IsNullOrEmpty())
+            {
+                v.Error(string.Format(ResUI.MsgInvalidProperty, "TLS Certificate"));
+            }
+
+            // Check for deprecated allowInsecure property when TLS is enabled
+            if (item.GetAllowInsecure()
+                && item.Cert.IsNullOrEmpty()
+                && item.CertSha.IsNullOrEmpty())
+            {
+                v.Warning(ResUI.MsgAllowInsecureDeprecated);
+            }
+
+            if ((coreType == ECoreType.Xray
+                && item.GetAllowInsecure()
+                && item.Cert.IsNullOrEmpty()
+                && item.CertSha.IsNullOrEmpty())
+                || (coreType == ECoreType.sing_box
+                    && item.GetAllowInsecure()
+                    && item.Cert.IsNullOrEmpty()))
+            {
+                v.Warning("Insecure configuration detected: AllowInsecure is enabled but no certificate is provided. This may cause MITM attacks.");
+            }
+        }
+
+        if (item.StreamSecurity == Global.StreamSecurityReality)
+        {
+            v.Assert(!item.PublicKey.IsNullOrEmpty(), string.Format(ResUI.MsgInvalidProperty, "PublicKey"));
+        }
+
+        var transport = item.GetTransportExtra();
+        if (item.Network == nameof(ETransport.xhttp) && !transport.XhttpExtra.IsNullOrEmpty())
+        {
+            if (JsonUtils.ParseJson(transport.XhttpExtra) is not JsonObject)
+            {
+                v.Error(string.Format(ResUI.MsgInvalidProperty, "XHTTP Extra"));
+            }
+        }
+
+        if (!item.Finalmask.IsNullOrEmpty())
+        {
+            if (JsonUtils.ParseJson(item.Finalmask) is not JsonObject)
+            {
+                v.Error(string.Format(ResUI.MsgInvalidProperty, "Finalmask"));
+            }
+        }
+    }
+
+    private static string? ValidateSingboxTransport(EConfigType configType, string net)
+    {
+        // sing-box does not support xhttp / kcp transports
+        if (SingboxUnsupportedTransports.Contains(net))
+        {
+            return string.Format(ResUI.MsgCoreNotSupportNetwork, nameof(ECoreType.sing_box), net);
+        }
+
+        // sing-box does not support non-tcp transports for protocols other than vmess/trojan/vless/shadowsocks
+        if (!SingboxTransportSupportedProtocols.Contains(configType) && net != nameof(ETransport.raw))
+        {
+            return string.Format(ResUI.MsgCoreNotSupportProtocolTransport,
+                nameof(ECoreType.sing_box), configType.ToString(), net);
+        }
+
+        // sing-box shadowsocks only supports tcp/ws/quic transports
+        if (configType == EConfigType.Shadowsocks && !SingboxShadowsocksAllowedTransports.Contains(net))
+        {
+            return string.Format(ResUI.MsgCoreNotSupportProtocolTransport,
+                nameof(ECoreType.sing_box), configType.ToString(), net);
+        }
+
+        return null;
+    }
+
+    private class ValidationContext
+    {
+        public List<string> Errors { get; } = [];
+        public List<string> Warnings { get; } = [];
+
+        public void Error(string message)
+        {
+            Errors.Add(message);
+        }
+
+        public void Warning(string message)
+        {
+            Warnings.Add(message);
+        }
+
+        public void Assert(bool condition, string errorMsg)
+        {
+            if (!condition)
+            {
+                Error(errorMsg);
+            }
+        }
+
+        public NodeValidatorResult ToResult()
+        {
+            return new NodeValidatorResult(Errors, Warnings);
+        }
+    }
+}
