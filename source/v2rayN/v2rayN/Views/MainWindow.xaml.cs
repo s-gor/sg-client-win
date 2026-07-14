@@ -1,4 +1,6 @@
 using System.Windows.Controls;
+using System.Net.NetworkInformation;
+using Microsoft.Win32;
 using System.Windows.Media;
 using MaterialDesignThemes.Wpf;
 using v2rayN.Manager;
@@ -8,12 +10,17 @@ namespace v2rayN.Views;
 public partial class MainWindow
 {
     private static Config _config;
-    private CheckUpdateView? _checkUpdateView;
-    private BackupAndRestoreView? _backupAndRestoreView;
+    private CancellationTokenSource? _recoveryCts;
+    private bool _networkWasUnavailable;
+    private DateTimeOffset? _networkUnavailableSince;
+    private bool _environmentEventsRegistered;
+    private SgConnectionsWindow? _connectionsWindow;
+    private SgLogWindow? _logWindow;
 
     public MainWindow()
     {
         InitializeComponent();
+        SgWindowSizing.AttachMain(this);
 
         _config = AppManager.Instance.Config;
         ThreadPool.RegisterWaitForSingleObject(App.ProgramStarted, OnProgramStarted, null, -1, false);
@@ -21,140 +28,72 @@ public partial class MainWindow
         App.Current.SessionEnding += Current_SessionEnding;
         Closing += MainWindow_Closing;
         PreviewKeyDown += MainWindow_PreviewKeyDown;
-        menuSettingsSetUWP.Click += MenuSettingsSetUWP_Click;
-        menuPromotion.Click += MenuPromotion_Click;
         menuClose.Click += MenuClose_Click;
-        menuCheckUpdate.Click += MenuCheckUpdate_Click;
-        btnNewUpdate.Click += MenuCheckUpdate_Click;
-        menuBackupAndRestore.Click += MenuBackupAndRestore_Click;
+        btnWindowMinimize.Click += BtnWindowMinimize_Click;
+        btnImport.Click += BtnImport_Click;
+        btnSubscriptions.Click += BtnSubscriptions_Click;
+        btnExpert.Click += BtnExpert_Click;
+        btnConnections.Click += BtnConnections_Click;
+        btnTheme.Click += BtnTheme_Click;
+        btnHelp.Click += BtnHelp_Click;
+        btnMaintenance.Click += BtnMaintenance_Click;
+        btnThemeGraphite.Click += ThemeOption_Click;
+        btnThemeLight.Click += ThemeOption_Click;
+        btnThemeNorthern.Click += ThemeOption_Click;
+        btnLogs.Click += BtnLogs_Click;
+        btnLogsCompact.Click += BtnLogsCompact_Click;
+        txtThemeName.Text = SgThemeManager.GetDisplayName(SgThemeManager.Current);
+        SgThemeManager.ThemeChanged += SgThemeManager_ThemeChanged;
+        RegisterEnvironmentEvents();
 
         ViewModel = new MainWindowViewModel(UpdateViewHandler);
 
-        switch (_config.UiItem.MainGirdOrientation)
-        {
-            case EGirdOrientation.Horizontal:
-                tabProfiles.Content ??= new ProfilesView();
-                tabMsgView.Content ??= new MsgView();
-                tabClashProxies.Content ??= new ClashProxiesView();
-                tabClashConnections.Content ??= new ClashConnectionsView();
-                gridMain.Visibility = Visibility.Visible;
-                break;
-
-            case EGirdOrientation.Vertical:
-                tabProfiles1.Content ??= new ProfilesView();
-                tabMsgView1.Content ??= new MsgView();
-                tabClashProxies1.Content ??= new ClashProxiesView();
-                tabClashConnections1.Content ??= new ClashConnectionsView();
-                gridMain1.Visibility = Visibility.Visible;
-                break;
-
-            case EGirdOrientation.Tab:
-            default:
-                tabProfiles2.Content ??= new ProfilesView();
-                tabMsgView2.Content ??= new MsgView();
-                tabClashProxies2.Content ??= new ClashProxiesView();
-                tabClashConnections2.Content ??= new ClashConnectionsView();
-                gridMain2.Visibility = Visibility.Visible;
-                break;
-        }
-        pbTheme.Content ??= new ThemeSettingView();
+        profilesHost.Content ??= new ProfilesView();
+        logHost.Content ??= new MsgView();
 
         this.WhenActivated(disposables =>
         {
-            //servers
-            this.BindCommand(ViewModel, vm => vm.AddVmessServerCmd, v => v.menuAddVmessServer).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.AddVlessServerCmd, v => v.menuAddVlessServer).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.AddShadowsocksServerCmd, v => v.menuAddShadowsocksServer).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.AddSocksServerCmd, v => v.menuAddSocksServer).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.AddHttpServerCmd, v => v.menuAddHttpServer).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.AddTrojanServerCmd, v => v.menuAddTrojanServer).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.AddHysteria2ServerCmd, v => v.menuAddHysteria2Server).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.AddTuicServerCmd, v => v.menuAddTuicServer).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.AddWireguardServerCmd, v => v.menuAddWireguardServer).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.AddAnytlsServerCmd, v => v.menuAddAnytlsServer).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.AddNaiveServerCmd, v => v.menuAddNaiveServer).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.AddCustomServerCmd, v => v.menuAddCustomServer).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.AddPolicyGroupServerCmd, v => v.menuAddPolicyGroupServer).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.AddProxyChainServerCmd, v => v.menuAddProxyChainServer).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.AddServerViaClipboardCmd, v => v.menuAddServerViaClipboard).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.AddServerViaScanCmd, v => v.menuAddServerViaScan).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.AddServerViaImageCmd, v => v.menuAddServerViaImage).DisposeWith(disposables);
 
-            //sub
-            this.BindCommand(ViewModel, vm => vm.SubSettingCmd, v => v.menuSubSetting).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.SubUpdateCmd, v => v.menuSubUpdate).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.SubUpdateViaProxyCmd, v => v.menuSubUpdateViaProxy).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.SubGroupUpdateCmd, v => v.menuSubGroupUpdate).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.SubGroupUpdateViaProxyCmd, v => v.menuSubGroupUpdateViaProxy).DisposeWith(disposables);
-
-            //setting
             this.BindCommand(ViewModel, vm => vm.OptionSettingCmd, v => v.menuOptionSetting).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.RoutingSettingCmd, v => v.menuRoutingSetting).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.DNSSettingCmd, v => v.menuDNSSetting).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.FullConfigTemplateCmd, v => v.menuFullConfigTemplate).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.GlobalHotkeySettingCmd, v => v.menuGlobalHotkeySetting).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.RebootAsAdminCmd, v => v.menuRebootAsAdmin).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.ClearServerStatisticsCmd, v => v.menuClearServerStatistics).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.OpenTheFileLocationCmd, v => v.menuOpenTheFileLocation).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.RegionalPresetDefaultCmd, v => v.menuRegionalPresetsDefault).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.RegionalPresetRussiaCmd, v => v.menuRegionalPresetsRussia).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.RegionalPresetIranCmd, v => v.menuRegionalPresetsIran).DisposeWith(disposables);
-
             this.BindCommand(ViewModel, vm => vm.ReloadCmd, v => v.menuReload).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.BlReloadEnabled, v => v.menuReload.IsEnabled).DisposeWith(disposables);
 
-            this.OneWayBind(ViewModel, vm => vm.BlNewUpdate, v => v.btnNewUpdate.Visibility).DisposeWith(disposables);
-
-            switch (_config.UiItem.MainGirdOrientation)
-            {
-                case EGirdOrientation.Horizontal:
-                    this.OneWayBind(ViewModel, vm => vm.ShowClashUI, v => v.tabMsgView.Visibility).DisposeWith(disposables);
-                    this.OneWayBind(ViewModel, vm => vm.ShowClashUI, v => v.tabClashProxies.Visibility).DisposeWith(disposables);
-                    this.OneWayBind(ViewModel, vm => vm.ShowClashUI, v => v.tabClashConnections.Visibility).DisposeWith(disposables);
-                    this.Bind(ViewModel, vm => vm.TabMainSelectedIndex, v => v.tabMain.SelectedIndex).DisposeWith(disposables);
-                    break;
-
-                case EGirdOrientation.Vertical:
-                    this.OneWayBind(ViewModel, vm => vm.ShowClashUI, v => v.tabMsgView1.Visibility).DisposeWith(disposables);
-                    this.OneWayBind(ViewModel, vm => vm.ShowClashUI, v => v.tabClashProxies1.Visibility).DisposeWith(disposables);
-                    this.OneWayBind(ViewModel, vm => vm.ShowClashUI, v => v.tabClashConnections1.Visibility).DisposeWith(disposables);
-                    this.Bind(ViewModel, vm => vm.TabMainSelectedIndex, v => v.tabMain1.SelectedIndex).DisposeWith(disposables);
-                    break;
-
-                case EGirdOrientation.Tab:
-                default:
-                    this.OneWayBind(ViewModel, vm => vm.ShowClashUI, v => v.tabClashProxies2.Visibility).DisposeWith(disposables);
-                    this.OneWayBind(ViewModel, vm => vm.ShowClashUI, v => v.tabClashConnections2.Visibility).DisposeWith(disposables);
-                    this.Bind(ViewModel, vm => vm.TabMainSelectedIndex, v => v.tabMain2.SelectedIndex).DisposeWith(disposables);
-                    break;
-            }
-
             AppEvents.SendSnackMsgRequested
-              .AsObservable()
-              .ObserveOn(RxSchedulers.MainThreadScheduler)
-              .Subscribe(async content => await DelegateSnackMsg(content))
-              .DisposeWith(disposables);
+                .AsObservable()
+                .ObserveOn(RxSchedulers.MainThreadScheduler)
+                .Subscribe(async content => await DelegateSnackMsg(content))
+                .DisposeWith(disposables);
 
             AppEvents.AppExitRequested
-              .AsObservable()
-              .ObserveOn(RxSchedulers.MainThreadScheduler)
-              .Subscribe(_ => StorageUI())
-              .DisposeWith(disposables);
+                .AsObservable()
+                .ObserveOn(RxSchedulers.MainThreadScheduler)
+                .Subscribe(_ => StorageUI())
+                .DisposeWith(disposables);
 
             AppEvents.ShutdownRequested
-             .AsObservable()
-             .ObserveOn(RxSchedulers.MainThreadScheduler)
-             .Subscribe(Shutdown)
-             .DisposeWith(disposables);
+                .AsObservable()
+                .ObserveOn(RxSchedulers.MainThreadScheduler)
+                .Subscribe(Shutdown)
+                .DisposeWith(disposables);
 
             AppEvents.ShowHideWindowRequested
-             .AsObservable()
-             .ObserveOn(RxSchedulers.MainThreadScheduler)
-             .Subscribe(ShowHideWindow)
-             .DisposeWith(disposables);
+                .AsObservable()
+                .ObserveOn(RxSchedulers.MainThreadScheduler)
+                .Subscribe(ShowHideWindow)
+                .DisposeWith(disposables);
+
+            AppEvents.ShowLogsRequested
+                .AsObservable()
+                .ObserveOn(RxSchedulers.MainThreadScheduler)
+                .Subscribe(_ => ShowLogs())
+                .DisposeWith(disposables);
         });
 
-        Title = $"{Utils.GetVersion()} - {(Utils.IsAdministrator() ? ResUI.RunAsAdmin : ResUI.NotRunAsAdmin)}";
+        Title = "SG Client — 073";
+
         if (_config.UiItem.AutoHideStartup)
         {
             WindowState = WindowState.Minimized;
@@ -165,24 +104,135 @@ public partial class MainWindow
             RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
         }
 
-        AddHelpMenuItem();
         WindowsManager.Instance.RegisterGlobalHotkey(_config, OnHotkeyHandler, null);
     }
 
-    #region Event
-
-    private void OnProgramStarted(object state, bool timeout)
+    private void BtnSubscriptions_Click(object sender, RoutedEventArgs e)
     {
-        Application.Current?.Dispatcher.Invoke(() =>
+        new SgSubscriptionsWindow { Owner = this }.ShowDialog();
+    }
+
+    private void BtnExpert_Click(object sender, RoutedEventArgs e)
+    {
+        try
         {
-            ShowHideWindow(true);
-        });
+            new SgExpertWindow { Owner = this }.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("MainWindow.BtnExpert_Click", ex);
+            MessageBox.Show(
+                this,
+                "Не удалось открыть экспертные настройки.\n\n"
+                    + ex.Message
+                    + "\n\nПодробности записаны в журнал SG Client.",
+                "Экспертные настройки",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+
+    private void BtnConnections_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (_connectionsWindow is { IsLoaded: true })
+            {
+                if (_connectionsWindow.WindowState == WindowState.Minimized)
+                {
+                    _connectionsWindow.WindowState = WindowState.Normal;
+                }
+
+                _connectionsWindow.Activate();
+                _connectionsWindow.Focus();
+                return;
+            }
+
+            var window = new SgConnectionsWindow { Owner = this };
+            _connectionsWindow = window;
+            window.Closed += (_, _) => _connectionsWindow = null;
+            window.Show();
+            window.Activate();
+        }
+        catch (Exception ex)
+        {
+            _connectionsWindow = null;
+            Logging.SaveLog("MainWindow.BtnConnections_Click", ex);
+            MessageBox.Show(
+                this,
+                "Не удалось открыть список соединений.\n\n"
+                    + ex.Message
+                    + "\n\nПодробности записаны в журнал SG Client.",
+                "Соединения",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void BtnMaintenance_Click(object sender, RoutedEventArgs e)
+    {
+        new SgMaintenanceWindow { Owner = this }.ShowDialog();
+    }
+
+    private void BtnHelp_Click(object sender, RoutedEventArgs e)
+    {
+        new SgHelpWindow { Owner = this }.ShowDialog();
+    }
+
+    private void OnProgramStarted(object? state, bool timeout)
+    {
+        Application.Current?.Dispatcher.Invoke(() => ShowHideWindow(true));
     }
 
     private async Task DelegateSnackMsg(string content)
     {
-        MainSnackbar.MessageQueue?.Enqueue(content);
+        if (content.IsNotEmpty())
+        {
+            MainSnackbar.MessageQueue?.Enqueue(BuildSgSnackContent(content));
+        }
         await Task.CompletedTask;
+    }
+
+    private FrameworkElement BuildSgSnackContent(string content)
+    {
+        var lowered = content.ToLowerInvariant();
+        var brushKey = lowered.Contains("ошиб", StringComparison.Ordinal)
+            || lowered.Contains("не удалось", StringComparison.Ordinal)
+            || lowered.Contains("failed", StringComparison.Ordinal)
+            || lowered.Contains("error", StringComparison.Ordinal)
+                ? "SgErrorBrush"
+                : lowered.Contains("предупреж", StringComparison.Ordinal)
+                    || lowered.Contains("внимание", StringComparison.Ordinal)
+                    || lowered.Contains("небезопас", StringComparison.Ordinal)
+                    || lowered.Contains("warning", StringComparison.Ordinal)
+                        ? "SgWarningBrush"
+                        : "SgAccentBrush";
+
+        var accent = (Brush)FindResource(brushKey);
+        var panel = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            MaxWidth = 560,
+        };
+        panel.Children.Add(new Border
+        {
+            Width = 8,
+            Height = 8,
+            Margin = new Thickness(0, 2, 10, 0),
+            VerticalAlignment = VerticalAlignment.Top,
+            Background = accent,
+            CornerRadius = new CornerRadius(4),
+        });
+        panel.Children.Add(new TextBlock
+        {
+            Text = content,
+            MaxWidth = 530,
+            Foreground = (Brush)FindResource("SgTextBrush"),
+            FontSize = 11.5,
+            TextWrapping = TextWrapping.Wrap,
+        });
+        return panel;
     }
 
     private async Task<bool> UpdateViewHandler(EViewAction action, object? obj)
@@ -194,7 +244,6 @@ public partial class MainWindow
                 {
                     return false;
                 }
-
                 return new AddServerWindow((ProfileItem)obj).ShowDialog() ?? false;
 
             case EViewAction.AddServer2Window:
@@ -202,7 +251,6 @@ public partial class MainWindow
                 {
                     return false;
                 }
-
                 return new AddServer2Window((ProfileItem)obj).ShowDialog() ?? false;
 
             case EViewAction.AddGroupServerWindow:
@@ -210,7 +258,6 @@ public partial class MainWindow
                 {
                     return false;
                 }
-
                 return new AddGroupServerWindow((ProfileItem)obj).ShowDialog() ?? false;
 
             case EViewAction.DNSSettingWindow:
@@ -220,7 +267,23 @@ public partial class MainWindow
                 return new RoutingSettingWindow().ShowDialog() ?? false;
 
             case EViewAction.OptionSettingWindow:
-                return new OptionSettingWindow().ShowDialog() ?? false;
+                return new OptionSettingWindow { Owner = this }.ShowDialog() ?? false;
+
+            case EViewAction.SgSplitTunnelWindow:
+                return new SgSplitTunnelWindow { Owner = this }.ShowDialog() ?? false;
+
+            case EViewAction.SgReserveProfileWindow:
+                return new SgReserveProfileWindow { Owner = this }.ShowDialog() ?? false;
+
+            case EViewAction.SgRoutingWindow:
+                return new SgRoutingWindow { Owner = this }.ShowDialog() ?? false;
+
+            case EViewAction.SgDpiWindow:
+                return new SgDpiWindow { Owner = this }.ShowDialog() ?? false;
+
+            case EViewAction.SgHelpWindow:
+                new SgHelpWindow { Owner = this }.ShowDialog();
+                return true;
 
             case EViewAction.FullConfigTemplateWindow:
                 return new FullConfigTemplateWindow().ShowDialog() ?? false;
@@ -244,7 +307,7 @@ public partial class MainWindow
                 break;
         }
 
-        return await Task.FromResult(true);
+        return true;
     }
 
     private void OnHotkeyHandler(EGlobalHotkey e)
@@ -259,7 +322,6 @@ public partial class MainWindow
             case EGlobalHotkey.SystemProxySet:
             case EGlobalHotkey.SystemProxyUnchanged:
             case EGlobalHotkey.SystemProxyPac:
-                AppEvents.SysProxyChangeRequested.Publish((ESysProxyType)((int)e - 1));
                 break;
         }
     }
@@ -272,14 +334,157 @@ public partial class MainWindow
 
     private async void Current_SessionEnding(object sender, SessionEndingCancelEventArgs e)
     {
-        Logging.SaveLog("Current_SessionEnding");
         StorageUI();
+        await StatusBarViewModel.Instance.DisableTunAsync();
         await AppManager.Instance.AppExitAsync(false);
     }
 
     private void Shutdown(bool obj)
     {
+        UnregisterEnvironmentEvents();
         Application.Current.Shutdown();
+    }
+
+    private void SgThemeManager_ThemeChanged(string theme)
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.Invoke(() => SgThemeManager_ThemeChanged(theme));
+            return;
+        }
+        txtThemeName.Text = SgThemeManager.GetDisplayName(theme);
+    }
+
+    private void RegisterEnvironmentEvents()
+    {
+        if (_environmentEventsRegistered)
+        {
+            return;
+        }
+
+        SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
+        NetworkChange.NetworkAvailabilityChanged += NetworkChange_NetworkAvailabilityChanged;
+        _environmentEventsRegistered = true;
+    }
+
+    private void UnregisterEnvironmentEvents()
+    {
+        if (!_environmentEventsRegistered)
+        {
+            return;
+        }
+
+        SystemEvents.PowerModeChanged -= SystemEvents_PowerModeChanged;
+        NetworkChange.NetworkAvailabilityChanged -= NetworkChange_NetworkAvailabilityChanged;
+        _environmentEventsRegistered = false;
+        SgThemeManager.ThemeChanged -= SgThemeManager_ThemeChanged;
+        _recoveryCts?.Cancel();
+        _recoveryCts?.Dispose();
+        _recoveryCts = null;
+    }
+
+    private void SystemEvents_PowerModeChanged(object sender, PowerModeChangedEventArgs e)
+    {
+        if (e.Mode == PowerModes.Resume && _config.SgQuickSettingsItem.AutoRecoverTun)
+        {
+            ScheduleTunRecovery("выход компьютера из сна", TimeSpan.FromSeconds(4));
+        }
+    }
+
+    private void NetworkChange_NetworkAvailabilityChanged(object? sender, NetworkAvailabilityEventArgs e)
+    {
+        if (!e.IsAvailable)
+        {
+            // Creating or removing a TUN adapter can briefly change Windows network
+            // availability. Do not interpret our own transition as a real outage.
+            if (!_config.TunModeItem.EnableTun
+                || StatusBarViewModel.Instance.TunBusy
+                || TunOperationCoordinator.IsBusy)
+            {
+                _networkWasUnavailable = false;
+                _networkUnavailableSince = null;
+                return;
+            }
+
+            _networkWasUnavailable = true;
+            _networkUnavailableSince = DateTimeOffset.UtcNow;
+            return;
+        }
+
+        if (!_networkWasUnavailable)
+        {
+            return;
+        }
+
+        var outageDuration = DateTimeOffset.UtcNow - (_networkUnavailableSince ?? DateTimeOffset.UtcNow);
+        _networkWasUnavailable = false;
+        _networkUnavailableSince = null;
+
+        // Ignore very short adapter flaps. They are usually caused by TUN switching.
+        if (outageDuration >= TimeSpan.FromSeconds(2)
+            && _config.SgQuickSettingsItem.AutoRecoverTun
+            && _config.TunModeItem.EnableTun
+            && !StatusBarViewModel.Instance.TunBusy
+            && !TunOperationCoordinator.IsBusy)
+        {
+            ScheduleTunRecovery("восстановление сети", TimeSpan.FromSeconds(4));
+        }
+    }
+
+    private void ScheduleTunRecovery(string reason, TimeSpan delay)
+    {
+        if (!_config.SgQuickSettingsItem.AutoRecoverTun || !_config.TunModeItem.EnableTun)
+        {
+            return;
+        }
+
+        _recoveryCts?.Cancel();
+        _recoveryCts?.Dispose();
+        var cts = new CancellationTokenSource();
+        _recoveryCts = cts;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(delay, cts.Token);
+
+                // After resume Windows may report the network before an uplink is
+                // actually available. Wait for the real availability event instead
+                // of restarting the tunnel into a guaranteed failure.
+                if (!NetworkInterface.GetIsNetworkAvailable())
+                {
+                    _networkWasUnavailable = true;
+                    _networkUnavailableSince = DateTimeOffset.UtcNow;
+                    return;
+                }
+
+                await (await Application.Current.Dispatcher.InvokeAsync(async () =>
+                {
+                    if (cts.IsCancellationRequested
+                        || !_config.SgQuickSettingsItem.AutoRecoverTun
+                        || !_config.TunModeItem.EnableTun
+                        || StatusBarViewModel.Instance.TunBusy
+                        || TunOperationCoordinator.IsBusy
+                        || ViewModel == null)
+                    {
+                        return;
+                    }
+
+                    Logging.SaveLog($"TUN recovery requested after {reason}");
+                    await ViewModel.Reload();
+                }));
+            }
+            catch (OperationCanceledException)
+            {
+                // A newer environment event replaced this recovery request.
+            }
+            catch (Exception ex)
+            {
+                Logging.SaveLog($"TUN recovery failed after {reason}", ex);
+                StatusBarViewModel.Instance.ReportTunError("Не удалось восстановить TUN после изменения сети. Откройте журнал.");
+            }
+        });
     }
 
     private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -293,21 +498,17 @@ public partial class MainWindow
                     {
                         return;
                     }
-                    AddServerViaClipboardAsync().ContinueWith(_ => { });
-
+                    _ = AddServerViaClipboardAsync();
                     break;
 
                 case Key.S:
-                    ScanScreenTaskAsync().ContinueWith(_ => { });
+                    _ = ScanScreenTaskAsync();
                     break;
             }
         }
-        else
+        else if (e.Key == Key.F5)
         {
-            if (e.Key == Key.F5)
-            {
-                ViewModel?.Reload();
-            }
+            ViewModel?.Reload();
         }
     }
 
@@ -317,20 +518,178 @@ public partial class MainWindow
         ShowHideWindow(false);
     }
 
-    private void MenuPromotion_Click(object sender, RoutedEventArgs e)
+    private void BtnWindowMinimize_Click(object sender, RoutedEventArgs e)
     {
-        ProcUtils.ProcessStart($"{Utils.Base64Decode(Global.PromotionUrl)}?t={DateTime.Now.Ticks}");
+        WindowState = WindowState.Minimized;
     }
 
-    private void MenuSettingsSetUWP_Click(object sender, RoutedEventArgs e)
+    private void BtnImport_Click(object sender, RoutedEventArgs e)
     {
-        ProcUtils.ProcessStart(Utils.GetBinPath("EnableLoopback.exe"));
+        themePopup.IsOpen = false;
+        importPopup.IsOpen = !importPopup.IsOpen;
+    }
+
+    private void BtnTheme_Click(object sender, RoutedEventArgs e)
+    {
+        importPopup.IsOpen = false;
+        themePopup.IsOpen = !themePopup.IsOpen;
+    }
+
+    private async void ThemeOption_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string theme })
+        {
+            return;
+        }
+
+        themePopup.IsOpen = false;
+        await SgThemeManager.ApplyAndSaveAsync(theme);
+        txtThemeName.Text = SgThemeManager.GetDisplayName(theme);
+    }
+
+    private void ImportAction_Click(object sender, RoutedEventArgs e)
+    {
+        importPopup.IsOpen = false;
+    }
+
+    private async void ImportAwgText_Click(object sender, RoutedEventArgs e)
+    {
+        importPopup.IsOpen = false;
+        await OpenAwgTextImportAsync();
+    }
+
+    private async Task OpenAwgTextImportAsync(string? content = null, string? sourceFileName = null)
+    {
+        var previousAwgProfileId = AmneziaWgManager.Instance.SelectedProfileId;
+        var dialog = new SgAwgTextImportWindow(content, sourceFileName ?? "AmneziaWG.conf") { Owner = this };
+        if (dialog.ShowDialog() != true || dialog.ImportedProfile == null)
+        {
+            return;
+        }
+
+        if (_config.TunModeItem.EnableTun)
+        {
+            if (previousAwgProfileId.IsNotEmpty())
+            {
+                await AmneziaWgManager.Instance.SelectProfileAsync(previousAwgProfileId);
+            }
+            else
+            {
+                await AmneziaWgManager.Instance.ClearSelectionAsync();
+            }
+        }
+
+        AppEvents.ProfilesRefreshRequested.Publish();
+        await DelegateSnackMsg($"Добавлен профиль AmneziaWG: {dialog.ImportedProfile.Name}");
+    }
+
+    private async void ImportFromFile_Click(object sender, RoutedEventArgs e)
+    {
+        importPopup.IsOpen = false;
+
+        if (UI.OpenFileDialog(out var fileName, "Подключение|*.txt;*.url;*.conf|Все файлы|*.*") != true
+            || fileName.IsNullOrEmpty())
+        {
+            return;
+        }
+
+        try
+        {
+            var content = await File.ReadAllTextAsync(fileName);
+            if (content.IsNullOrEmpty())
+            {
+                await DelegateSnackMsg("Выбранный файл пуст.");
+                return;
+            }
+
+            if (AmneziaWgManager.LooksLikeWireGuardConfig(content)
+                && AmneziaWgManager.IsAmneziaConfig(content))
+            {
+                await OpenAwgTextImportAsync(content, fileName);
+                return;
+            }
+
+            if (ViewModel != null)
+            {
+                // Ordinary WireGuard configs deliberately continue through the
+                // standard WireGuard importer. Only configs with Amnezia J/S/H
+                // parameters are routed to the AmneziaWG profile store.
+                await ViewModel.AddServerViaClipboardAsync(content);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("Import connection file", ex);
+            await DelegateSnackMsg(ex.Message.IsNullOrEmpty()
+                ? "Не удалось импортировать файл подключения."
+                : ex.Message);
+        }
+    }
+
+    private void BtnLogs_Click(object sender, RoutedEventArgs e)
+    {
+        ShowLogs();
+    }
+
+    private void BtnLogsCompact_Click(object sender, RoutedEventArgs e)
+    {
+        if (expLogs.IsExpanded)
+        {
+            HideCompactLogs();
+        }
+        else
+        {
+            ShowCompactLogs();
+        }
+    }
+
+    private void ShowLogs()
+    {
+        ShowHideWindow(true);
+
+        if (_logWindow is { IsLoaded: true })
+        {
+            _logWindow.ActivateAndBringToFront();
+            return;
+        }
+
+        var initialText = (logHost.Content as MsgView)?.GetText();
+        _logWindow = new SgLogWindow(initialText)
+        {
+            Owner = this,
+        };
+        _logWindow.Closed += (_, _) => _logWindow = null;
+        _logWindow.Show();
+    }
+
+    private void ShowCompactLogs()
+    {
+        expLogs.IsExpanded = true;
+        icoLogsCompact.Kind = PackIconKind.ChevronUp;
+        btnLogsCompact.ToolTip = "Скрыть краткий журнал";
+    }
+
+    private void HideCompactLogs()
+    {
+        expLogs.IsExpanded = false;
+        icoLogsCompact.Kind = PackIconKind.ChevronDown;
+        btnLogsCompact.ToolTip = "Показать краткий журнал в главном окне";
     }
 
     public async Task AddServerViaClipboardAsync()
     {
         var clipboardData = WindowsUtils.GetClipboardData();
-        if (clipboardData.IsNotEmpty() && ViewModel != null)
+        if (clipboardData.IsNullOrEmpty())
+        {
+            return;
+        }
+        if (AmneziaWgManager.LooksLikeWireGuardConfig(clipboardData)
+            && AmneziaWgManager.IsAmneziaConfig(clipboardData))
+        {
+            await OpenAwgTextImportAsync(clipboardData, "AmneziaWG.conf");
+            return;
+        }
+        if (ViewModel != null)
         {
             await ViewModel.AddServerViaClipboardAsync(clipboardData);
         }
@@ -339,64 +698,68 @@ public partial class MainWindow
     private async Task ScanScreenTaskAsync()
     {
         ShowHideWindow(false);
+        string? result = null;
 
         if (Application.Current?.MainWindow is Window window)
         {
             var bytes = QRCodeWindowsUtils.CaptureScreen(window);
-            await ViewModel?.ScanScreenResult(bytes);
+            result = QRCodeUtils.ParseBarcode(bytes);
         }
 
         ShowHideWindow(true);
+        await ImportScannedContentAsync(result, "AmneziaWG.conf");
     }
 
     private async Task ScanImageTaskAsync()
     {
-        if (UI.OpenFileDialog(out var fileName, "PNG|*.png|All|*.*") != true)
+        if (UI.OpenFileDialog(out var fileName, "PNG|*.png|All|*.*") != true || fileName.IsNullOrEmpty())
         {
             return;
         }
-        if (fileName.IsNullOrEmpty())
+
+        var result = QRCodeUtils.ParseBarcode(fileName);
+        await ImportScannedContentAsync(result, "AmneziaWG.conf");
+    }
+
+    private async Task ImportScannedContentAsync(string? result, string sourceFileName)
+    {
+        if (result.IsNullOrEmpty())
         {
+            NoticeManager.Instance.Enqueue(ResUI.NoValidQRcodeFound);
             return;
         }
-        await ViewModel?.ScanImageResult(fileName);
+
+        if (AmneziaWgManager.LooksLikeWireGuardConfig(result)
+            && AmneziaWgManager.IsAmneziaConfig(result))
+        {
+            await OpenAwgTextImportAsync(result, sourceFileName);
+            return;
+        }
+
+        if (ViewModel != null)
+        {
+            await ViewModel.AddScanResultAsync(result);
+        }
     }
-
-    private void MenuCheckUpdate_Click(object sender, RoutedEventArgs e)
-    {
-        _checkUpdateView ??= new CheckUpdateView();
-        DialogHost.Show(_checkUpdateView, "RootDialog");
-
-        AppEvents.HasUpdateNotified.Publish(false);
-    }
-
-    private void MenuBackupAndRestore_Click(object sender, RoutedEventArgs e)
-    {
-        _backupAndRestoreView ??= new BackupAndRestoreView();
-        DialogHost.Show(_backupAndRestoreView, "RootDialog");
-    }
-
-    #endregion Event
-
-    #region UI
 
     public void ShowHideWindow(bool? blShow)
     {
         var bl = blShow ?? !AppManager.Instance.ShowInTaskbar;
         if (bl)
         {
-            this?.Show();
-            if (this?.WindowState == WindowState.Minimized)
+            Show();
+            if (WindowState == WindowState.Minimized)
             {
                 WindowState = WindowState.Normal;
             }
-            this?.Activate();
-            this?.Focus();
+            Activate();
+            Focus();
         }
         else
         {
-            this?.Hide();
+            Hide();
         }
+
         AppManager.Instance.ShowInTaskbar = bl;
     }
 
@@ -407,64 +770,10 @@ public partial class MainWindow
         {
             ShowHideWindow(false);
         }
-        RestoreUI();
-    }
-
-    private void RestoreUI()
-    {
-        if (_config.UiItem.MainGirdHeight1 > 0 && _config.UiItem.MainGirdHeight2 > 0)
-        {
-            if (_config.UiItem.MainGirdOrientation == EGirdOrientation.Horizontal)
-            {
-                gridMain.ColumnDefinitions[0].Width = new GridLength(_config.UiItem.MainGirdHeight1, GridUnitType.Star);
-                gridMain.ColumnDefinitions[2].Width = new GridLength(_config.UiItem.MainGirdHeight2, GridUnitType.Star);
-            }
-            else if (_config.UiItem.MainGirdOrientation == EGirdOrientation.Vertical)
-            {
-                gridMain1.RowDefinitions[0].Height = new GridLength(_config.UiItem.MainGirdHeight1, GridUnitType.Star);
-                gridMain1.RowDefinitions[2].Height = new GridLength(_config.UiItem.MainGirdHeight2, GridUnitType.Star);
-            }
-        }
     }
 
     private void StorageUI()
     {
         ConfigHandler.SaveWindowSizeItem(_config, GetType().Name, Width, Height);
-
-        if (_config.UiItem.MainGirdOrientation == EGirdOrientation.Horizontal)
-        {
-            ConfigHandler.SaveMainGirdHeight(_config, gridMain.ColumnDefinitions[0].ActualWidth, gridMain.ColumnDefinitions[2].ActualWidth);
-        }
-        else if (_config.UiItem.MainGirdOrientation == EGirdOrientation.Vertical)
-        {
-            ConfigHandler.SaveMainGirdHeight(_config, gridMain1.RowDefinitions[0].ActualHeight, gridMain1.RowDefinitions[2].ActualHeight);
-        }
     }
-
-    private void AddHelpMenuItem()
-    {
-        var coreInfo = CoreInfoManager.Instance.GetCoreInfo();
-        foreach (var it in coreInfo
-            .Where(t => t.CoreType is not ECoreType.v2fly
-                        and not ECoreType.hysteria))
-        {
-            var item = new MenuItem()
-            {
-                Tag = it.Url.Replace(@"/releases", ""),
-                Header = string.Format(ResUI.menuWebsiteItem, it.CoreType.ToString().Replace("_", " ")).UpperFirstChar()
-            };
-            item.Click += MenuItem_Click;
-            menuHelp.Items.Add(item);
-        }
-    }
-
-    private void MenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is MenuItem item)
-        {
-            ProcUtils.ProcessStart(item.Tag.ToString());
-        }
-    }
-
-    #endregion UI
 }

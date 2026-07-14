@@ -1,4 +1,4 @@
-﻿namespace ServiceLib.Manager;
+namespace ServiceLib.Manager;
 
 public sealed class CoreInfoManager
 {
@@ -52,33 +52,23 @@ public sealed class CoreInfoManager
 
     public List<ECoreType> GetCheckUpdateCoreTypes()
     {
-        var lst = new List<ECoreType>();
-
-        if (RuntimeInformation.ProcessArchitecture != Architecture.X86)
+        // SG Client only offers updates for engines that are actually shipped
+        // and safely replaceable through this updater. AmneziaWG is updated as
+        // a tested runtime bundle together with SG Client releases.
+        if (RuntimeInformation.ProcessArchitecture == Architecture.X86
+            || (Utils.IsWindows() && Environment.OSVersion.Version.Major < 10))
         {
-            if (IsCheckUpdateSupported(ECoreType.v2rayN))
-            {
-                lst.Add(ECoreType.v2rayN);
-            }
-
-            if (!(Utils.IsWindows() && Environment.OSVersion.Version.Major < 10))
-            {
-                lst.Add(ECoreType.Xray);
-                lst.Add(ECoreType.mihomo);
-                lst.Add(ECoreType.sing_box);
-            }
+            return [];
         }
 
-        return lst;
+        return [ECoreType.Xray, ECoreType.sing_box];
     }
 
     public bool IsCheckUpdateSupported(ECoreType type)
     {
         return type switch
         {
-            ECoreType.v2rayN => false, // SG Client self-update is intentionally disabled in phase 1.
             ECoreType.Xray => true,
-            ECoreType.mihomo => true,
             ECoreType.sing_box => true,
             _ => false,
         };

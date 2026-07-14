@@ -84,8 +84,11 @@ public class NodeValidator
                     && (Utils.IsGuidByParse(item.Password) || item.Password.Length <= 30),
                     string.Format(ResUI.MsgInvalidProperty, "Password")
                 );
-                v.Assert(Global.Flows.Contains(protocolExtra.Flow ?? string.Empty),
-                    string.Format(ResUI.MsgInvalidProperty, "Flow"));
+                if (!Global.Flows.Contains(protocolExtra.Flow ?? string.Empty))
+                {
+                    v.Warning(
+                        $"Нераспознанное значение VLESS Flow '{protocolExtra.Flow}' передано ядру без изменения.");
+                }
                 break;
 
             case EConfigType.Shadowsocks:

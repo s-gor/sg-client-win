@@ -1,4 +1,4 @@
-﻿namespace GlobalHotKeys;
+namespace GlobalHotKeys;
 
 public interface IRegistration : IDisposable
 {

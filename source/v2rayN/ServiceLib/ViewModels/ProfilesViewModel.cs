@@ -2,6 +2,11 @@ namespace ServiceLib.ViewModels;
 
 public class ProfilesViewModel : MyReactiveObject
 {
+    public event Action? SpeedTestCompleted;
+    public event Action? CountryMetadataChanged;
+
+    public static ProfilesViewModel? Instance { get; private set; }
+
     #region private prop
 
     private List<ProfileItem> _lstProfile;
@@ -9,6 +14,11 @@ public class ProfilesViewModel : MyReactiveObject
     private readonly Dictionary<string, bool> _dicHeaderSort = new();
     private SpeedtestService? _speedtestService;
     private string? _pendingSelectIndexId;
+    private string? _pendingRevealProfileId;
+    private readonly SemaphoreSlim _profileActivationGate = new(1, 1);
+    private CancellationTokenSource? _countryLookupCts;
+    private readonly object _latencyProgressLock = new();
+    private readonly HashSet<string> _latencyCompletedIds = new(StringComparer.OrdinalIgnoreCase);
 
     #endregion private prop
 
@@ -21,6 +31,15 @@ public class ProfilesViewModel : MyReactiveObject
     [Reactive]
     public ProfileItemModel SelectedProfile { get; set; }
 
+    [Reactive]
+    public bool TunEnabled { get; set; }
+
+    [Reactive]
+    public bool TunBusy { get; set; }
+
+    [Reactive]
+    public ETunUiState TunUiState { get; set; }
+
     public IList<ProfileItemModel> SelectedProfiles { get; set; }
 
     [Reactive]
@@ -31,6 +50,24 @@ public class ProfilesViewModel : MyReactiveObject
 
     [Reactive]
     public string ServerFilter { get; set; }
+
+    [Reactive]
+    public bool LatencyTestRunning { get; set; }
+
+    [Reactive]
+    public bool LatencyTestPanelVisible { get; set; }
+
+    [Reactive]
+    public int LatencyTestCompleted { get; set; }
+
+    [Reactive]
+    public int LatencyTestTotal { get; set; }
+
+    [Reactive]
+    public double LatencyTestProgress { get; set; }
+
+    [Reactive]
+    public string LatencyTestStatus { get; set; } = "URL-тест не запущен";
 
     #endregion ObservableCollection
 
@@ -84,8 +121,20 @@ public class ProfilesViewModel : MyReactiveObject
 
     public ProfilesViewModel(Func<EViewAction, object?, Task<bool>>? updateView)
     {
+        Instance = this;
         _config = AppManager.Instance.Config;
         _updateView = updateView;
+        TunEnabled = _config.TunModeItem.EnableTun;
+        TunBusy = StatusBarViewModel.Instance.TunBusy;
+        TunUiState = StatusBarViewModel.Instance.TunUiState;
+
+        StatusBarViewModel.Instance.WhenAnyValue(x => x.TunUiState)
+            .Subscribe(value =>
+            {
+                TunUiState = value;
+                TunBusy = value is ETunUiState.Starting or ETunUiState.Stopping or ETunUiState.Switching;
+                TunEnabled = StatusBarViewModel.Instance.EnableTun;
+            });
 
         #region WhenAnyValue && ReactiveCommand
 
@@ -254,7 +303,7 @@ public class ProfilesViewModel : MyReactiveObject
         AppEvents.SetDefaultServerRequested
             .AsObservable()
             .ObserveOn(RxSchedulers.MainThreadScheduler)
-            .Subscribe(async indexId => await SetDefaultServer(indexId));
+            .Subscribe(async indexId => { await ActivateProfileAsync(indexId); });
 
         #endregion AppEvents
 
@@ -273,6 +322,22 @@ public class ProfilesViewModel : MyReactiveObject
 
     #endregion Init
 
+    public void RequestRevealProfile(string indexId)
+    {
+        if (indexId.IsNotEmpty())
+        {
+            _pendingRevealProfileId = indexId;
+            _pendingSelectIndexId = indexId;
+        }
+    }
+
+    public string? ConsumePendingRevealProfileId()
+    {
+        var value = _pendingRevealProfileId;
+        _pendingRevealProfileId = null;
+        return value;
+    }
+
     #region Actions
 
     private void Reload()
@@ -284,8 +349,10 @@ public class ProfilesViewModel : MyReactiveObject
     {
         if (result.IndexId.IsNullOrEmpty())
         {
+            FinishLatencyTest(result.Delay);
             NoticeManager.Instance.SendMessageEx(result.Delay);
             NoticeManager.Instance.Enqueue(result.Delay);
+            SpeedTestCompleted?.Invoke();
             return;
         }
         var item = ProfileItems.FirstOrDefault(it => it.IndexId == result.IndexId);
@@ -307,6 +374,8 @@ public class ProfilesViewModel : MyReactiveObject
         {
             item.IpInfo = result.IpInfo ?? string.Empty;
         }
+        TrackLatencyProgress(result);
+        SpeedTestCompleted?.Invoke();
         await Task.CompletedTask;
     }
 
@@ -375,24 +444,42 @@ public class ProfilesViewModel : MyReactiveObject
 
     private async Task RefreshServersBiz()
     {
-        var lstModel = await GetProfileItemsEx(_config.SubIndexId, _serverFilter);
-        _lstProfile = JsonUtils.Deserialize<List<ProfileItem>>(JsonUtils.Serialize(lstModel)) ?? [];
+        var lstModel = await GetProfileItemsEx(string.Empty, _serverFilter) ?? [];
+        _lstProfile = JsonUtils.Deserialize<List<ProfileItem>>(
+            JsonUtils.Serialize(lstModel.Where(item => !item.IsAmneziaWG))) ?? [];
+
+        TunEnabled = _config.TunModeItem.EnableTun;
+
+        // Keep the user's highlighted row separate from the active profile.
+        // During Clear/AddRange WPF may temporarily select the first item; using
+        // the stable IndexId prevents that transient selection from switching
+        // a subscription row back to a local profile.
+        var highlightedIndexId = _pendingSelectIndexId.IsNotEmpty()
+            ? _pendingSelectIndexId
+            : SelectedProfile?.IndexId;
 
         ProfileItems.Clear();
         ProfileItems.AddRange(lstModel);
         if (lstModel.Count > 0)
         {
-            ProfileItemModel? selected = null;
-            if (!_pendingSelectIndexId.IsNullOrEmpty())
+            var selected = highlightedIndexId.IsNotEmpty()
+                ? lstModel.FirstOrDefault(t => string.Equals(t.IndexId, highlightedIndexId, StringComparison.OrdinalIgnoreCase))
+                : null;
+
+            // A pending reveal/select request belongs to this refresh only.
+            // Keeping a missing stale id could later override a real click.
+            if (_pendingSelectIndexId.IsNotEmpty())
             {
-                selected = lstModel.FirstOrDefault(t => t.IndexId == _pendingSelectIndexId);
                 _pendingSelectIndexId = null;
             }
-            selected ??= lstModel.FirstOrDefault(t => t.IndexId == _config.IndexId);
+
+            selected ??= lstModel.FirstOrDefault(t => t.IsActive);
+            selected ??= lstModel.FirstOrDefault(t => string.Equals(t.IndexId, _config.IndexId, StringComparison.OrdinalIgnoreCase));
             SelectedProfile = selected ?? lstModel.First();
         }
 
         await _updateView?.Invoke(EViewAction.DispatcherRefreshServersBiz, null);
+        StartCountryEnrichment(lstModel);
     }
 
     private async Task RefreshSubscriptions()
@@ -405,50 +492,281 @@ public class ProfilesViewModel : MyReactiveObject
         {
             SubItems.Add(item);
         }
-        SelectedSub = (_config.SubIndexId.IsNotEmpty()
-                        ? SubItems.FirstOrDefault(t => t.Id == _config.SubIndexId)
-                        : null) ?? SubItems.FirstOrDefault();
+        // The compact SG profile browser always starts with all subscriptions.
+        // Filtering by a particular source is handled instantly in ProfilesView,
+        // without reloading thousands of profiles from storage.
+        SelectedSub = SubItems.FirstOrDefault();
     }
 
     private async Task<List<ProfileItemModel>?> GetProfileItemsEx(string subid, string filter)
     {
-        var lstModel = await AppManager.Instance.ProfileModels(_config.SubIndexId, filter);
+        var lstModel = await AppManager.Instance.ProfileModels(subid, filter);
 
         await ConfigHandler.SetDefaultServer(_config, lstModel);
 
+        var awgSelectedId = AmneziaWgManager.Instance.SelectedProfileId;
         var lstServerStat = (_config.GuiItem.EnableStatistics ? StatisticsManager.Instance.ServerStat : null) ?? [];
         var lstProfileExs = await ProfileExManager.Instance.GetProfileExs();
-        lstModel = (from t in lstModel
-                    join t2 in lstServerStat on t.IndexId equals t2.IndexId into t2b
-                    from t22 in t2b.DefaultIfEmpty()
-                    join t3 in lstProfileExs on t.IndexId equals t3.IndexId into t3b
-                    from t33 in t3b.DefaultIfEmpty()
-                    select new ProfileItemModel
-                    {
-                        IndexId = t.IndexId,
-                        ConfigType = t.ConfigType,
-                        Remarks = t.Remarks,
-                        Address = t.Address,
-                        Port = t.Port,
-                        //Security = t.Security,
-                        Network = t.Network,
-                        StreamSecurity = t.StreamSecurity,
-                        Subid = t.Subid,
-                        SubRemarks = t.SubRemarks,
-                        IsActive = t.IndexId == _config.IndexId,
-                        Sort = t33?.Sort ?? 0,
-                        Delay = t33?.Delay ?? 0,
-                        Speed = t33?.Speed ?? 0,
-                        DelayVal = t33?.Delay != 0 ? $"{t33?.Delay}" : string.Empty,
-                        SpeedVal = t33?.Speed > 0 ? $"{t33?.Speed}" : t33?.Message ?? string.Empty,
-                        IpInfo = t33?.IpInfo ?? string.Empty,
-                        TodayDown = t22 == null ? "" : Utils.HumanFy(t22.TodayDown),
-                        TodayUp = t22 == null ? "" : Utils.HumanFy(t22.TodayUp),
-                        TotalDown = t22 == null ? "" : Utils.HumanFy(t22.TotalDown),
-                        TotalUp = t22 == null ? "" : Utils.HumanFy(t22.TotalUp)
-                    }).OrderBy(t => t.Sort).ToList();
+        var result = (from t in lstModel
+                      join t2 in lstServerStat on t.IndexId equals t2.IndexId into t2b
+                      from t22 in t2b.DefaultIfEmpty()
+                      join t3 in lstProfileExs on t.IndexId equals t3.IndexId into t3b
+                      from t33 in t3b.DefaultIfEmpty()
+                      select new ProfileItemModel
+                      {
+                          IndexId = t.IndexId,
+                          ConfigType = t.ConfigType,
+                          Remarks = t.Remarks,
+                          CountryCode = t.CountryCode,
+                          CountrySource = SgCountryHelper.NormalizeCode(t.CountryCode).IsNotEmpty()
+                              ? "Профиль"
+                              : (SgCountryHelper.ResolveCode(string.Empty, t.Remarks).IsNotEmpty() ? "Имя профиля" : string.Empty),
+                          Address = t.Address,
+                          Port = t.Port,
+                          Network = t.Network,
+                          StreamSecurity = t.StreamSecurity,
+                          Subid = t.Subid,
+                          IsSub = t.IsSub,
+                          SubRemarks = t.SubRemarks,
+                          IsActive = awgSelectedId.IsNullOrEmpty() && t.IndexId == _config.IndexId,
+                          IsAmneziaWG = false,
+                          ProtocolDisplay = GetProtocolDisplay(t.ConfigType, t.Network, t.StreamSecurity),
+                          SourceDisplay = t.IsSub
+                              ? (t.SubRemarks.IsNotEmpty() ? $"Подписка: {t.SubRemarks}" : "Подписка")
+                              : "Локальный профиль",
+                          Sort = t33?.Sort ?? 0,
+                          Delay = t33?.Delay ?? 0,
+                          Speed = t33?.Speed ?? 0,
+                          DelayVal = t33?.Delay != 0 ? $"{t33?.Delay} мс" : string.Empty,
+                          SpeedVal = t33?.Speed > 0 ? $"{t33?.Speed}" : t33?.Message ?? string.Empty,
+                          IpInfo = t33?.IpInfo ?? string.Empty,
+                          TodayDown = t22 == null ? "" : Utils.HumanFy(t22.TodayDown),
+                          TodayUp = t22 == null ? "" : Utils.HumanFy(t22.TodayUp),
+                          TotalDown = t22 == null ? "" : Utils.HumanFy(t22.TotalDown),
+                          TotalUp = t22 == null ? "" : Utils.HumanFy(t22.TotalUp)
+                      }).OrderBy(t => t.Sort).ToList();
 
-        return lstModel;
+        foreach (var item in result)
+        {
+            ApplyCountryMetadata(item);
+        }
+
+        var awgProfiles = AmneziaWgManager.Instance.GetProfiles();
+        for (var awgIndex = 0; awgIndex < awgProfiles.Count; awgIndex++)
+        {
+            var profile = awgProfiles[awgIndex];
+            if (filter.IsNotEmpty()
+                && !profile.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                && !profile.Endpoint.Contains(filter, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+            var awgItem = new ProfileItemModel
+            {
+                IndexId = profile.Id,
+                ConfigType = EConfigType.WireGuard,
+                Remarks = profile.Name,
+                CountryCode = profile.CountryCode,
+                CountrySource = SgCountryHelper.NormalizeCode(profile.CountryCode).IsNotEmpty() ? "GeoIP" : string.Empty,
+                Address = profile.EndpointHost,
+                Port = profile.EndpointPort,
+                Network = "udp",
+                StreamSecurity = string.Empty,
+                IsActive = string.Equals(profile.Id, awgSelectedId, StringComparison.OrdinalIgnoreCase),
+                IsAmneziaWG = true,
+                ProtocolDisplay = "AmneziaWG",
+                SourceDisplay = "Локальный профиль · AmneziaWG",
+                DelayVal = profile.EndpointPort > 0 ? $"UDP {profile.EndpointPort}" : "UDP",
+                Sort = 1_000_000 + awgIndex
+            };
+            ApplyCountryMetadata(awgItem);
+            result.Add(awgItem);
+        }
+
+        return result;
+    }
+
+    private static void ApplyCountryMetadata(ProfileItemModel item)
+    {
+        var structured = SgCountryHelper.NormalizeCode(item.CountryCode);
+        var fromName = SgCountryHelper.ResolveCode(string.Empty, item.Remarks);
+        var resolved = structured.IsNotEmpty() ? structured : fromName;
+        var source = item.CountrySource;
+        if (source.IsNullOrEmpty())
+        {
+            source = structured.IsNotEmpty() ? "Профиль" : (fromName.IsNotEmpty() ? "Имя профиля" : string.Empty);
+        }
+        item.ApplyCountry(resolved, source);
+    }
+
+    private void StartCountryEnrichment(IReadOnlyList<ProfileItemModel> items)
+    {
+        _countryLookupCts?.Cancel();
+        _countryLookupCts?.Dispose();
+        _countryLookupCts = new CancellationTokenSource();
+        _ = EnrichMissingCountriesSafeAsync(items.ToList(), _countryLookupCts.Token);
+    }
+
+    private async Task EnrichMissingCountriesSafeAsync(List<ProfileItemModel> items, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await EnrichMissingCountriesAsync(items, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("Profile GeoIP enrichment failed", ex);
+        }
+    }
+
+    private async Task EnrichMissingCountriesAsync(List<ProfileItemModel> items, CancellationToken cancellationToken)
+    {
+        var candidates = items
+            .Where(item => item.ResolvedCountryCode.IsNullOrEmpty() && item.Address.IsNotEmpty())
+            .GroupBy(item => (item.Address ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (candidates.Count == 0)
+        {
+            return;
+        }
+
+        var resolvedByAddress = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        using var gate = new SemaphoreSlim(16, 16);
+        var tasks = candidates.Select(async group =>
+        {
+            await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                var code = await SgGeoIpCountryService.Instance
+                    .ResolveAddressAsync(group.Key, cancellationToken)
+                    .ConfigureAwait(false);
+                if (code.IsNotEmpty())
+                {
+                    resolvedByAddress[group.Key] = code;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                Logging.SaveLog($"Profile GeoIP lookup failed: {group.Key}", ex);
+            }
+            finally
+            {
+                gate.Release();
+            }
+        }).ToArray();
+
+        try
+        {
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (cancellationToken.IsCancellationRequested || resolvedByAddress.Count == 0)
+        {
+            return;
+        }
+
+        var resolvedItems = items
+            .Where(item => item.ResolvedCountryCode.IsNullOrEmpty()
+                && resolvedByAddress.ContainsKey((item.Address ?? string.Empty).Trim()))
+            .ToList();
+
+        foreach (var item in resolvedItems.Where(item => item.IsAmneziaWG))
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+            var code = resolvedByAddress[(item.Address ?? string.Empty).Trim()];
+            await AmneziaWgManager.Instance.SetCountryCodeAsync(item.IndexId, code).ConfigureAwait(false);
+        }
+
+        var regularIds = resolvedItems
+            .Where(item => !item.IsAmneziaWG && item.IndexId.IsNotEmpty())
+            .Select(item => item.IndexId)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var regularCodeById = resolvedItems
+            .Where(item => !item.IsAmneziaWG && item.IndexId.IsNotEmpty())
+            .GroupBy(item => item.IndexId, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => resolvedByAddress[(group.First().Address ?? string.Empty).Trim()],
+                StringComparer.OrdinalIgnoreCase);
+
+        const int databaseChunkSize = 400;
+        for (var offset = 0; offset < regularIds.Count; offset += databaseChunkSize)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+            var ids = regularIds.Skip(offset).Take(databaseChunkSize).ToList();
+            var entities = await AppManager.Instance.GetProfileItemsByIndexIds(ids).ConfigureAwait(false);
+            var updates = new List<ProfileItem>();
+            foreach (var entity in entities)
+            {
+                if (SgCountryHelper.NormalizeCode(entity.CountryCode).IsNullOrEmpty()
+                    && regularCodeById.TryGetValue(entity.IndexId, out var code))
+                {
+                    entity.CountryCode = code;
+                    updates.Add(entity);
+                }
+            }
+            if (updates.Count > 0)
+            {
+                await SQLiteHelper.Instance.UpdateAllAsync(updates).ConfigureAwait(false);
+            }
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+
+        RxSchedulers.MainThreadScheduler.Schedule(items, (scheduler, scheduledItems) =>
+        {
+            foreach (var item in scheduledItems)
+            {
+                if (item.ResolvedCountryCode.IsNullOrEmpty()
+                    && resolvedByAddress.TryGetValue((item.Address ?? string.Empty).Trim(), out var code))
+                {
+                    item.ApplyCountry(code, "GeoIP · geoip.dat");
+                }
+            }
+            CountryMetadataChanged?.Invoke();
+            return Disposable.Empty;
+        });
+    }
+
+    private static string GetProtocolDisplay(EConfigType configType, string network, string streamSecurity)
+    {
+        if (configType == EConfigType.Hysteria2)
+        {
+            return "Hysteria2";
+        }
+        if (configType == EConfigType.VLESS)
+        {
+            if (streamSecurity == Global.StreamSecurityReality)
+            {
+                return network == ETransport.xhttp.ToString() ? "VLESS XHTTP · REALITY" : "VLESS · REALITY";
+            }
+            if (network == ETransport.xhttp.ToString())
+            {
+                return "VLESS XHTTP · TLS";
+            }
+            return "VLESS";
+        }
+        return configType.ToString();
     }
 
     #endregion Servers && Groups
@@ -463,7 +781,14 @@ public class ProfilesViewModel : MyReactiveObject
             return null;
         }
 
-        var orderProfiles = SelectedProfiles?.OrderBy(t => t.Sort);
+        var orderProfiles = SelectedProfiles
+            .Where(item => !item.IsAmneziaWG)
+            .OrderBy(t => t.Sort)
+            .ToList();
+        if (orderProfiles.Count == 0)
+        {
+            return null;
+        }
         if (latest)
         {
             lstSelected.AddRange(await AppManager.Instance.GetProfileItemsOrderedByIndexIds(orderProfiles.Select(sp => sp?.IndexId)));
@@ -515,6 +840,29 @@ public class ProfilesViewModel : MyReactiveObject
 
     public async Task RemoveServerAsync()
     {
+        if (SelectedProfile?.IsAmneziaWG == true)
+        {
+            if (await _updateView?.Invoke(EViewAction.ShowYesNo, null) == false)
+            {
+                return;
+            }
+            var selectedId = SelectedProfile.IndexId;
+            if (StatusBarViewModel.Instance.EnableTun
+                && string.Equals(AmneziaWgManager.Instance.SelectedProfileId, selectedId, StringComparison.OrdinalIgnoreCase))
+            {
+                await StatusBarViewModel.Instance.DisableTunAsync();
+                if (StatusBarViewModel.Instance.TunUiState == ETunUiState.Error)
+                {
+                    return;
+                }
+            }
+            await AmneziaWgManager.Instance.DeleteProfileAsync(selectedId);
+            NoticeManager.Instance.Enqueue("Профиль AmneziaWG удалён.");
+            await RefreshServers();
+            AppEvents.ProfilesRefreshRequested.Publish();
+            return;
+        }
+
         var lstSelected = await GetProfileItems(true);
         if (lstSelected == null)
         {
@@ -526,6 +874,11 @@ public class ProfilesViewModel : MyReactiveObject
         }
         var exists = lstSelected.Exists(t => t.IndexId == _config.IndexId);
 
+        if (exists && StatusBarViewModel.Instance.EnableTun)
+        {
+            await StatusBarViewModel.Instance.DisableTunAsync();
+        }
+
         await ConfigHandler.RemoveServers(_config, lstSelected);
         NoticeManager.Instance.Enqueue(ResUI.OperationSuccess);
         if (lstSelected.Count == ProfileItems.Count)
@@ -535,7 +888,7 @@ public class ProfilesViewModel : MyReactiveObject
         await RefreshServers();
         if (exists)
         {
-            Reload();
+            AppEvents.ProfilesRefreshRequested.Publish();
         }
     }
 
@@ -571,35 +924,155 @@ public class ProfilesViewModel : MyReactiveObject
 
     public async Task SetDefaultServer()
     {
-        if (string.IsNullOrEmpty(SelectedProfile?.IndexId))
-        {
-            return;
-        }
-        await SetDefaultServer(SelectedProfile.IndexId);
+        await ActivateProfileAsync(SelectedProfile?.IndexId);
     }
 
-    private async Task SetDefaultServer(string? indexId)
+    public async Task<bool> ActivateProfileAsync(string? indexId)
     {
         if (indexId.IsNullOrEmpty())
         {
-            return;
+            return false;
         }
-        if (indexId == _config.IndexId)
+
+        if (!await _profileActivationGate.WaitAsync(0))
         {
-            return;
+            Logging.SaveLog($"Profile activation ignored while another switch is active: {indexId}");
+            return false;
+        }
+
+        try
+        {
+            return await ActivateProfileCoreAsync(indexId);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog($"Activate profile {indexId}", ex);
+            NoticeManager.Instance.Enqueue(ex.Message.IsNullOrEmpty()
+                ? "Не удалось переключить профиль."
+                : ex.Message);
+            AppEvents.ProfilesRefreshRequested.Publish();
+            return false;
+        }
+        finally
+        {
+            _profileActivationGate.Release();
+        }
+    }
+
+    private async Task<bool> ActivateProfileCoreAsync(string indexId)
+    {
+        Logging.SaveLog($"Profile switch requested: {indexId}; TUN={_config.TunModeItem.EnableTun}");
+
+        if (AmneziaWgManager.IsAwgProfileId(indexId))
+        {
+            var awgProfile = AmneziaWgManager.Instance.GetProfile(indexId);
+            if (awgProfile == null)
+            {
+                NoticeManager.Instance.Enqueue("Профиль AmneziaWG не найден.");
+                return false;
+            }
+
+            var alreadySelected = string.Equals(indexId, AmneziaWgManager.Instance.SelectedProfileId, StringComparison.OrdinalIgnoreCase);
+            if (alreadySelected && (!_config.TunModeItem.EnableTun || AmneziaWgManager.Instance.ActiveProfileId == indexId))
+            {
+                return true;
+            }
+
+            _pendingSelectIndexId = indexId;
+            await AmneziaWgManager.Instance.SelectProfileAsync(indexId);
+            Logging.SaveLog($"AmneziaWG profile selected: {awgProfile.Name} ({awgProfile.Id})");
+
+            if (_config.TunModeItem.EnableTun)
+            {
+                StatusBarViewModel.Instance.ReportProfileSwitching(awgProfile.Name, "AmneziaWG", "AmneziaWG");
+            }
+            else
+            {
+                StatusBarViewModel.Instance.ReportProfileSelected(awgProfile.Name, "AmneziaWG");
+            }
+
+            AppEvents.ProfilesRefreshRequested.Publish();
+            await Task.Delay(60);
+
+            if (_config.TunModeItem.EnableTun)
+            {
+                var mainWindowViewModel = MainWindowViewModel.Instance;
+                if (mainWindowViewModel != null)
+                {
+                    Logging.SaveLog($"Starting direct TUN switch to AmneziaWG: {awgProfile.Name}");
+                    await mainWindowViewModel.Reload();
+                    Logging.SaveLog($"Direct TUN switch to AmneziaWG completed: {awgProfile.Name}; active={AmneziaWgManager.Instance.ActiveProfileId}");
+                    return StatusBarViewModel.Instance.TunUiState == ETunUiState.On;
+                }
+
+                AppEvents.ReloadRequested.Publish();
+            }
+            return true;
+        }
+
+        var awgWasSelected = AmneziaWgManager.Instance.SelectedProfileId.IsNotEmpty();
+        if (indexId == _config.IndexId && !awgWasSelected)
+        {
+            return true;
         }
         var item = await AppManager.Instance.GetProfileItem(indexId);
         if (item is null)
         {
             NoticeManager.Instance.Enqueue(ResUI.PleaseSelectServer);
-            return;
+            return false;
         }
 
-        if (await ConfigHandler.SetDefaultServerIndex(_config, indexId) == 0)
+        _pendingSelectIndexId = indexId;
+        await AmneziaWgManager.Instance.ClearSelectionAsync();
+        if (await ConfigHandler.SetDefaultServerIndex(_config, indexId) != 0)
         {
-            await RefreshServers();
+            return false;
+        }
+
+        var protocol = GetProtocolDisplay(item.ConfigType, item.Network, item.StreamSecurity);
+        var connectionMode = _config.SgQuickSettingsItem?.ConnectionMode ?? "off";
+        var proxyModeActive = !_config.TunModeItem.EnableTun
+            && connectionMode is "system-proxy" or "local-proxy";
+
+        if (_config.TunModeItem.EnableTun)
+        {
+            var effectiveCore = AppManager.Instance.GetCoreType(item, item.ConfigType);
+            var core = effectiveCore switch
+            {
+                ECoreType.sing_box => "sing-box",
+                ECoreType.Xray => "Xray",
+                _ => effectiveCore.ToString(),
+            };
+            StatusBarViewModel.Instance.ReportProfileSwitching(item.Remarks, protocol, core);
+        }
+        else
+        {
+            StatusBarViewModel.Instance.ReportProfileSelected(item.Remarks, protocol);
+            if (proxyModeActive)
+            {
+                StatusBarViewModel.Instance.ReportProxyStarting(connectionMode);
+            }
+        }
+
+        AppEvents.ProfilesRefreshRequested.Publish();
+        await Task.Delay(60);
+
+        // A profile click must switch the running core in every active mode.
+        // Previously only TUN reloaded; System Proxy and Local Proxy kept using
+        // the old local profile, which made subscription rows appear to jump back.
+        if (_config.TunModeItem.EnableTun || proxyModeActive)
+        {
+            var mainWindowViewModel = MainWindowViewModel.Instance;
+            if (mainWindowViewModel != null)
+            {
+                await mainWindowViewModel.Reload();
+                return _config.TunModeItem.EnableTun
+                    ? StatusBarViewModel.Instance.TunUiState == ETunUiState.On
+                    : CoreManager.Instance.IsCoreRunning;
+            }
             Reload();
         }
+        return true;
     }
 
     public async Task ShareServerAsync()
@@ -722,6 +1195,39 @@ public class ProfilesViewModel : MyReactiveObject
         }
     }
 
+    public async Task TestLatencyAsync(IEnumerable<ProfileItemModel> profiles)
+    {
+        var candidates = profiles?
+            .Where(item => item != null && !item.IsAmneziaWG && item.IndexId.IsNotEmpty())
+            .GroupBy(item => item.IndexId, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .ToList() ?? [];
+
+        if (candidates.Count == 0)
+        {
+            NoticeManager.Instance.Enqueue("В текущем списке нет профилей Xray или sing-box для проверки задержки.");
+            return;
+        }
+
+        if (LatencyTestRunning)
+        {
+            NoticeManager.Instance.Enqueue("URL-тест уже выполняется.");
+            return;
+        }
+
+        BeginLatencyTest(candidates);
+        var previousSelection = SelectedProfiles;
+        try
+        {
+            SelectedProfiles = candidates;
+            await ServerSpeedtest(ESpeedActionType.Realping);
+        }
+        finally
+        {
+            SelectedProfiles = previousSelection;
+        }
+    }
+
     public async Task ServerSpeedtest(ESpeedActionType actionType)
     {
         List<ProfileItem>? lstSelected;
@@ -759,6 +1265,77 @@ public class ProfilesViewModel : MyReactiveObject
     public void ServerSpeedtestStop()
     {
         _speedtestService?.ExitLoop();
+        if (LatencyTestRunning)
+        {
+            // Cancellation must release the UI immediately. The remaining
+            // per-profile tasks observe the stop token in the background, but
+            // they must never keep the profile browser or connection controls
+            // trapped in a global busy-looking state.
+            FinishLatencyTest(ResUI.SpeedtestingStop);
+            SpeedTestCompleted?.Invoke();
+        }
+    }
+
+    private void BeginLatencyTest(IReadOnlyCollection<ProfileItemModel> candidates)
+    {
+        lock (_latencyProgressLock)
+        {
+            _latencyCompletedIds.Clear();
+        }
+        LatencyTestPanelVisible = true;
+        LatencyTestTotal = candidates.Count;
+        LatencyTestCompleted = 0;
+        LatencyTestProgress = 0;
+        LatencyTestRunning = true;
+        LatencyTestStatus = $"URL-тест: 0 из {LatencyTestTotal}";
+    }
+
+    private void TrackLatencyProgress(SpeedTestResult result)
+    {
+        if (!LatencyTestRunning || result.IndexId.IsNullOrEmpty() || result.Delay.IsNullOrEmpty())
+        {
+            return;
+        }
+
+        if (string.Equals(result.Delay, ResUI.Speedtesting, StringComparison.OrdinalIgnoreCase)
+            || result.Delay.Contains("ожид", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        lock (_latencyProgressLock)
+        {
+            if (!_latencyCompletedIds.Add(result.IndexId))
+            {
+                return;
+            }
+            LatencyTestCompleted = Math.Min(_latencyCompletedIds.Count, LatencyTestTotal);
+        }
+
+        LatencyTestProgress = LatencyTestTotal <= 0
+            ? 0
+            : Math.Min(100d, LatencyTestCompleted * 100d / LatencyTestTotal);
+        LatencyTestStatus = $"URL-тест: {LatencyTestCompleted} из {LatencyTestTotal}";
+    }
+
+    private void FinishLatencyTest(string? message)
+    {
+        if (!LatencyTestRunning)
+        {
+            return;
+        }
+
+        var stopped = message?.Contains("останов", StringComparison.OrdinalIgnoreCase) == true
+            || message?.Contains("stop", StringComparison.OrdinalIgnoreCase) == true;
+        if (!stopped)
+        {
+            LatencyTestCompleted = LatencyTestTotal;
+            LatencyTestProgress = LatencyTestTotal > 0 ? 100 : 0;
+        }
+        LatencyTestStatus = stopped
+            ? $"URL-тест остановлен: {LatencyTestCompleted} из {LatencyTestTotal}"
+            : $"URL-тест завершён: {LatencyTestCompleted} из {LatencyTestTotal}";
+        LatencyTestRunning = false;
     }
 
     private async Task Export2ClientConfigAsync(bool blClipboard)

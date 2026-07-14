@@ -18,6 +18,7 @@ public class ProfileItem
         Username = string.Empty;
         Network = string.Empty;
         Remarks = string.Empty;
+        CountryCode = string.Empty;
         StreamSecurity = string.Empty;
         AllowInsecure = string.Empty;
     }
@@ -92,11 +93,8 @@ public class ProfileItem
                     return false;
                 }
 
-                if (!Global.Flows.Contains(GetProtocolExtra().Flow ?? string.Empty))
-                {
-                    return false;
-                }
-
+                // Flow is an opaque Xray value. Known values are offered by
+                // the editor, but imported future values must remain usable.
                 break;
 
             case EConfigType.Shadowsocks:
@@ -164,6 +162,7 @@ public class ProfileItem
     public int? PreSocksPort { get; set; }
     public bool DisplayLog { get; set; } = true;
     public string Remarks { get; set; }
+    public string CountryCode { get; set; }
     public string Address { get; set; }
     public int Port { get; set; }
     public string Password { get; set; }

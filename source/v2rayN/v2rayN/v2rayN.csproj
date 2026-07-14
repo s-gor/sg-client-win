@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
@@ -36,7 +36,9 @@
 		<Resource Include="Resources\NotifyIcon2.ico" />
 		<Resource Include="Resources\NotifyIcon3.ico" />
 		<Resource Include="Resources\NotifyIcon4.ico" />
+		<Resource Include="Resources\NotifyIcon5.ico" />
 		<Resource Include="Resources\v2rayN.ico" />
+		<Resource Include="Assets\Flags\*.png" />
 	</ItemGroup>
 
 	<ItemGroup>

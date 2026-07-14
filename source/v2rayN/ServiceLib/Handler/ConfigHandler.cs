@@ -35,10 +35,13 @@ public static class ConfigHandler
 
         config ??= new Config();
 
+        // New SG Client installations start with the minimal local Xray
+        // diagnostics required by the Connections window. Existing users keep
+        // their explicit setting and receive a one-click prompt when it is off.
         config.CoreBasicItem ??= new()
         {
-            LogEnabled = false,
-            Loglevel = "warning",
+            LogEnabled = true,
+            Loglevel = "info",
         };
 
         if (config.Inbound == null)
@@ -50,6 +53,7 @@ public static class ConfigHandler
                 LocalPort = 10808,
                 UdpEnabled = true,
                 SniffingEnabled = true,
+                DestOverride = ["http", "tls", "quic"],
                 RouteOnly = false,
             };
 
@@ -94,6 +98,32 @@ public static class ConfigHandler
             IcmpRouting = Global.TunIcmpRoutingPolicies.First(),
             EnableLegacyProtect = false,
         };
+        config.SgQuickSettingsItem ??= new SgQuickSettingsItem();
+        config.SgQuickSettingsItem.SplitTunnelApplications ??= [];
+        config.SgQuickSettingsItem.SplitTunnelAddresses ??= [];
+        var smartRouting = SgSmartRoutingHelper.Normalize(config.SgQuickSettingsItem);
+        config.SgQuickSettingsItem.DpiMode = SgDpiModeHelper.Normalize(config.SgQuickSettingsItem.DpiMode);
+        if (config.SgQuickSettingsItem.DpiCustomJson.IsNullOrEmpty())
+        {
+            config.SgQuickSettingsItem.DpiCustomJson = SgDpiModeHelper.GetDefaultCustomJson();
+        }
+        if (config.SgQuickSettingsItem.DpiMode == "custom"
+            && !SgDpiModeHelper.TryParseCustomProfiles(
+                config.SgQuickSettingsItem.DpiCustomJson,
+                out _,
+                out _,
+                out _))
+        {
+            config.SgQuickSettingsItem.DpiMode = "auto";
+            config.SgQuickSettingsItem.DpiCustomJson = SgDpiModeHelper.GetDefaultCustomJson();
+        }
+        SgDpiModeHelper.ApplyLegacyFragmentSettings(config);
+        if (SgSmartRoutingHelper.RequiresCommunityRules(smartRouting))
+        {
+            SgRussiaRulesManager.ApplySources(config);
+        }
+        ApplySgAutomaticTunDefaults(config);
+        ApplySgLocalNetworkPreference(config);
         config.GuiItem ??= new();
         config.MsgUIItem ??= new();
 
@@ -210,6 +240,90 @@ public static class ConfigHandler
         return 0;
     }
 
+    public static void ApplySgAutomaticTunDefaults(Config config)
+    {
+        config.TunModeItem ??= new TunModeItem();
+        config.SgQuickSettingsItem ??= new SgQuickSettingsItem();
+        if (config.SgQuickSettingsItem.AutomaticTunDefaultsMigrated)
+        {
+            return;
+        }
+
+        if (config.TunModeItem.Stack.IsNullOrEmpty()
+            || string.Equals(config.TunModeItem.Stack, "gvisor", StringComparison.OrdinalIgnoreCase))
+        {
+            config.TunModeItem.Stack = "auto";
+        }
+        if (config.TunModeItem.Mtu <= 0 || config.TunModeItem.Mtu == 9000)
+        {
+            config.TunModeItem.Mtu = 0;
+        }
+        config.SgQuickSettingsItem.AutomaticTunDefaultsMigrated = true;
+    }
+
+    public static string ResolveSgTunStack(Config config)
+    {
+        var stack = config.TunModeItem?.Stack?.Trim().ToLowerInvariant();
+        return stack is "mixed" or "system" or "gvisor" ? stack : "mixed";
+    }
+
+    public static int ResolveSgTunMtu(Config config, bool singbox)
+    {
+        var configured = config.TunModeItem?.Mtu ?? 0;
+        return configured > 0 ? configured : singbox ? 9000 : 1500;
+    }
+
+    private static readonly string[] SgLocalNetworkExclusions =
+    [
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16",
+        "169.254.0.0/16",
+        "fc00::/7",
+        "fe80::/10"
+    ];
+
+    public static void ApplySgLocalNetworkPreference(Config config)
+    {
+        config.TunModeItem ??= new TunModeItem();
+        config.SgQuickSettingsItem ??= new SgQuickSettingsItem();
+
+        var addresses = (config.TunModeItem.RouteExcludeAddress ?? [])
+            .Where(item => item.IsNotEmpty())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (config.SgQuickSettingsItem.AllowLocalNetwork)
+        {
+            foreach (var address in SgLocalNetworkExclusions)
+            {
+                if (!addresses.Contains(address, StringComparer.OrdinalIgnoreCase))
+                {
+                    addresses.Add(address);
+                }
+            }
+        }
+        else
+        {
+            addresses.RemoveAll(item => SgLocalNetworkExclusions.Contains(item, StringComparer.OrdinalIgnoreCase));
+        }
+
+        config.TunModeItem.RouteExcludeAddress = addresses.Count == 0 ? null : addresses;
+    }
+
+    public static List<string> GetSgRouteExclusions(Config config)
+    {
+        config.TunModeItem ??= new TunModeItem();
+        config.SgQuickSettingsItem ??= new SgQuickSettingsItem();
+        config.SgQuickSettingsItem.SplitTunnelAddresses ??= [];
+
+        return (config.TunModeItem.RouteExcludeAddress ?? [])
+            .Concat(config.SgQuickSettingsItem.SplitTunnelAddresses)
+            .Where(item => item.IsNotEmpty())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
     #endregion ConfigHandler
 
     #region Server
@@ -232,6 +346,7 @@ public static class ConfigHandler
         {
             item.CoreType = profileItem.CoreType;
             item.Remarks = profileItem.Remarks;
+            item.CountryCode = SgCountryHelper.ResolveCode(profileItem.CountryCode, profileItem.Remarks);
             item.Address = profileItem.Address;
             item.Port = profileItem.Port;
 
@@ -575,6 +690,7 @@ public static class ConfigHandler
         else
         {
             item.Remarks = profileItem.Remarks;
+            item.CountryCode = SgCountryHelper.ResolveCode(profileItem.CountryCode, profileItem.Remarks);
             item.Address = profileItem.Address;
             item.CoreType = profileItem.CoreType;
             item.DisplayLog = profileItem.DisplayLog;
@@ -1028,7 +1144,9 @@ public static class ConfigHandler
         profileItem.SetProtocolExtra(profileItem.GetProtocolExtra() with
         {
             VlessEncryption = vlessEncryption.IsNullOrEmpty() ? Global.None : vlessEncryption,
-            Flow = Global.Flows.Contains(flow) ? flow : Global.Flows.First(),
+            // Preserve future Xray flow values instead of silently replacing
+            // them with an empty value during import.
+            Flow = flow,
         });
 
         if (profileItem.Password.IsNullOrEmpty())
@@ -1096,6 +1214,7 @@ public static class ConfigHandler
     public static async Task<int> AddServerCommon(Config config, ProfileItem profileItem, bool toFile = true)
     {
         profileItem.ConfigVersion = 4;
+        profileItem.CountryCode = SgCountryHelper.ResolveCode(profileItem.CountryCode, profileItem.Remarks);
 
         if (profileItem.StreamSecurity.IsNotEmpty())
         {
@@ -1196,6 +1315,25 @@ public static class ConfigHandler
         {
             return string.Equals(a, b) || (string.IsNullOrEmpty(a) && string.IsNullOrEmpty(b));
         }
+    }
+
+    public static async Task<ProfileItem?> FindExactLocalProfile(ProfileItem? candidate)
+    {
+        if (candidate == null)
+        {
+            return null;
+        }
+
+        var candidateUri = FmtHandler.GetShareUri(candidate);
+        if (candidateUri.IsNullOrEmpty())
+        {
+            return null;
+        }
+
+        var profiles = await SQLiteHelper.Instance.TableAsync<ProfileItem>()
+            .Where(item => !item.IsSub)
+            .ToListAsync();
+        return profiles.FirstOrDefault(item => string.Equals(FmtHandler.GetShareUri(item), candidateUri, StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -1564,7 +1702,7 @@ public static class ConfigHandler
                     continue;
                 }
             }
-            profileItem.Subid = subid;
+            profileItem.Subid = isSub ? subid : string.Empty;
             profileItem.IsSub = isSub;
 
             var addStatus = profileItem.ConfigType switch
@@ -1614,7 +1752,7 @@ public static class ConfigHandler
             return -1;
         }
 
-        var subItem = await AppManager.Instance.GetSubItem(subid);
+        var subItem = isSub ? await AppManager.Instance.GetSubItem(subid) : null;
         var subRemarks = subItem?.Remarks;
         var preSocksPort = subItem?.PreSocksPort;
 
@@ -1634,7 +1772,7 @@ public static class ConfigHandler
             var count = 0;
             foreach (var it in lstProfiles)
             {
-                it.Subid = subid;
+                it.Subid = isSub ? subid : string.Empty;
                 it.IsSub = isSub;
                 it.PreSocksPort = preSocksPort;
                 if (await AddCustomServer(config, it, true) == 0)
@@ -1667,7 +1805,7 @@ public static class ConfigHandler
             return -1;
         }
 
-        profileItem.Subid = subid;
+        profileItem.Subid = isSub ? subid : string.Empty;
         profileItem.IsSub = isSub;
         profileItem.PreSocksPort = preSocksPort;
         if (await AddCustomServer(config, profileItem, true) == 0)
@@ -1681,28 +1819,28 @@ public static class ConfigHandler
     }
 
     /// <summary>
-    /// Add Shadowsocks servers from SIP008 format
-    /// SIP008 is a JSON-based format for Shadowsocks servers
+    /// Add Shadowsocks servers from SIP009 format
+    /// SIP009 is a JSON-based format for Shadowsocks servers
     /// </summary>
     /// <param name="config">Current configuration</param>
-    /// <param name="strData">String data in SIP008 format</param>
+    /// <param name="strData">String data in SIP009 format</param>
     /// <param name="subid">Subscription ID to associate with the servers</param>
     /// <param name="isSub">Whether this is from a subscription</param>
     /// <returns>Number of successfully imported servers or -1 if failed</returns>
-    private static async Task<int> AddBatchServers4SsSIP008(Config config, string strData, string subid, bool isSub)
+    private static async Task<int> AddBatchServers4SsSIP009(Config config, string strData, string subid, bool isSub)
     {
         if (strData.IsNullOrEmpty())
         {
             return -1;
         }
 
-        var lstSsServer = ShadowsocksFmt.ResolveSip008(strData);
+        var lstSsServer = ShadowsocksFmt.ResolveSip009(strData);
         if (lstSsServer?.Count > 0)
         {
             var counter = 0;
             foreach (var ssItem in lstSsServer)
             {
-                ssItem.Subid = subid;
+                ssItem.Subid = isSub ? subid : string.Empty;
                 ssItem.IsSub = isSub;
                 if (await AddShadowsocksServer(config, ssItem) == 0)
                 {
@@ -1733,7 +1871,7 @@ public static class ConfigHandler
             var counter = 0;
             foreach (var item in lstServer)
             {
-                item.Subid = subid;
+                item.Subid = isSub ? subid : string.Empty;
                 item.IsSub = isSub;
                 if (await AddWireguardServer(config, item) == 0)
                 {
@@ -1753,14 +1891,14 @@ public static class ConfigHandler
             return -1;
         }
 
-        var lstServer = InnerFmt.Resolve(strData, subid);
+        var lstServer = InnerFmt.Resolve(strData, isSub ? subid : string.Empty);
         if (lstServer?.Count > 0)
         {
             var counter = 0;
             List<ProfileItem> lstAdd = [];
             foreach (var profileItem in lstServer)
             {
-                profileItem.Subid = subid;
+                profileItem.Subid = isSub ? subid : string.Empty;
                 profileItem.IsSub = isSub;
 
                 var addStatus = profileItem.ConfigType switch
@@ -1812,16 +1950,79 @@ public static class ConfigHandler
             return -1;
         }
         List<ProfileItem>? lstOriSub = null;
+        Dictionary<string, byte[]>? customConfigBackup = null;
         ProfileItem? activeProfile = null;
         if (isSub && subid.IsNotEmpty())
         {
             lstOriSub = await AppManager.Instance.ProfileItems(subid);
             activeProfile = lstOriSub?.FirstOrDefault(t => t.IndexId == config.IndexId);
+            customConfigBackup = [];
+            foreach (var oldItem in lstOriSub?.Where(t => t.ConfigType == EConfigType.Custom) ?? Enumerable.Empty<ProfileItem>())
+            {
+                var oldPath = Utils.GetConfigPath(oldItem.Address);
+                if (File.Exists(oldPath))
+                {
+                    customConfigBackup[oldItem.Address] = await File.ReadAllBytesAsync(oldPath);
+                }
+            }
             await RemoveServersViaSubid(config, subid, true);
         }
 
         var counter = 0;
-        if (Utils.IsBase64String(strData))
+        var decodedCandidate = Utils.IsBase64String(strData) ? Utils.Base64Decode(strData) : string.Empty;
+        var awgCandidate = AmneziaWgManager.IsAmneziaConfig(strData)
+            ? strData
+            : AmneziaWgManager.IsAmneziaConfig(decodedCandidate)
+                ? decodedCandidate
+                : string.Empty;
+
+        if (awgCandidate.IsNullOrEmpty())
+        {
+            var diagnosticCandidate = AmneziaWgManager.HasAmneziaParameterMarkers(strData)
+                ? strData
+                : AmneziaWgManager.HasAmneziaParameterMarkers(decodedCandidate)
+                    ? decodedCandidate
+                    : string.Empty;
+            if (diagnosticCandidate.IsNotEmpty()
+                && !AmneziaWgManager.TryValidateAmneziaConfig(
+                    diagnosticCandidate,
+                    out _,
+                    out var awgValidationError))
+            {
+                Logging.SaveLog(
+                    $"AmneziaWG batch import validation failed: {awgValidationError}");
+            }
+        }
+        if (awgCandidate.IsNotEmpty())
+        {
+            try
+            {
+                var sourceName = "AmneziaWG.conf";
+                var previousAwgProfileId = AmneziaWgManager.Instance.SelectedProfileId;
+                await AmneziaWgManager.Instance.ImportProfileAsync(
+                    sourceName,
+                    awgCandidate,
+                    AmneziaWgManager.GetSuggestedProfileName(sourceName, awgCandidate));
+                if (config.TunModeItem.EnableTun)
+                {
+                    if (previousAwgProfileId.IsNotEmpty())
+                    {
+                        await AmneziaWgManager.Instance.SelectProfileAsync(previousAwgProfileId);
+                    }
+                    else
+                    {
+                        await AmneziaWgManager.Instance.ClearSelectionAsync();
+                    }
+                }
+                counter = 1;
+            }
+            catch (Exception ex)
+            {
+                Logging.SaveLog("Import AmneziaWG batch configuration", ex);
+            }
+        }
+
+        if (counter < 1 && Utils.IsBase64String(strData))
         {
             counter = await AddBatchServersCommon(config, Utils.Base64Decode(strData), subid, isSub);
         }
@@ -1836,7 +2037,7 @@ public static class ConfigHandler
 
         if (counter < 1)
         {
-            counter = await AddBatchServers4SsSIP008(config, strData, subid, isSub);
+            counter = await AddBatchServers4SsSIP009(config, strData, subid, isSub);
         }
 
         //maybe wireguard config
@@ -1875,6 +2076,29 @@ public static class ConfigHandler
         if (counter < 1)
         {
             counter = await AddBatchServers4Custom(config, strData, subid, isSub);
+        }
+
+        // A failed or unreadable update must never destroy the last working
+        // subscription. Remove partial imports and restore the previous set.
+        if (isSub && subid.IsNotEmpty() && counter < 1 && lstOriSub is { Count: > 0 })
+        {
+            await RemoveServersViaSubid(config, subid, true);
+            await SQLiteHelper.Instance.InsertAllAsync(lstOriSub);
+
+            foreach (var oldFile in customConfigBackup ?? new Dictionary<string, byte[]>())
+            {
+                var restoredPath = Utils.GetConfigPath(oldFile.Key);
+                Directory.CreateDirectory(Path.GetDirectoryName(restoredPath)!);
+                await File.WriteAllBytesAsync(restoredPath, oldFile.Value);
+            }
+
+            if (activeProfile != null)
+            {
+                await SetDefaultServerIndex(config, activeProfile.IndexId);
+            }
+
+            await SaveConfig(config);
+            return -1;
         }
 
         //Select active node

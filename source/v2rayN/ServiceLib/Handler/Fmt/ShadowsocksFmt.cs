@@ -278,16 +278,16 @@ public class ShadowsocksFmt : BaseFmt
         return item;
     }
 
-    public static List<ProfileItem>? ResolveSip008(string result)
+    public static List<ProfileItem>? ResolveSip009(string result)
     {
-        //SsSIP008
+        //SsSIP009
         var lstSsServer = JsonUtils.Deserialize<List<SsServer>>(result);
         if (lstSsServer?.Count <= 0)
         {
-            var ssSIP008 = JsonUtils.Deserialize<SsSIP008>(result);
-            if (ssSIP008?.servers?.Count > 0)
+            var ssSIP009 = JsonUtils.Deserialize<SsSIP009>(result);
+            if (ssSIP009?.servers?.Count > 0)
             {
-                lstSsServer = ssSIP008.servers;
+                lstSsServer = ssSIP009.servers;
             }
         }
 

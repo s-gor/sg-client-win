@@ -6,1355 +6,686 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:reactiveui="http://reactiveui.net"
-    xmlns:resx="clr-namespace:ServiceLib.Resx;assembly=ServiceLib"
+    xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
     xmlns:vms="clr-namespace:ServiceLib.ViewModels;assembly=ServiceLib"
-    Title="{x:Static resx:ResUI.menuSetting}"
-    Width="1000"
-    Height="700"
+    Title="Настройки SG Client"
+    Width="974"
+    Height="714"
+    MinWidth="780"
+    MinHeight="580"
     x:TypeArguments="vms:OptionSettingViewModel"
+    Background="{DynamicResource SgBackgroundBrush}"
+    Icon="/Resources/v2rayN.ico"
+    ResizeMode="CanResize"
     ShowInTaskbar="False"
-    Style="{StaticResource WindowGlobal}"
-    WindowStartupLocation="CenterScreen"
+    WindowStartupLocation="CenterOwner"
+    WindowStyle="None"
+    TextOptions.TextFormattingMode="Display"
     mc:Ignorable="d">
-    <DockPanel Margin="{StaticResource Margin8}">
-        <StackPanel
-            Margin="{StaticResource Margin4}"
-            HorizontalAlignment="Center"
-            DockPanel.Dock="Bottom"
-            Orientation="Horizontal">
-            <Button
-                x:Name="btnSave"
-                Width="100"
-                Content="{x:Static resx:ResUI.TbConfirm}"
-                IsDefault="True"
-                Style="{StaticResource DefButton}" />
-            <Button
-                x:Name="btnCancel"
-                Width="100"
-                Margin="{StaticResource MarginLeftRight8}"
-                Content="{x:Static resx:ResUI.TbCancel}"
-                IsCancel="true"
-                Style="{StaticResource DefButton}" />
-        </StackPanel>
 
-        <TabControl HorizontalContentAlignment="Left">
-            <TabItem Header="{x:Static resx:ResUI.TbSettingsCore}">
-                <ScrollViewer VerticalScrollBarVisibility="Visible">
-                    <Grid Margin="{StaticResource Margin8}">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <TextBlock
-                            Grid.Row="0"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsSocksPort}" />
-                        <TextBox
-                            x:Name="txtlocalPort"
-                            Grid.Row="0"
-                            Grid.Column="1"
-                            Width="200"
-                            Margin="{StaticResource Margin8}"
-                            Style="{StaticResource DefTextBox}" />
-                        <TextBlock
-                            Grid.Row="0"
-                            Grid.Column="2"
-                            Margin="{StaticResource Margin4}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsSocksPortTip}"
-                            TextWrapping="Wrap" />
-
-                        <TextBlock
-                            Grid.Row="2"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsSecondLocalPortEnabled}" />
-                        <ToggleButton
-                            x:Name="togSecondLocalPortEnabled"
-                            Grid.Row="2"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="3"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsUdpEnabled}" />
-                        <ToggleButton
-                            x:Name="togudpEnabled"
-                            Grid.Row="3"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="4"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsSniffingEnabled}" />
-                        <ToggleButton
-                            x:Name="togsniffingEnabled"
-                            Grid.Row="4"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="5"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsDestOverride}" />
-                        <ListBox
-                            x:Name="clbdestOverride"
-                            Grid.Row="5"
-                            Grid.Column="1"
-                            Grid.ColumnSpan="2"
-                            Margin="{StaticResource Margin4}"
-                            HorizontalAlignment="Left"
-                            FontSize="{DynamicResource StdFontSize}"
-                            Style="{StaticResource MaterialDesignFilterChipPrimaryListBox}" />
-
-                        <TextBlock
-                            Grid.Row="6"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsRouteOnly}" />
-                        <ToggleButton
-                            x:Name="togrouteOnly"
-                            Grid.Row="6"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="7"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsAllowLAN}" />
-                        <ToggleButton
-                            x:Name="togAllowLANConn"
-                            Grid.Row="7"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="8"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsNewPort4LAN}" />
-                        <ToggleButton
-                            x:Name="togNewPort4LAN"
-                            Grid.Row="8"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="9"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsUser}" />
-                        <TextBox
-                            x:Name="txtuser"
-                            Grid.Row="9"
-                            Grid.Column="1"
-                            Width="200"
-                            Margin="{StaticResource Margin8}"
-                            Style="{StaticResource DefTextBox}" />
-
-                        <TextBlock
-                            Grid.Row="10"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsPass}" />
-                        <TextBox
-                            x:Name="txtpass"
-                            Grid.Row="10"
-                            Grid.Column="1"
-                            Width="200"
-                            Margin="{StaticResource Margin8}"
-                            Style="{StaticResource DefTextBox}" />
-
-                        <TextBlock
-                            Grid.Row="12"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsLogEnabledToFile}" />
-                        <ToggleButton
-                            x:Name="toglogEnabled"
-                            Grid.Row="12"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="13"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsLogLevel}" />
-                        <ComboBox
-                            x:Name="cmbloglevel"
-                            Grid.Row="13"
-                            Grid.Column="1"
-                            Width="200"
-                            Margin="{StaticResource Margin8}"
-                            materialDesign:HintAssist.Hint="Level"
-                            Style="{StaticResource DefComboBox}" />
-
-                        <TextBlock
-                            Grid.Row="15"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsDefFingerprint}" />
-                        <ComboBox
-                            x:Name="cmbdefFingerprint"
-                            Grid.Row="15"
-                            Grid.Column="1"
-                            Width="200"
-                            Margin="{StaticResource Margin8}"
-                            IsEditable="True"
-                            Style="{StaticResource DefComboBox}" />
-
-                        <TextBlock
-                            Grid.Row="16"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsDefUserAgent}" />
-                        <ComboBox
-                            x:Name="cmbdefUserAgent"
-                            Grid.Row="16"
-                            Grid.Column="1"
-                            Width="200"
-                            Margin="{StaticResource Margin8}"
-                            IsEditable="True"
-                            Style="{StaticResource DefComboBox}" />
-                        <TextBlock
-                            Grid.Row="16"
-                            Grid.Column="3"
-                            Margin="{StaticResource Margin8}"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsDefUserAgentTips}" />
-
-                        <TextBlock
-                            Grid.Row="17"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsMux4SboxProtocol}" />
-                        <ComboBox
-                            x:Name="cmbmux4SboxProtocol"
-                            Grid.Row="17"
-                            Grid.Column="1"
-                            Width="200"
-                            Margin="{StaticResource Margin8}"
-                            Style="{StaticResource DefComboBox}" />
-
-                        <TextBlock
-                            Grid.Row="18"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsEnableCacheFile4Sbox}" />
-                        <ToggleButton
-                            x:Name="togenableCacheFile4Sbox"
-                            Grid.Row="18"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="19"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsHysteriaBandwidth}" />
-
-                        <StackPanel
-                            Grid.Row="19"
-                            Grid.Column="1"
-                            Orientation="Horizontal">
-
-                            <TextBox
-                                x:Name="txtUpMbps"
-                                Width="90"
-                                Margin="{StaticResource Margin8}"
-                                materialDesign:HintAssist.Hint="Up"
-                                Style="{StaticResource DefTextBox}" />
-                            <TextBox
-                                x:Name="txtDownMbps"
-                                Width="90"
-                                Margin="{StaticResource Margin8}"
-                                materialDesign:HintAssist.Hint="Down"
-                                Style="{StaticResource DefTextBox}" />
-                        </StackPanel>
-
-                        <TextBlock
-                            Grid.Row="20"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsEnableFragment}" />
-                        <ToggleButton
-                            x:Name="togenableFragment"
-                            Grid.Row="20"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="21"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbEnableFinalFragment}" />
-                        <ToggleButton
-                            x:Name="togenableFinalFragment"
-                            Grid.Row="21"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-                        <TextBlock
-                            Grid.Row="21"
-                            Grid.Column="2"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbEnableFinalFragmentTip}"
-                            TextWrapping="Wrap" />
-
-                        <TextBlock
-                            Grid.Row="22"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsBindInterface}" />
-                        <TextBox
-                            x:Name="txtbindInterface"
-                            Grid.Row="22"
-                            Grid.Column="1"
-                            Width="200"
-                            Margin="{StaticResource Margin8}"
-                            Style="{StaticResource DefTextBox}" />
-                        <TextBlock
-                            Grid.Row="22"
-                            Grid.Column="2"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsBindInterfaceTip}"
-                            TextWrapping="Wrap" />
-
-                        <TextBlock
-                            Grid.Row="23"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsSendThrough}" />
-                        <TextBox
-                            x:Name="txtsendThrough"
-                            Grid.Row="23"
-                            Grid.Column="1"
-                            Width="200"
-                            Margin="{StaticResource Margin8}"
-                            materialDesign:HintAssist.Hint="0.0.0.0"
-                            Style="{StaticResource DefTextBox}" />
-                        <TextBlock
-                            Grid.Row="23"
-                            Grid.Column="2"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsSendThroughTip}"
-                            TextWrapping="Wrap" />
-                    </Grid>
-                </ScrollViewer>
-            </TabItem>
-
-            <!--<TabItem Header="{x:Static resx:ResUI.TbSettingsCoreKcp}">
-                <Grid Margin="{StaticResource Margin8}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <TextBlock
-                        Grid.Row="1"
-                        Grid.Column="0"
-                        Margin="{StaticResource Margin8}"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource ToolbarTextBlock}"
-                        Text="{x:Static resx:ResUI.TbMtu}" />
-                    <TextBox Style="{StaticResource DefTextBox}"
-                        x:Name="txtKcpmtu"
-                        Grid.Row="1"
-                        Grid.Column="1"
-                        Width="200"
-                        Margin="{StaticResource Margin8}" />
-
-                    <TextBlock
-                        Grid.Row="2"
-                        Grid.Column="0"
-                        Margin="{StaticResource Margin8}"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource ToolbarTextBlock}"
-                        Text="tti" />
-                    <TextBox Style="{StaticResource DefTextBox}"
-                        x:Name="txtKcptti"
-                        Grid.Row="2"
-                        Grid.Column="1"
-                        Width="200"
-                        Margin="{StaticResource Margin8}" />
-
-                    <TextBlock
-                        Grid.Row="3"
-                        Grid.Column="0"
-                        Margin="{StaticResource Margin8}"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource ToolbarTextBlock}"
-                        Text="uplinkCapacity" />
-                    <TextBox Style="{StaticResource DefTextBox}"
-                        x:Name="txtKcpuplinkCapacity"
-                        Grid.Row="3"
-                        Grid.Column="1"
-                        Width="200"
-                        Margin="{StaticResource Margin8}" />
-
-                    <TextBlock
-                        Grid.Row="4"
-                        Grid.Column="0"
-                        Margin="{StaticResource Margin8}"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource ToolbarTextBlock}"
-                        Text="downlinkCapacity" />
-                    <TextBox Style="{StaticResource DefTextBox}"
-                        x:Name="txtKcpdownlinkCapacity"
-                        Grid.Row="4"
-                        Grid.Column="1"
-                        Width="200"
-                        Margin="{StaticResource Margin8}" />
-
-                    <TextBlock
-                        Grid.Row="5"
-                        Grid.Column="0"
-                        Margin="{StaticResource Margin8}"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource ToolbarTextBlock}"
-                        Text="readBufferSize" />
-                    <TextBox Style="{StaticResource DefTextBox}"
-                        x:Name="txtKcpreadBufferSize"
-                        Grid.Row="5"
-                        Grid.Column="1"
-                        Width="200"
-                        Margin="{StaticResource Margin8}" />
-
-                    <TextBlock
-                        Grid.Row="6"
-                        Grid.Column="0"
-                        Margin="{StaticResource Margin8}"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource ToolbarTextBlock}"
-                        Text="writeBufferSize" />
-                    <TextBox Style="{StaticResource DefTextBox}"
-                        x:Name="txtKcpwriteBufferSize"
-                        Grid.Row="6"
-                        Grid.Column="1"
-                        Width="200"
-                        Margin="{StaticResource Margin8}" />
-
-                    <TextBlock
-                        Grid.Row="7"
-                        Grid.Column="0"
-                        Margin="{StaticResource Margin8}"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource ToolbarTextBlock}"
-                        Text="congestion" />
-                    <ToggleButton
-                        x:Name="togKcpcongestion"
-                        Grid.Row="7"
-                        Grid.Column="1"
-                        Margin="{StaticResource Margin8}"
-                        HorizontalAlignment="Left" />
-                </Grid>
-            </TabItem>-->
-
-            <TabItem Header="{x:Static resx:ResUI.TbSettingsN}">
-                <ScrollViewer VerticalScrollBarVisibility="Visible">
-                    <Grid Grid.Row="2" Margin="{StaticResource Margin8}">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <TextBlock
-                            Grid.Row="1"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsStartBoot}" />
-                        <ToggleButton
-                            x:Name="togAutoRun"
-                            Grid.Row="1"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-                        <TextBlock
-                            Grid.Row="1"
-                            Grid.Column="2"
-                            Margin="{StaticResource Margin4}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsStartBootTip}"
-                            TextWrapping="Wrap" />
-
-                        <TextBlock
-                            Grid.Row="2"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsStatistics}" />
-                        <ToggleButton
-                            x:Name="togEnableStatistics"
-                            Grid.Row="2"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="3"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsDisplayRealTimeSpeed}" />
-                        <ToggleButton
-                            x:Name="togDisplayRealTimeSpeed"
-                            Grid.Row="3"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="4"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsKeepOlderDedupl}" />
-                        <ToggleButton
-                            x:Name="togKeepOlderDedupl"
-                            Grid.Row="4"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="5"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsEnableAutoAdjustMainLvColWidth}" />
-                        <ToggleButton
-                            x:Name="togEnableAutoAdjustMainLvColWidth"
-                            Grid.Row="5"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="8"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsAutoHideStartup}" />
-                        <ToggleButton
-                            x:Name="togAutoHideStartup"
-                            Grid.Row="8"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="10"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsEnableDragDropSort}" />
-                        <ToggleButton
-                            x:Name="togEnableDragDropSort"
-                            Grid.Row="10"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="11"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsDoubleClick2Activate}" />
-                        <ToggleButton
-                            x:Name="togDoubleClick2Activate"
-                            Grid.Row="11"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="12"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsEnableHWA}" />
-                        <ToggleButton
-                            x:Name="togEnableHWA"
-                            Grid.Row="12"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="13"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsAutoUpdateInterval}" />
-                        <TextBox
-                            x:Name="txtautoUpdateInterval"
-                            Grid.Row="13"
-                            Grid.Column="1"
-                            Width="200"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left"
-                            Style="{StaticResource DefTextBox}" />
-
-                        <TextBlock
-                            Grid.Row="14"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsTrayMenuServersLimit}" />
-                        <TextBox
-                            x:Name="txttrayMenuServersLimit"
-                            Grid.Row="14"
-                            Grid.Column="1"
-                            Width="200"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left"
-                            Style="{StaticResource DefTextBox}" />
-
-                        <TextBlock
-                            Grid.Row="15"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsCurrentFontFamily}" />
-                        <ComboBox
-                            x:Name="cmbcurrentFontFamily"
-                            Grid.Row="15"
-                            Grid.Column="1"
-                            Width="300"
-                            Margin="{StaticResource Margin8}"
-                            MaxDropDownHeight="1000"
-                            Style="{StaticResource DefComboBox}" />
-                        <TextBlock
-                            Grid.Row="15"
-                            Grid.Column="2"
-                            Margin="{StaticResource Margin4}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsCurrentFontFamilyTip}"
-                            TextWrapping="Wrap" />
-
-                        <TextBlock
-                            Grid.Row="16"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsMixedConcurrencyCount}" />
-                        <ComboBox
-                            x:Name="cmbMixedConcurrencyCount"
-                            Grid.Row="16"
-                            Grid.Column="1"
-                            Width="200"
-                            Margin="{StaticResource Margin8}"
-                            Style="{StaticResource DefComboBox}" />
-
-                        <TextBlock
-                            Grid.Row="17"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsSpeedTestTimeout}" />
-                        <ComboBox
-                            x:Name="cmbSpeedTestTimeout"
-                            Grid.Row="17"
-                            Grid.Column="1"
-                            Width="200"
-                            Margin="{StaticResource Margin8}"
-                            Style="{StaticResource DefComboBox}" />
-
-                        <TextBlock
-                            Grid.Row="18"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsSpeedTestUrl}" />
-                        <ComboBox
-                            x:Name="cmbSpeedTestUrl"
-                            Grid.Row="18"
-                            Grid.Column="1"
-                            Width="300"
-                            Margin="{StaticResource Margin8}"
-                            IsEditable="True"
-                            Style="{StaticResource DefComboBox}" />
-
-                        <TextBlock
-                            Grid.Row="19"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsSpeedPingTestUrl}" />
-                        <ComboBox
-                            x:Name="cmbSpeedPingTestUrl"
-                            Grid.Row="19"
-                            Grid.Column="1"
-                            Width="300"
-                            Margin="{StaticResource Margin8}"
-                            IsEditable="True"
-                            Style="{StaticResource DefComboBox}" />
-
-                        <TextBlock
-                            Grid.Row="20"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsUdpTestUrl}" />
-                        <ComboBox
-                            x:Name="cmbUdpTestTarget"
-                            Grid.Row="20"
-                            Grid.Column="1"
-                            Width="200"
-                            Margin="{StaticResource Margin8}"
-                            IsEditable="True"
-                            Style="{StaticResource DefComboBox}" />
-
-                        <TextBlock
-                            Grid.Row="22"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsIPAPIUrl}" />
-                        <ComboBox
-                            x:Name="cmbIPAPIUrl"
-                            Grid.Row="22"
-                            Grid.Column="1"
-                            Width="300"
-                            Margin="{StaticResource Margin8}"
-                            IsEditable="True"
-                            Style="{StaticResource DefComboBox}" />
-
-                        <TextBlock
-                            Grid.Row="23"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsSubConvert}" />
-                        <ComboBox
-                            x:Name="cmbSubConvertUrl"
-                            Grid.Row="23"
-                            Grid.Column="1"
-                            Width="300"
-                            Margin="{StaticResource Margin8}"
-                            materialDesign:HintAssist.Hint="Convert Url"
-                            IsEditable="True"
-                            Style="{StaticResource DefComboBox}" />
-
-                        <TextBlock
-                            Grid.Row="24"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsMainGirdOrientation}" />
-                        <ComboBox
-                            x:Name="cmbMainGirdOrientation"
-                            Grid.Row="24"
-                            Grid.Column="1"
-                            Width="200"
-                            Margin="{StaticResource Margin8}"
-                            Style="{StaticResource DefComboBox}" />
-
-                        <TextBlock
-                            Grid.Row="25"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsGeoFilesSource}" />
-                        <ComboBox
-                            x:Name="cmbGetFilesSourceUrl"
-                            Grid.Row="25"
-                            Grid.Column="1"
-                            Width="300"
-                            Margin="{StaticResource Margin8}"
-                            IsEditable="True"
-                            Style="{StaticResource DefComboBox}" />
-                        <TextBlock
-                            Grid.Row="25"
-                            Grid.Column="2"
-                            Margin="{StaticResource Margin4}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsChinaUserTip}"
-                            TextWrapping="Wrap" />
-
-                        <TextBlock
-                            Grid.Row="26"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsSrsFilesSource}" />
-                        <ComboBox
-                            x:Name="cmbSrsFilesSourceUrl"
-                            Grid.Row="26"
-                            Grid.Column="1"
-                            Width="300"
-                            Margin="{StaticResource Margin8}"
-                            IsEditable="True"
-                            Style="{StaticResource DefComboBox}" />
-                        <TextBlock
-                            Grid.Row="26"
-                            Grid.Column="2"
-                            Margin="{StaticResource Margin4}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsChinaUserTip}"
-                            TextWrapping="Wrap" />
-
-                        <TextBlock
-                            Grid.Row="27"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsRoutingRulesSource}" />
-                        <ComboBox
-                            x:Name="cmbRoutingRulesSourceUrl"
-                            Grid.Row="27"
-                            Grid.Column="1"
-                            Width="300"
-                            Margin="{StaticResource Margin8}"
-                            IsEditable="True"
-                            Style="{StaticResource DefComboBox}" />
-                        <TextBlock
-                            Grid.Row="27"
-                            Grid.Column="2"
-                            Margin="{StaticResource Margin4}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsChinaUserTip}"
-                            TextWrapping="Wrap" />
-                    </Grid>
-                </ScrollViewer>
-            </TabItem>
-
-            <TabItem Header="{x:Static resx:ResUI.TbSettingsSystemproxy}">
-                <DockPanel Margin="{StaticResource Margin8}">
-                    <StackPanel DockPanel.Dock="Bottom" Orientation="Vertical">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock
-                                Margin="{StaticResource Margin8}"
-                                VerticalAlignment="Center"
-                                Style="{StaticResource ToolbarTextBlock}"
-                                Text="{x:Static resx:ResUI.TbSettingsNotProxyLocalAddress}" />
-                            <ToggleButton
-                                x:Name="tognotProxyLocalAddress"
-                                Margin="{StaticResource Margin8}"
-                                HorizontalAlignment="Left" />
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock
-                                Margin="{StaticResource Margin8}"
-                                VerticalAlignment="Center"
-                                Style="{StaticResource ToolbarTextBlock}"
-                                Text="{x:Static resx:ResUI.TbSettingsAdvancedProtocol}" />
-                            <ComboBox
-                                x:Name="cmbsystemProxyAdvancedProtocol"
-                                MinWidth="400"
-                                Margin="{StaticResource Margin8}"
-                                materialDesign:HintAssist.Hint="Protocol"
-                                Style="{StaticResource DefComboBox}" />
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock
-                                Margin="{StaticResource Margin8}"
-                                VerticalAlignment="Center"
-                                Style="{StaticResource ToolbarTextBlock}"
-                                Text="{x:Static resx:ResUI.TbSettingsCustomSystemProxyPacPath}" />
-
-                            <TextBox
-                                x:Name="txtCustomSystemProxyPacPath"
-                                Width="600"
-                                Margin="{StaticResource Margin4}"
-                                VerticalAlignment="Center"
-                                AcceptsReturn="True"
-                                Style="{StaticResource DefTextBox}"
-                                TextWrapping="Wrap" />
-                            <Button
-                                x:Name="btnBrowseCustomSystemProxyPacPath"
-                                Margin="{StaticResource MarginLeftRight4}"
-                                Content="{x:Static resx:ResUI.TbBrowse}"
-                                Style="{StaticResource DefButton}" />
-                        </StackPanel>
-                    </StackPanel>
-
-                    <TextBlock
-                        Grid.Row="1"
-                        Margin="{StaticResource Margin8}"
-                        VerticalAlignment="Center"
-                        DockPanel.Dock="Top"
-                        Style="{StaticResource ToolbarTextBlock}"
-                        Text="{x:Static resx:ResUI.TbSettingsExceptionTip}" />
-                    <TextBox
-                        x:Name="txtsystemProxyExceptions"
-                        Margin="{StaticResource Margin8}"
-                        VerticalAlignment="Stretch"
-                        AcceptsReturn="True"
-                        BorderThickness="1"
-                        Style="{StaticResource DefTextBox}"
-                        TextWrapping="Wrap"
-                        VerticalScrollBarVisibility="Auto" />
-                </DockPanel>
-            </TabItem>
-
-            <TabItem Header="{x:Static resx:ResUI.TbSettingsTunMode}">
-                <ScrollViewer VerticalScrollBarVisibility="Visible">
-                    <Grid Margin="{StaticResource Margin8}" DockPanel.Dock="Top">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-
-                        <TextBlock
-                            Grid.Row="2"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsTunAutoRoute}" />
-                        <ToggleButton
-                            x:Name="togAutoRoute"
-                            Grid.Row="2"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="3"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsTunStrictRoute}" />
-                        <ToggleButton
-                            x:Name="togStrictRoute"
-                            Grid.Row="3"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="4"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsTunStack}" />
-                        <ComboBox
-                            x:Name="cmbStack"
-                            Grid.Row="4"
-                            Grid.Column="1"
-                            Width="200"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left"
-                            Style="{StaticResource DefComboBox}" />
-
-                        <TextBlock
-                            Grid.Row="5"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbMtu}" />
-                        <ComboBox
-                            x:Name="cmbMtu"
-                            Grid.Row="5"
-                            Grid.Column="1"
-                            Width="200"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left"
-                            IsEditable="True"
-                            Style="{StaticResource DefComboBox}" />
-
-                        <TextBlock
-                            Grid.Row="6"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbIcmpRoutingPolicy}" />
-                        <ComboBox
-                            x:Name="cmbIcmpRoutingPolicy"
-                            Grid.Row="6"
-                            Grid.Column="1"
-                            Width="200"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left"
-                            Style="{StaticResource DefComboBox}" />
-
-                        <TextBlock
-                            Grid.Row="7"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbSettingsEnableIPv6Address}" />
-                        <ToggleButton
-                            x:Name="togEnableIPv6Address"
-                            Grid.Row="7"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="8"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbLegacyProtect}" />
-                        <ToggleButton
-                            x:Name="togEnableLegacyProtect"
-                            Grid.Row="8"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            HorizontalAlignment="Left" />
-
-                        <TextBlock
-                            Grid.Row="9"
-                            Grid.Column="0"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbRouteExcludeAddress}" />
-
-                        <TextBox
-                            x:Name="txtRouteExcludeAddress"
-                            Grid.Row="9"
-                            Grid.Column="1"
-                            Margin="{StaticResource Margin8}"
-                            VerticalAlignment="Stretch"
-                            AcceptsReturn="True"
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome
+            CaptionHeight="0"
+            CornerRadius="0"
+            GlassFrameThickness="0"
+            ResizeBorderThickness="7"
+            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+
+        <Style x:Key="SgWindowButton" TargetType="Button">
+            <Setter Property="Width" Value="42" />
+            <Setter Property="Height" Value="42" />
+            <Setter Property="Foreground" Value="{DynamicResource SgMutedBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" CornerRadius="9">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource SgHoverBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource SgPressedBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="HeaderActionButton" BasedOn="{StaticResource SgWindowButtonBase}" TargetType="Button">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="MinWidth" Value="86" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+            <Setter Property="Padding" Value="12,4" />
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceRaisedBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="SgTabItem" TargetType="TabItem">
+            <Setter Property="Width" Value="192" />
+            <Setter Property="Height" Value="48" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+            <Setter Property="Foreground" Value="{DynamicResource SgMutedBrush}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border
+                            x:Name="TabBorder"
+                            Padding="14,0"
+                            Background="Transparent"
+                            BorderBrush="Transparent"
                             BorderThickness="1"
-                            MinLines="2"
-                            Style="{StaticResource DefTextBox}"
-                            TextWrapping="Wrap"
-                            VerticalScrollBarVisibility="Auto" />
-                        <TextBlock
-                            Grid.Row="9"
-                            Grid.Column="2"
-                            Margin="{StaticResource Margin4}"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource ToolbarTextBlock}"
-                            Text="{x:Static resx:ResUI.TbRouteExcludeAddressTip}"
-                            TextWrapping="Wrap" />
-                    </Grid>
-                </ScrollViewer>
-            </TabItem>
+                            CornerRadius="11">
+                            <ContentPresenter
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Center"
+                                ContentSource="Header"
+                                RecognizesAccessKey="True" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource SgHoverBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource SgAccentSoftBrush}" />
+                                <Setter TargetName="TabBorder" Property="BorderBrush" Value="{DynamicResource SgAccentBorderBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource SgAccentBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-            <TabItem Header="{x:Static resx:ResUI.TbSettingsCoreType}">
-                <Grid Margin="{StaticResource Margin8}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
+        <Style x:Key="SgSettingCard" TargetType="Border">
+            <Setter Property="Margin" Value="0,0,0,10" />
+            <Setter Property="Padding" Value="16,13" />
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceSoftBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="13" />
+        </Style>
+
+
+        <Style x:Key="SgComboItem" TargetType="ComboBoxItem">
+            <Setter Property="Padding" Value="12,9" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="ItemBorder" Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" CornerRadius="7">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource SgHoverBrush}" /></Trigger>
+                            <Trigger Property="IsSelected" Value="True"><Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource SgAccentSoftBrush}" /><Setter Property="Foreground" Value="{DynamicResource SgAccentBrush}" /></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SgValueComboBox" TargetType="ComboBox">
+            <Setter Property="Height" Value="52" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgInputBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="ItemContainerStyle" Value="{StaticResource SgComboItem}" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Border x:Name="ComboBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="42" /></Grid.ColumnDefinitions>
+                                    <ContentPresenter x:Name="ContentSite" Margin="12,0,4,0" VerticalAlignment="Center" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" IsHitTestVisible="False" />
+                                    <TextBox x:Name="PART_EditableTextBox" Style="{x:Null}" Margin="10,4,2,4" Padding="2,0" VerticalContentAlignment="Center" Background="Transparent" BorderThickness="0" Foreground="{TemplateBinding Foreground}" FontSize="{TemplateBinding FontSize}" Visibility="Hidden" />
+                                    <ToggleButton Grid.Column="1" Focusable="False" ClickMode="Press" IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                                        <ToggleButton.Template>
+                                            <ControlTemplate TargetType="ToggleButton">
+                                                <Border Background="Transparent"><materialDesign:PackIcon Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource SgMutedBrush}" Kind="ChevronDown" /></Border>
+                                            </ControlTemplate>
+                                        </ToggleButton.Template>
+                                    </ToggleButton>
+                                </Grid>
+                            </Border>
+                            <Popup x:Name="PART_Popup" AllowsTransparency="True" Focusable="False" IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}" Placement="Bottom" PlacementTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}" PopupAnimation="Fade">
+                                <Border MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}" MaxHeight="300" Margin="0,5,0,0" Padding="5" Background="{DynamicResource SgSurfaceRaisedBrush}" BorderBrush="{DynamicResource SgBorderStrongBrush}" BorderThickness="1" CornerRadius="9">
+                                    <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Auto"><ItemsPresenter /></ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEditable" Value="True"><Setter TargetName="ContentSite" Property="Visibility" Value="Hidden" /><Setter TargetName="PART_EditableTextBox" Property="Visibility" Value="Visible" /></Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ComboBorder" Property="BorderBrush" Value="{DynamicResource SgAccentBorderBrush}" /></Trigger>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="ComboBorder" Property="BorderBrush" Value="{DynamicResource SgAccentBrush}" /><Setter TargetName="ComboBorder" Property="BorderThickness" Value="2" /></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="ComboBorder" Property="Opacity" Value="0.55" /></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SgValueTextBox" TargetType="TextBox">
+            <Setter Property="MinHeight" Value="52" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgInputBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CaretBrush" Value="{DynamicResource SgAccentBrush}" />
+            <Setter Property="SelectionBrush" Value="{DynamicResource SgAccentSoftBrush}" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="InputBorder" Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
+                            <ScrollViewer x:Name="PART_ContentHost" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="InputBorder" Property="BorderBrush" Value="{DynamicResource SgAccentBorderBrush}" /></Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="InputBorder" Property="BorderBrush" Value="{DynamicResource SgAccentBrush}" /><Setter TargetName="InputBorder" Property="BorderThickness" Value="2" /></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="InputBorder" Property="Opacity" Value="0.55" /></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SgHelpIconButton" BasedOn="{StaticResource SgWindowButtonBase}" TargetType="Button">
+            <Setter Property="Width" Value="28" /><Setter Property="Height" Value="28" /><Setter Property="MinWidth" Value="28" /><Setter Property="MinHeight" Value="28" />
+            <Setter Property="Margin" Value="5,-5,0,-5" /><Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" /><Setter Property="BorderBrush" Value="Transparent" /><Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="{DynamicResource SgMutedBrush}" />
+        </Style>
+
+        <Style x:Key="SgPrimaryButton" BasedOn="{StaticResource SgWindowButtonBase}" TargetType="Button">
+            <Setter Property="MinWidth" Value="126" />
+            <Setter Property="Height" Value="42" />
+            <Setter Property="Padding" Value="20,0" />
+            <Setter Property="Foreground" Value="{DynamicResource SgOnButtonTextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgAccentBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgAccentBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontSize" Value="13.5" />
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
+
+        <Style x:Key="SgSecondaryButton" BasedOn="{StaticResource SgWindowButtonBase}" TargetType="Button">
+            <Setter Property="MinWidth" Value="112" />
+            <Setter Property="Height" Value="42" />
+            <Setter Property="Padding" Value="18,0" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+    </Window.Resources>
+
+    <Border Background="{DynamicResource SgBackgroundBrush}" BorderBrush="{DynamicResource SgBorderStrongBrush}" BorderThickness="1" CornerRadius="16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="58" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Border
+                Grid.Row="0"
+                Padding="18,0,8,0"
+                Background="{DynamicResource SgHeaderBrush}"
+                BorderBrush="{DynamicResource SgBorderBrush}"
+                BorderThickness="0,0,0,1"
+                CornerRadius="15,15,0,0"
+                MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock
-                        Grid.Row="1"
-                        Grid.Column="0"
-                        Margin="{StaticResource Margin8}"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource ToolbarTextBlock}"
-                        Text="VMess" />
-                    <ComboBox
-                        x:Name="cmbCoreType1"
-                        Grid.Row="1"
-                        Grid.Column="1"
-                        Width="200"
-                        Margin="{StaticResource Margin8}"
-                        Style="{StaticResource DefComboBox}" />
-
-                    <TextBlock
-                        Grid.Row="2"
-                        Grid.Column="0"
-                        Margin="{StaticResource Margin8}"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource ToolbarTextBlock}"
-                        Text="Custom" />
-                    <ComboBox
-                        x:Name="cmbCoreType2"
-                        Grid.Row="2"
-                        Grid.Column="1"
-                        Width="200"
-                        Margin="{StaticResource Margin8}"
-                        Style="{StaticResource DefComboBox}" />
-
-                    <TextBlock
-                        Grid.Row="3"
-                        Grid.Column="0"
-                        Margin="{StaticResource Margin8}"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource ToolbarTextBlock}"
-                        Text="Shadowsocks" />
-                    <ComboBox
-                        x:Name="cmbCoreType3"
-                        Grid.Row="3"
-                        Grid.Column="1"
-                        Width="200"
-                        Margin="{StaticResource Margin8}"
-                        Style="{StaticResource DefComboBox}" />
-
-                    <TextBlock
-                        Grid.Row="4"
-                        Grid.Column="0"
-                        Margin="{StaticResource Margin8}"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource ToolbarTextBlock}"
-                        Text="Socks" />
-                    <ComboBox
-                        x:Name="cmbCoreType4"
-                        Grid.Row="4"
-                        Grid.Column="1"
-                        Width="200"
-                        Margin="{StaticResource Margin8}"
-                        Style="{StaticResource DefComboBox}" />
-
-                    <TextBlock
-                        Grid.Row="5"
-                        Grid.Column="0"
-                        Margin="{StaticResource Margin8}"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource ToolbarTextBlock}"
-                        Text="VLESS" />
-                    <ComboBox
-                        x:Name="cmbCoreType5"
-                        Grid.Row="5"
-                        Grid.Column="1"
-                        Width="200"
-                        Margin="{StaticResource Margin8}"
-                        Style="{StaticResource DefComboBox}" />
-
-                    <TextBlock
-                        Grid.Row="6"
-                        Grid.Column="0"
-                        Margin="{StaticResource Margin8}"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource ToolbarTextBlock}"
-                        Text="Trojan" />
-                    <ComboBox
-                        x:Name="cmbCoreType6"
-                        Grid.Row="6"
-                        Grid.Column="1"
-                        Width="200"
-                        Margin="{StaticResource Margin8}"
-                        Style="{StaticResource DefComboBox}" />
-
-                    <TextBlock
-                        Grid.Row="7"
-                        Grid.Column="0"
-                        Margin="{StaticResource Margin8}"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource ToolbarTextBlock}"
-                        Text="Hysteria2" />
-                    <ComboBox
-                        x:Name="cmbCoreType7"
-                        Grid.Row="7"
-                        Grid.Column="1"
-                        Width="200"
-                        Margin="{StaticResource Margin8}"
-                        Style="{StaticResource DefComboBox}" />
-
-                    <TextBlock
-                        Grid.Row="8"
-                        Grid.Column="0"
-                        Margin="{StaticResource Margin8}"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource ToolbarTextBlock}"
-                        Text="Wireguard" />
-                    <ComboBox
-                        x:Name="cmbCoreType9"
-                        Grid.Row="8"
-                        Grid.Column="1"
-                        Width="200"
-                        Margin="{StaticResource Margin8}"
-                        Style="{StaticResource DefComboBox}" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock
+                            FontSize="18"
+                            FontWeight="SemiBold"
+                            Foreground="{DynamicResource SgTextBrush}"
+                            Text="Настройки" />
+                        <TextBlock
+                            Margin="0,2,0,0"
+                            FontSize="10.5"
+                            Foreground="{DynamicResource SgMutedBrush}"
+                            Text="Основные параметры SG Client и поведения подключения" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal">
+                        <Button x:Name="btnHelp" Style="{StaticResource HeaderActionButton}" Content="Справка" />
+                        <Button x:Name="btnClose" Style="{StaticResource HeaderActionButton}" Content="Закрыть" />
+                    </StackPanel>
                 </Grid>
-            </TabItem>
-        </TabControl>
-    </DockPanel>
+            </Border>
+
+            <TabControl
+                Grid.Row="1"
+                Margin="18,18,18,0"
+                Background="Transparent"
+                BorderThickness="0"
+                ItemContainerStyle="{StaticResource SgTabItem}"
+                TabStripPlacement="Left">
+                <TabControl.Resources>
+                    <Style TargetType="TabPanel">
+                        <Setter Property="Margin" Value="0,0,18,0" />
+                    </Style>
+                </TabControl.Resources>
+
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Width="18" Height="18" Margin="0,0,10,0" Kind="TuneVariant" />
+                            <TextBlock VerticalAlignment="Center" Text="Основные" />
+                        </StackPanel>
+                    </TabItem.Header>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="2,0,8,8">
+                            <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Основные настройки" />
+                            <TextBlock Margin="0,5,0,18" FontSize="11" Foreground="{DynamicResource SgMutedBrush}" Text="Поведение клиента и отображение состояния подключения." />
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Тема оформления" />
+                                        <TextBlock Margin="0,4,16,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Применяется сразу и сохраняется для следующего запуска." />
+                                    </StackPanel>
+                                    <ComboBox x:Name="cmbTheme" Grid.Column="1" DisplayMemberPath="Name" SelectedValuePath="Id" Style="{StaticResource SgValueComboBox}" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Запускать вместе с Windows" />
+                                        <TextBlock Margin="0,4,16,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="SG Client будет доступен сразу после входа в систему." />
+                                    </StackPanel>
+                                    <ToggleButton x:Name="togAutoRun" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource MaterialDesignSwitchToggleButton}" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Сворачивать после запуска" />
+                                        <TextBlock Margin="0,4,16,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Главное окно не будет мешать после автоматического запуска." />
+                                    </StackPanel>
+                                    <ToggleButton x:Name="togAutoHideStartup" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource MaterialDesignSwitchToggleButton}" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Восстанавливать TUN автоматически" />
+                                        <TextBlock Margin="0,4,16,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Перезапускать выбранный профиль после сна или восстановления сети." />
+                                    </StackPanel>
+                                    <ToggleButton x:Name="togAutoRecoverTun" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource MaterialDesignSwitchToggleButton}" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Резервный профиль" />
+                                        <TextBlock x:Name="txtReserveProfileSetting" Margin="0,4,16,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Не настроен" />
+                                    </StackPanel>
+                                    <Button x:Name="btnReserveProfileSetting" Grid.Column="1" Width="130" Height="36" VerticalAlignment="Center" Style="{StaticResource MaterialDesignOutlinedButton}" Content="Настроить" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Показывать статистику трафика" />
+                                        <TextBlock Margin="0,4,16,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Отображать объём переданных и полученных данных." />
+                                    </StackPanel>
+                                    <ToggleButton x:Name="togEnableStatistics" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource MaterialDesignSwitchToggleButton}" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Показывать текущую скорость" />
+                                        <TextBlock Margin="0,4,16,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Обновлять скорость соединения во время работы TUN." />
+                                    </StackPanel>
+                                    <ToggleButton x:Name="togDisplayRealTimeSpeed" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource MaterialDesignSwitchToggleButton}" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Аппаратное ускорение интерфейса" />
+                                        <TextBlock Margin="0,4,16,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Отключайте только при проблемах с отображением окна." />
+                                    </StackPanel>
+                                    <ToggleButton x:Name="togEnableHWA" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource MaterialDesignSwitchToggleButton}" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Width="18" Height="18" Margin="0,0,10,0" Kind="ShieldLockOutline" />
+                            <TextBlock VerticalAlignment="Center" Text="TUN" />
+                        </StackPanel>
+                    </TabItem.Header>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="2,0,8,8">
+                            <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Параметры TUN" />
+                            <TextBlock Margin="0,5,0,18" FontSize="11" Foreground="{DynamicResource SgMutedBrush}" Text="Параметры системного туннеля. Рекомендуемые значения уже выбраны." />
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Настраивать маршруты автоматически" />
+                                        <TextBlock Margin="0,4,16,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="SG Client сам направляет трафик устройства через TUN." />
+                                    </StackPanel>
+                                    <ToggleButton x:Name="togAutoRoute" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource MaterialDesignSwitchToggleButton}" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Строгая маршрутизация" />
+                                        <TextBlock Margin="0,4,16,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Снижает риск обхода туннеля отдельными приложениями." />
+                                    </StackPanel>
+                                    <ToggleButton x:Name="togStrictRoute" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource MaterialDesignSwitchToggleButton}" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Поддержка IPv6" />
+                                        <TextBlock Margin="0,4,16,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Включайте только при наличии IPv6 у сервера и провайдера." />
+                                    </StackPanel>
+                                    <ToggleButton x:Name="togEnableIPv6Address" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource MaterialDesignSwitchToggleButton}" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="300" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Сетевой стек" />
+                                            <Button Style="{StaticResource SgHelpIconButton}" Click="StackHelp_Click" ToolTip="Открыть справку"><materialDesign:PackIcon Width="16" Height="16" Kind="HelpCircleOutline" /></Button>
+                                        </StackPanel>
+                                        <TextBlock Margin="0,4,16,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="Автоматически использует mixed для Hysteria2/sing-box. На Xray и AmneziaWG не влияет." />
+                                    </StackPanel>
+                                    <ComboBox
+                                        x:Name="cmbStack"
+                                        Grid.Column="1"
+                                        DisplayMemberPath="Name"
+                                        SelectedValuePath="Id"
+                                        Style="{StaticResource SgValueComboBox}" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="300" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Размер пакета MTU" />
+                                            <Button Style="{StaticResource SgHelpIconButton}" Click="MtuHelp_Click" ToolTip="Открыть справку"><materialDesign:PackIcon Width="16" Height="16" Kind="HelpCircleOutline" /></Button>
+                                        </StackPanel>
+                                        <TextBlock Margin="0,4,16,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="Можно ввести своё значение 1280–9000. Рекомендуется: Xray 1500; Hysteria2/sing-box 9000; AmneziaWG — значение из профиля." />
+                                    </StackPanel>
+                                    <ComboBox
+                                        x:Name="cmbMtu"
+                                        Grid.Column="1"
+                                        IsEditable="True"
+                                        IsTextSearchEnabled="False"
+                                        StaysOpenOnEdit="True"
+                                        LostKeyboardFocus="Mtu_LostKeyboardFocus"
+                                        DisplayMemberPath="Name"
+                                        SelectedValuePath="Id"
+                                        Style="{StaticResource SgValueComboBox}" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <StackPanel>
+                                    <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Адреса вне туннеля" />
+                                    <TextBlock Margin="0,4,0,10" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Необязательный список адресов через запятую." />
+                                    <TextBox
+                                        x:Name="txtRouteExcludeAddress"
+                                        MinHeight="52"
+                                        ToolTip="Например: 192.168.1.0/24"
+                                        Style="{StaticResource SgValueTextBox}" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Width="18" Height="18" Margin="0,0,10,0" Kind="Tools" />
+                            <TextBlock VerticalAlignment="Center" Text="Дополнительно" />
+                        </StackPanel>
+                    </TabItem.Header>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="2,0,8,8">
+                            <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Дополнительные параметры" />
+                            <TextBlock Margin="0,5,0,18" FontSize="11" Foreground="{DynamicResource SgMutedBrush}" Text="Эти настройки обычно не требуют изменения." />
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Разрешить UDP" />
+                                        <TextBlock Margin="0,4,16,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Нужно для звонков, игр, QUIC и Hysteria2." />
+                                    </StackPanel>
+                                    <ToggleButton x:Name="togUdpEnabled" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource MaterialDesignSwitchToggleButton}" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Определять тип трафика" />
+                                        <TextBlock Margin="0,4,16,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Помогает корректно направлять доменные запросы и приложения." />
+                                    </StackPanel>
+                                    <ToggleButton x:Name="togSniffingEnabled" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource MaterialDesignSwitchToggleButton}" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Локальный порт" />
+                                        <TextBlock Margin="0,4,16,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Внутренний порт клиента. Оставьте значение по умолчанию." />
+                                    </StackPanel>
+                                    <TextBox
+                                        x:Name="txtLocalPort"
+                                        Grid.Column="1"
+                                        Style="{StaticResource SgValueTextBox}" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Журнал соединений Xray" />
+                                        <TextBlock Margin="0,4,16,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Нужен для доменов и маршрутов в «Соединениях». Хранится только на этом компьютере." />
+                                    </StackPanel>
+                                    <ToggleButton x:Name="togLogEnabled" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource MaterialDesignSwitchToggleButton}" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SgSettingCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Подробность журнала" />
+                                        <TextBlock Margin="0,4,16,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Для «Соединений» SG Client использует безопасный уровень info; debug без необходимости не включается." />
+                                    </StackPanel>
+                                    <ComboBox
+                                        x:Name="cmbLogLevel"
+                                        Grid.Column="1"
+                                        Style="{StaticResource SgValueComboBox}" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Width="18" Height="18" Margin="0,0,10,0" Kind="InformationOutline" />
+                            <TextBlock VerticalAlignment="Center" Text="О программе" />
+                        </StackPanel>
+                    </TabItem.Header>
+                    <Grid Margin="2,0,8,8">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <Border
+                                Padding="28"
+                                Background="{DynamicResource SgSurfaceSoftBrush}"
+                                BorderBrush="{DynamicResource SgBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="18">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <Grid Width="84" Height="84">
+                                        <Polygon
+                                            Fill="{DynamicResource SgLogoFillBrush}"
+                                            Points="42,2 80,23 80,61 42,82 4,61 4,23"
+                                            Stroke="{DynamicResource SgAccentBrush}"
+                                            StrokeThickness="2" />
+                                        <TextBlock
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            FontSize="25"
+                                            FontWeight="Bold"
+                                            Foreground="{DynamicResource SgAccentBrush}"
+                                            Text="SG" />
+                                    </Grid>
+                                    <TextBlock Margin="0,18,0,0" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="SG Client" />
+                                    <TextBlock Margin="0,5,0,0" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SgAccentBrush}" Text="Сборка 073" />
+                                    <TextBlock
+                                        Width="620"
+                                        Margin="0,15,0,0"
+                                        TextAlignment="Center"
+                                        TextWrapping="Wrap"
+                                        FontSize="11.5"
+                                        LineHeight="19"
+                                        Foreground="{DynamicResource SgMutedBrush}"
+                                        Text="Единый Windows-клиент для профилей SG-Panel и SG-AWG-Panel. Поддерживает TUN, системный прокси Windows и локальный HTTP/SOCKS-прокси." />
+
+                                    <Grid Width="760" Margin="0,22,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0" Padding="16" Background="{DynamicResource SgSurfaceRaisedBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="13">
+                                            <StackPanel>
+                                                <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SgAccentBrush}" Text="ПОДДЕРЖИВАЕМЫЕ ПРОФИЛИ" />
+                                                <TextBlock Margin="0,9,0,0" FontSize="11" LineHeight="18" Foreground="{DynamicResource SgTextBrush}" TextWrapping="Wrap" Text="VLESS REALITY и TLS&#x0a;XHTTP и raw/TCP&#x0a;Hysteria2&#x0a;AmneziaWG" />
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Border Grid.Column="2" Padding="16" Background="{DynamicResource SgSurfaceRaisedBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="13">
+                                            <StackPanel>
+                                                <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SgAccentBrush}" Text="ЯДРА И КОМПОНЕНТЫ" />
+                                                <TextBlock Margin="0,9,0,0" FontSize="11" LineHeight="18" Foreground="{DynamicResource SgTextBrush}" TextWrapping="Wrap" Text="Xray-core и sing-box&#x0a;AmneziaWG и Wintun&#x0a;Основа v2rayN&#x0a;.NET 10 · WPF · Windows x64" />
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Border Grid.Column="4" Padding="16" Background="{DynamicResource SgSurfaceRaisedBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="13">
+                                            <StackPanel>
+                                                <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SgAccentBrush}" Text="ВОЗМОЖНОСТИ" />
+                                                <TextBlock Margin="0,9,0,0" FontSize="11" LineHeight="18" Foreground="{DynamicResource SgTextBrush}" TextWrapping="Wrap" Text="Умная маршрутизация и GeoFiles&#x0a;DNS, Kill Switch и разделённый TUN&#x0a;Маскировка DPI и подписки&#x0a;Резервные копии и безопасные обновления" />
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+
+                                    <Separator Width="620" Margin="0,22,0,16" Background="{DynamicResource SgBorderBrush}" />
+                                    <TextBlock FontSize="11" Foreground="{DynamicResource SgTextBrush}" Text="Интерфейс и сборка: Ser.Gor · 2026" />
+                                    <TextBlock Width="620" Margin="0,7,0,0" TextAlignment="Center" TextWrapping="Wrap" FontSize="10" LineHeight="16" Foreground="{DynamicResource SgMutedBrush}" Text="SG Client использует компоненты с открытым исходным кодом. Названия проектов, лицензии и ссылки на исходный код приведены в документации и THIRD-PARTY-NOTICES.md." />
+                                </StackPanel>
+                            </Border>
+                        </ScrollViewer>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+
+            <Border
+                Grid.Row="2"
+                Padding="18,12"
+                Background="{DynamicResource SgHeaderBrush}"
+                BorderBrush="{DynamicResource SgBorderBrush}"
+                BorderThickness="0,1,0,0" CornerRadius="0,0,15,15">
+                <Grid>
+                    <TextBlock x:Name="txtFooterStatus"
+                        VerticalAlignment="Center"
+                        FontSize="10"
+                        Foreground="{DynamicResource SgMutedBrush}"
+                        Text="Изменения будут применены после нажатия кнопки справа." />
+                    <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal">
+                        <Button x:Name="btnCancel" Margin="0,0,10,0" Content="Отмена" Style="{StaticResource SgSecondaryButton}" />
+                        <Button x:Name="btnSave" Content="Применить" IsDefault="True" Style="{StaticResource SgPrimaryButton}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
 </base:WindowBase>

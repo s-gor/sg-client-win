@@ -180,7 +180,7 @@ public sealed partial class HotkeyManager
         Alt = 0x0001,
         Ctrl = 0x0002,
         Shift = 0x0004,
-        Win = 0x0008,
+        Win = 0x0009,
         NoRepeat = 0x4000
     }
 }

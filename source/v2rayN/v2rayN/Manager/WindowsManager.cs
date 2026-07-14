@@ -9,32 +9,58 @@ public sealed class WindowsManager
     public static WindowsManager Instance => instance.Value;
     private static readonly string _tag = "WindowsHandler";
 
-    public async Task<Icon> GetNotifyIcon(Config config)
+    public Task<Icon> GetNotifyIcon(Config config)
     {
+        var state = config.TunModeItem.EnableTun ? ETunUiState.On : ETunUiState.Off;
+        return GetNotifyIcon(config, state);
+    }
+
+    public async Task<Icon> GetNotifyIcon(
+        Config config,
+        ETunUiState state,
+        string? connectionMode = null)
+    {
+        await Task.CompletedTask;
+
         try
         {
-            var index = (int)config.SystemProxyItem.SysProxyType;
+            var systemProxyRunning =
+                string.Equals(
+                    connectionMode,
+                    "system-proxy",
+                    StringComparison.OrdinalIgnoreCase)
+                && state == ETunUiState.On;
+            var localProxyRunning =
+                string.Equals(
+                    connectionMode,
+                    "local-proxy",
+                    StringComparison.OrdinalIgnoreCase)
+                && state == ETunUiState.On;
 
-            //Load from routing setting
-            var createdIcon = await GetNotifyIcon4Routing(config);
-            if (createdIcon != null)
-            {
-                return createdIcon;
-            }
-
-            //Load from local file
+            var index = systemProxyRunning
+                ? 2
+                : localProxyRunning
+                    ? 4
+                    : state switch
+                    {
+                        ETunUiState.On => 1,
+                        ETunUiState.Starting or ETunUiState.Stopping or ETunUiState.Switching => 2,
+                        ETunUiState.Error => 3,
+                        _ => 0
+                    };
             var fileName = Utils.GetPath($"NotifyIcon{index + 1}.ico");
             if (File.Exists(fileName))
             {
                 return new Icon(fileName);
             }
+
             return index switch
             {
-                0 => Properties.Resources.NotifyIcon1,
                 1 => Properties.Resources.NotifyIcon2,
                 2 => Properties.Resources.NotifyIcon3,
                 3 => Properties.Resources.NotifyIcon4,
-                _ => Properties.Resources.NotifyIcon1, // default
+                4 => Properties.Resources.NotifyIcon5,
+                _ => Properties.Resources.NotifyIcon1
             };
         }
         catch (Exception ex)
@@ -46,52 +72,42 @@ public sealed class WindowsManager
 
     public System.Windows.Media.ImageSource GetAppIcon(Config config)
     {
-        var index = (int)config.SystemProxyItem.SysProxyType + 1;
-        return BitmapFrame.Create(new Uri($"pack://application:,,,/Resources/NotifyIcon{index}.ico", UriKind.RelativeOrAbsolute));
+        return GetAppIcon(config.TunModeItem.EnableTun ? ETunUiState.On : ETunUiState.Off);
     }
 
-    private async Task<Icon?> GetNotifyIcon4Routing(Config config)
+    public System.Windows.Media.ImageSource GetAppIcon(
+        ETunUiState state,
+        string? connectionMode = null)
     {
-        try
-        {
-            var item = await ConfigHandler.GetDefaultRouting(config);
-            if (item == null || item.CustomIcon.IsNullOrEmpty() || !File.Exists(item.CustomIcon))
-            {
-                return null;
-            }
+        var systemProxyRunning =
+            string.Equals(
+                connectionMode,
+                "system-proxy",
+                StringComparison.OrdinalIgnoreCase)
+            && state == ETunUiState.On;
+        var localProxyRunning =
+            string.Equals(
+                connectionMode,
+                "local-proxy",
+                StringComparison.OrdinalIgnoreCase)
+            && state == ETunUiState.On;
 
-            var color = ColorTranslator.FromHtml("#3399CC");
-            var index = (int)config.SystemProxyItem.SysProxyType;
-            if (index > 0)
-            {
-                color = (new[] { Color.Red, Color.Purple, Color.DarkGreen, Color.Orange, Color.DarkSlateBlue, Color.RoyalBlue })[index - 1];
-            }
+        var index = systemProxyRunning
+            ? 3
+            : localProxyRunning
+                ? 5
+                : state switch
+                {
+                    ETunUiState.On => 2,
+                    ETunUiState.Starting or ETunUiState.Stopping or ETunUiState.Switching => 3,
+                    ETunUiState.Error => 4,
+                    _ => 1
+                };
 
-            var width = 128;
-            var height = 128;
-
-            Bitmap bitmap = new(width, height);
-            var graphics = Graphics.FromImage(bitmap);
-            SolidBrush drawBrush = new(color);
-
-            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            //graphics.FillRectangle(drawBrush, new Rectangle(0, 0, width, height));
-            graphics.DrawImage(new Bitmap(item.CustomIcon), 0, 0, width, height);
-            graphics.FillEllipse(drawBrush, width / 2, width / 2, width / 2, width / 2);
-
-            var createdIcon = Icon.FromHandle(bitmap.GetHicon());
-
-            drawBrush.Dispose();
-            graphics.Dispose();
-            bitmap.Dispose();
-
-            return createdIcon;
-        }
-        catch (Exception ex)
-        {
-            Logging.SaveLog(_tag, ex);
-            return null;
-        }
+        return BitmapFrame.Create(
+            new Uri(
+                $"pack://application:,,,/Resources/NotifyIcon{index}.ico",
+                UriKind.RelativeOrAbsolute));
     }
 
     public void RegisterGlobalHotkey(Config config, Action<EGlobalHotkey> handler, Action<bool, string>? update)

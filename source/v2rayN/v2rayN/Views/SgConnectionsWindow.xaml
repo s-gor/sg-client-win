@@ -1,0 +1,758 @@
+<Window
+    x:Class="v2rayN.Views.SgConnectionsWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+    xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+    Title="SG Client — Маршруты и соединения"
+    Width="974"
+    Height="714"
+    MinWidth="860"
+    MinHeight="620"
+    Background="{DynamicResource SgBackgroundBrush}"
+    Icon="/Resources/v2rayN.ico"
+    ResizeMode="CanResize"
+    ShowInTaskbar="False"
+    WindowStartupLocation="CenterOwner"
+    WindowStyle="None"
+    Foreground="{DynamicResource SgTextBrush}"
+    SnapsToDevicePixels="True"
+    UseLayoutRounding="True"
+    TextOptions.TextFormattingMode="Display">
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0" CornerRadius="0" GlassFrameThickness="0" ResizeBorderThickness="7" UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <Style x:Key="ConnectionsPanel" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="13" />
+        </Style>
+
+        <Style x:Key="ConnectionsTextBox" TargetType="TextBox">
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Padding" Value="11,6" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgInputBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="CaretBrush" Value="{DynamicResource SgAccentBrush}" />
+        </Style>
+
+        <Style x:Key="ConnectionsRouteFilterButton" TargetType="{x:Type Button}">
+            <Setter Property="Height" Value="36" />
+            <Setter Property="MinWidth" Value="116" />
+            <Setter Property="Padding" Value="11,0" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgInputBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="ButtonBorder" Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="9" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource SgHoverBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource SgSelectedBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource SgAccentBorderBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource SgDisabledBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource SgDisabledTextBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ConnectionsRouteOption" TargetType="{x:Type RadioButton}">
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type RadioButton}">
+                        <Border x:Name="OptionBorder" Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" CornerRadius="7">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="20" />
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True" />
+                                <materialDesign:PackIcon x:Name="SelectedMark" Grid.Column="1" Width="15" Height="15" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource SgAccentBrush}" Kind="Check" Visibility="Collapsed" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="OptionBorder" Property="Background" Value="{DynamicResource SgHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="OptionBorder" Property="Background" Value="{DynamicResource SgSelectedBrush}" />
+                                <Setter TargetName="SelectedMark" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{DynamicResource SgDisabledTextBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ConnectionsDataGrid" TargetType="DataGrid">
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="GridLinesVisibility" Value="Horizontal" />
+            <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="RowBackground" Value="{DynamicResource SgSurfaceBrush}" />
+            <Setter Property="AlternatingRowBackground" Value="{DynamicResource SgSurfaceSoftBrush}" />
+            <Setter Property="HeadersVisibility" Value="Column" />
+            <Setter Property="CanUserAddRows" Value="False" />
+            <Setter Property="CanUserDeleteRows" Value="False" />
+            <Setter Property="CanUserResizeRows" Value="False" />
+            <Setter Property="IsReadOnly" Value="True" />
+            <Setter Property="SelectionMode" Value="Single" />
+            <Setter Property="SelectionUnit" Value="FullRow" />
+            <Setter Property="EnableRowVirtualization" Value="True" />
+            <Setter Property="EnableColumnVirtualization" Value="True" />
+            <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
+            <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
+            <Setter Property="RowHeight" Value="48" />
+        </Style>
+
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Padding" Value="9,0" />
+            <Setter Property="Foreground" Value="{DynamicResource SgMutedBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceRaisedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="0,0,1,1" />
+            <Setter Property="FontSize" Value="10.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style TargetType="DataGridRow">
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource SgHoverBrush}" />
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource SgSelectedBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="DataGridCell">
+            <Setter Property="Padding" Value="9,0" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Compact factual details for the hovered live-connection row. -->
+        <Style x:Key="ConnectionsLiveRow" TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+            <Setter Property="ToolTipService.InitialShowDelay" Value="220" />
+            <Setter Property="ToolTipService.BetweenShowDelay" Value="0" />
+            <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+            <Setter Property="ToolTip">
+                <Setter.Value>
+                    <ToolTip
+                        Padding="0"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        HasDropShadow="False"
+                        Placement="Mouse"
+                        HorizontalOffset="14"
+                        VerticalOffset="12">
+                        <Border
+                            Width="370"
+                            Padding="13,11"
+                            Background="{DynamicResource SgSurfaceRaisedBrush}"
+                            BorderBrush="{DynamicResource SgBorderStrongBrush}"
+                            BorderThickness="1"
+                            CornerRadius="10">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,9">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="28" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="23" Height="16" VerticalAlignment="Center" Background="{DynamicResource SgSurfaceBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="3">
+                                        <Image
+                                            Source="{Binding PlacementTarget.DataContext.CountryFlagUri, RelativeSource={RelativeSource AncestorType={x:Type ToolTip}}}"
+                                            Stretch="Uniform"
+                                            SnapsToDevicePixels="True" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock
+                                            MaxWidth="315"
+                                            FontSize="12.5"
+                                            FontWeight="SemiBold"
+                                            Foreground="{DynamicResource SgTextBrush}"
+                                            Text="{Binding PlacementTarget.DataContext.SiteDisplay, RelativeSource={RelativeSource AncestorType={x:Type ToolTip}}}"
+                                            TextTrimming="CharacterEllipsis" />
+                                        <TextBlock
+                                            Margin="0,2,0,0"
+                                            MaxWidth="315"
+                                            FontSize="11"
+                                            Foreground="{DynamicResource SgMutedBrush}"
+                                            Text="{Binding PlacementTarget.DataContext.DestinationAddressDisplay, RelativeSource={RelativeSource AncestorType={x:Type ToolTip}}}"
+                                            TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Border Height="1" Margin="0,0,0,8" Background="{DynamicResource SgBorderBrush}" />
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="142" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="23" />
+                                        <RowDefinition Height="23" />
+                                        <RowDefinition Height="23" />
+                                        <RowDefinition Height="23" />
+                                        <RowDefinition Height="23" />
+                                        <RowDefinition Height="23" />
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Foreground="{DynamicResource SgMutedBrush}" Text="Источник имени:" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="{Binding PlacementTarget.DataContext.DomainSourceDisplay, RelativeSource={RelativeSource AncestorType={x:Type ToolTip}}}" TextTrimming="CharacterEllipsis" />
+
+                                    <TextBlock Grid.Row="1" Foreground="{DynamicResource SgMutedBrush}" Text="Output:" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="{Binding PlacementTarget.DataContext.OutboundDisplay, RelativeSource={RelativeSource AncestorType={x:Type ToolTip}}}" />
+
+                                    <TextBlock Grid.Row="2" Foreground="{DynamicResource SgMutedBrush}" Text="Правило:" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="{Binding PlacementTarget.DataContext.RuleDisplay, RelativeSource={RelativeSource AncestorType={x:Type ToolTip}}}" TextTrimming="CharacterEllipsis" />
+
+                                    <TextBlock Grid.Row="3" Foreground="{DynamicResource SgMutedBrush}" Text="Протокол:" />
+                                    <TextBlock Grid.Row="3" Grid.Column="1" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="{Binding PlacementTarget.DataContext.ProtocolDisplay, RelativeSource={RelativeSource AncestorType={x:Type ToolTip}}}" />
+
+                                    <TextBlock Grid.Row="4" Foreground="{DynamicResource SgMutedBrush}" Text="Обращений:" />
+                                    <TextBlock Grid.Row="4" Grid.Column="1" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="{Binding PlacementTarget.DataContext.HitCountDisplay, RelativeSource={RelativeSource AncestorType={x:Type ToolTip}}}" />
+
+                                    <TextBlock Grid.Row="5" Foreground="{DynamicResource SgMutedBrush}" Text="{Binding PlacementTarget.DataContext.DetailTimeLabel, RelativeSource={RelativeSource AncestorType={x:Type ToolTip}}}" />
+                                    <TextBlock Grid.Row="5" Grid.Column="1" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="{Binding PlacementTarget.DataContext.DetailTimeDisplay, RelativeSource={RelativeSource AncestorType={x:Type ToolTip}}}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </ToolTip>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border Background="{DynamicResource SgBackgroundBrush}" BorderBrush="{DynamicResource SgBorderStrongBrush}" BorderThickness="1" CornerRadius="16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="60" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Padding="18,0,9,0" Background="{DynamicResource SgHeaderBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="0,0,0,1" CornerRadius="15,15,0,0" MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                        <Border Width="38" Height="38" Background="{DynamicResource SgAccentSoftBrush}" BorderBrush="{DynamicResource SgAccentBorderBrush}" BorderThickness="1" CornerRadius="10">
+                            <materialDesign:PackIcon Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource SgAccentBrush}" Kind="LanConnect" />
+                        </Border>
+                        <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                            <TextBlock FontSize="17" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Маршруты и соединения" />
+                            <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="VPN / Direct / Block в реальном времени" />
+                        </StackPanel>
+                    </StackPanel>
+                    <Button
+                        x:Name="btnTrafficStatistics"
+                        Grid.Column="1"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                        Height="36"
+                        MinWidth="124"
+                        Margin="6,0,6,0"
+                        Padding="12,0"
+                        Style="{StaticResource ConnectionsRouteFilterButton}"
+                        ToolTip="Общий трафик за текущий месяц и разбивка по профилям">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Width="17" Height="17" Margin="0,0,7,0" VerticalAlignment="Center" Foreground="{DynamicResource SgAccentBrush}" Kind="ChartBoxOutline" />
+                            <TextBlock VerticalAlignment="Center" FontWeight="SemiBold" Text="Статистика" />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="btnWindowMinimize" Grid.Column="2" shell:WindowChrome.IsHitTestVisibleInChrome="True" Width="38" Height="38" Margin="0" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource SgMutedBrush}" Style="{StaticResource MaterialDesignIconButton}" ToolTip="Свернуть">
+                        <materialDesign:PackIcon Width="19" Height="19" Kind="Minimize" />
+                    </Button>
+                    <Button x:Name="btnWindowClose" Grid.Column="3" shell:WindowChrome.IsHitTestVisibleInChrome="True" Width="38" Height="38" Margin="2,0,0,0" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource SgMutedBrush}" Style="{StaticResource MaterialDesignIconButton}" ToolTip="Закрыть">
+                        <materialDesign:PackIcon Width="19" Height="19" Kind="Close" />
+                    </Button>
+                </Grid>
+            </Border>
+
+            <TabControl x:Name="mainTabs" Grid.Row="1" Margin="14" Background="Transparent" BorderThickness="0" Tag="SG_LIVE_ROUTES_ONLY">
+                <TabItem Header="Маршруты в реальном времени">
+                    <Grid Margin="0,10,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <Border x:Name="runtimeSummaryPanel" Grid.Row="0" Margin="0,0,0,9" Padding="14,11" Style="{StaticResource ConnectionsPanel}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1.05*" />
+                                    <ColumnDefinition Width="1.25*" />
+                                    <ColumnDefinition Width="1.45*" />
+                                    <ColumnDefinition Width="1.05*" />
+                                    <ColumnDefinition Width="1.45*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource SgMutedBrush}" Text="АКТИВНЫЙ РЕЖИМ" />
+                                    <TextBlock x:Name="txtSummaryMode" Margin="0,4,0,0" FontSize="12" FontWeight="SemiBold" Text="Отключено" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="14,0,0,0">
+                                    <TextBlock FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource SgMutedBrush}" Text="МАРШРУТИЗАЦИЯ" />
+                                    <TextBlock x:Name="txtSummaryRouting" Margin="0,4,0,0" FontSize="12" FontWeight="SemiBold" Text="—" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Margin="14,0,0,0">
+                                    <TextBlock FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource SgMutedBrush}" Text="ПРОФИЛЬ / ЯДРО" />
+                                    <TextBlock x:Name="txtSummaryProfile" Margin="0,4,0,0" FontSize="12" FontWeight="SemiBold" Text="Профиль не выбран" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock x:Name="txtSummaryCore" Margin="0,2,0,0" FontSize="9.5" Foreground="{DynamicResource SgMutedBrush}" Text="—" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="3" Margin="14,0,0,0">
+                                    <TextBlock FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource SgMutedBrush}" Text="DNS" />
+                                    <TextBlock x:Name="txtSummaryDns" Margin="0,4,0,0" FontSize="12" FontWeight="SemiBold" Text="—" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="4" Margin="14,0,0,0">
+                                    <TextBlock FontSize="9.5" FontWeight="SemiBold" Foreground="{DynamicResource SgMutedBrush}" Text="ВИДИМЫЙ ТРАФИК / НАЗНАЧЕНИЯ" />
+                                    <TextBlock x:Name="txtSummaryRoutes" Margin="0,4,0,0" FontSize="12" FontWeight="SemiBold" Text="VPN 0 · Direct 0 · Block 0" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock x:Name="txtSummaryRoutesHint" Margin="0,2,0,0" FontSize="9.5" Foreground="{DynamicResource SgMutedBrush}" Text="Откройте сайт и дождитесь обновления" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <Button x:Name="btnQuickVpnCheck" Grid.Column="5" Height="38" MinWidth="154" Margin="14,0,0,0" VerticalAlignment="Center" Content="Проверить VPN" ToolTip="Проверить внешний IP, маршрут тестового адреса и DNS" Visibility="Collapsed" Tag="SG_HIDDEN_QUICK_CHECK" />
+                            </Grid>
+                        </Border>
+
+                        <Border x:Name="filterPanel" Grid.Row="1" Padding="11" Style="{StaticResource ConnectionsPanel}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2.2*" />
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Height="36" Margin="0,0,9,0" Background="{DynamicResource SgInputBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="9" ToolTip="Поиск по домену, IP, Output VPN/Direct/Block и протоколу">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="36" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="36" />
+                                        </Grid.ColumnDefinitions>
+                                        <materialDesign:PackIcon Grid.Column="0" Width="17" Height="17" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource SgMutedBrush}" Kind="Magnify" />
+                                        <Grid Grid.Column="1">
+                                            <TextBlock x:Name="txtSearchPlaceholder" VerticalAlignment="Center" IsHitTestVisible="False" Foreground="{DynamicResource SgMutedBrush}" Text="Поиск по домену, IP, VPN/Direct/Block или протоколу" TextTrimming="CharacterEllipsis" />
+                                            <TextBox x:Name="txtSearch"
+                                                     Padding="0"
+                                                     VerticalContentAlignment="Center"
+                                                     Background="Transparent"
+                                                     BorderThickness="0"
+                                                     CaretBrush="{DynamicResource SgAccentBrush}"
+                                                     FocusVisualStyle="{x:Null}"
+                                                     Foreground="{DynamicResource SgTextBrush}"
+                                                     ToolTip="Введите часть домена, IP, Output VPN/Direct/Block или протокола TCP/UDP" />
+                                        </Grid>
+                                        <Button x:Name="btnClearSearch"
+                                                Grid.Column="2"
+                                                Width="32"
+                                                Height="32"
+                                                Margin="2"
+                                                Padding="0"
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                FocusVisualStyle="{x:Null}"
+                                                Foreground="{DynamicResource SgMutedBrush}"
+                                                Style="{StaticResource MaterialDesignIconButton}"
+                                                ToolTip="Очистить поиск"
+                                                Visibility="Collapsed">
+                                            <materialDesign:PackIcon Width="15" Height="15" Kind="Close" />
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                                <Button x:Name="btnRouteFilter" Grid.Column="1" Margin="0,0,9,0" Style="{StaticResource ConnectionsRouteFilterButton}" ToolTip="Фильтр по Output: VPN / Direct / Block">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="20" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="txtRouteFilter" VerticalAlignment="Center" Foreground="{DynamicResource SgTextBrush}" Text="Все выходы" TextTrimming="CharacterEllipsis" />
+                                        <materialDesign:PackIcon Grid.Column="1" Width="17" Height="17" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource SgMutedBrush}" Kind="ChevronDown" />
+                                    </Grid>
+                                </Button>
+                                <Popup x:Name="routeFilterPopup"
+                                       Grid.Column="1"
+                                       AllowsTransparency="True"
+                                       Focusable="False"
+                                       Placement="Bottom"
+                                       PlacementTarget="{Binding ElementName=btnRouteFilter}"
+                                       PopupAnimation="Fade"
+                                       StaysOpen="False"
+                                       VerticalOffset="5">
+                                    <Border Width="132" Padding="5" Background="{DynamicResource SgSurfaceRaisedBrush}" BorderBrush="{DynamicResource SgBorderStrongBrush}" BorderThickness="1" CornerRadius="10">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="14" Direction="270" Opacity="0.22" ShadowDepth="4" Color="#000000" />
+                                        </Border.Effect>
+                                        <StackPanel>
+                                            <RadioButton x:Name="routeAll" Content="Все выходы" GroupName="ConnectionRouteFilter" IsChecked="True" Style="{StaticResource ConnectionsRouteOption}" Tag="Все выходы" Click="RouteFilterOption_Click" />
+                                            <RadioButton x:Name="routeDirect" Content="Direct" GroupName="ConnectionRouteFilter" Style="{StaticResource ConnectionsRouteOption}" Tag="Direct" Click="RouteFilterOption_Click" />
+                                            <RadioButton x:Name="routeVpn" Content="VPN" GroupName="ConnectionRouteFilter" Style="{StaticResource ConnectionsRouteOption}" Tag="VPN" Click="RouteFilterOption_Click" />
+                                            <RadioButton x:Name="routeBlock" Content="Block" GroupName="ConnectionRouteFilter" Style="{StaticResource ConnectionsRouteOption}" Tag="Block" Click="RouteFilterOption_Click" />
+                                            <RadioButton x:Name="routeOther" Content="Other" GroupName="ConnectionRouteFilter" Style="{StaticResource ConnectionsRouteOption}" Tag="Other" Click="RouteFilterOption_Click" Visibility="Collapsed" />
+                                        </StackPanel>
+                                    </Border>
+                                </Popup>
+                                <StackPanel Grid.Column="2" Margin="3,0,12,0" VerticalAlignment="Center" Orientation="Horizontal">
+                                    <CheckBox x:Name="chkAutoRefresh" VerticalAlignment="Center" Foreground="{DynamicResource SgTextBrush}" Content="Автообновление" IsChecked="True" />
+                                    <CheckBox x:Name="chkIncludeHistory" Margin="13,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource SgTextBrush}" Content="История 15 мин" ToolTip="Показывать историю до открытия окна. По умолчанию анализируется только текущий тестовый сеанс." />
+                                </StackPanel>
+                                <TextBlock x:Name="refreshProgress" Grid.Column="3" Margin="0,0,9,0" VerticalAlignment="Center" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Обновление…" Visibility="Collapsed" />
+                                <Button x:Name="btnRefresh" Grid.Column="4" Width="38" Height="36" Margin="0,0,7,0" Padding="0" ToolTip="Обновить сейчас">
+                                    <materialDesign:PackIcon Width="17" Height="17" Kind="Refresh" />
+                                </Button>
+                                <Button x:Name="btnExportCsv" Grid.Column="5" Height="36" Margin="0,0,7,0" Content="CSV" ToolTip="Сохранить текущий список в CSV" />
+                                <StackPanel Grid.Column="6" Orientation="Horizontal">
+                                    <Button x:Name="btnExportJson" Height="36" Margin="0,0,7,0" Content="JSON" ToolTip="Сохранить текущий список в JSON" />
+                                    <Button x:Name="btnClear" Height="36" Content="Новый тест" ToolTip="Начать новый тестовый сеанс и учитывать только новые обращения" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Row="2" Margin="0,9,0,9" Padding="12,9" Style="{StaticResource ConnectionsPanel}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border Width="9" Height="9" Margin="0,0,9,0" VerticalAlignment="Center" Background="{DynamicResource SgAccentBrush}" CornerRadius="5" />
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
+                                    <TextBlock x:Name="txtEngine" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Ядро не определено" />
+                                    <TextBlock Margin="9,0,0,0" FontSize="11" Foreground="{DynamicResource SgMutedBrush}" Text="·" />
+                                    <TextBlock x:Name="txtHint" Margin="9,0,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="Откройте соединение и обновите список" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <TextBlock x:Name="txtCount" Grid.Column="2" VerticalAlignment="Center" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource SgAccentBrush}" Text="0 соединений" />
+                            </Grid>
+                        </Border>
+
+                        <Grid Grid.Row="3">
+                            <Border x:Name="tablePanel" Style="{StaticResource ConnectionsPanel}">
+                                <DataGrid x:Name="gridConnections" AlternationCount="2" AutoGenerateColumns="False" Style="{StaticResource ConnectionsDataGrid}" RowStyle="{StaticResource ConnectionsLiveRow}" SelectionChanged="GridConnections_SelectionChanged" MouseDoubleClick="GridConnections_MouseDoubleClick">
+                                    <DataGrid.Columns>
+                                        <DataGridTemplateColumn Width="2.2*" Header="Страна · сайт / назначение">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Grid VerticalAlignment="Center">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="28" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Width="23" Height="16" VerticalAlignment="Center" Background="{DynamicResource SgSurfaceRaisedBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="3" ToolTip="{Binding CountryToolTip}">
+                                                            <Image Source="{Binding CountryFlagUri}" Stretch="Uniform" SnapsToDevicePixels="True" />
+                                                        </Border>
+                                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                            <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="{Binding PrimaryDestinationDisplay}" TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock Margin="0,2,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="{Binding SecondaryDestinationDisplay}" TextTrimming="CharacterEllipsis" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTextColumn x:Name="colRule" Width="1.8*" Binding="{Binding RuleDisplay}" Header="Правило / проверка" />
+                                        <DataGridTextColumn x:Name="colOutbound" Width="1.15*" Binding="{Binding OutboundDisplay}" Header="Output" />
+                                        <DataGridTextColumn x:Name="colTunnel" Width="1.45*" Binding="{Binding TunnelDisplay}" Header="Туннель / цепочка" />
+                                        <DataGridTextColumn x:Name="colProtocol" Width="0.62*" Binding="{Binding ProtocolDisplay}" Header="Протокол" />
+                                        <DataGridTextColumn x:Name="colProcess" Width="1.05*" Binding="{Binding ProcessDisplay}" Header="Процесс" />
+                                        <DataGridTextColumn x:Name="colHitCount" Width="0.72*" Binding="{Binding HitCountDisplay}" Header="Обращения" Visibility="Collapsed" />
+                                        <DataGridTextColumn x:Name="colTime" Width="0.82*" Binding="{Binding ElapsedDisplay}" Header="Последнее" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Border>
+
+                            <Border x:Name="emptyState" Margin="1" Background="{DynamicResource SgSurfaceBrush}" CornerRadius="12" IsHitTestVisible="False">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <materialDesign:PackIcon Width="34" Height="34" HorizontalAlignment="Center" Foreground="{DynamicResource SgMutedBrush}" Kind="LanDisconnect" />
+                                    <TextBlock x:Name="txtEmptyState" Margin="0,10,0,0" FontSize="12" Foreground="{DynamicResource SgMutedBrush}" Text="Активные соединения пока не обнаружены." />
+                                </StackPanel>
+                            </Border>
+
+                            <Border x:Name="unsupportedPanel" Padding="28" Style="{StaticResource ConnectionsPanel}" Visibility="Collapsed">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="790">
+                                        <Border Width="58" Height="58" HorizontalAlignment="Center" Background="{DynamicResource SgSurfaceRaisedBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="17">
+                                            <materialDesign:PackIcon Width="28" Height="28" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource SgMutedBrush}" Kind="InformationOutline" />
+                                        </Border>
+                                        <TextBlock x:Name="txtUnsupportedTitle" Margin="0,16,0,0" HorizontalAlignment="Center" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Нет активного ядра" />
+                                        <TextBlock x:Name="txtUnsupportedDetails" Margin="0,9,0,0" HorizontalAlignment="Center" FontSize="11.5" Foreground="{DynamicResource SgMutedBrush}" TextAlignment="Center" TextWrapping="Wrap" />
+
+                                        <Grid x:Name="awgDiagnosticsPanel" Margin="0,18,0,0" Visibility="Collapsed">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="135" />
+                                                <ColumnDefinition Width="240" />
+                                                <ColumnDefinition Width="145" />
+                                                <ColumnDefinition Width="240" />
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="32" />
+                                                <RowDefinition Height="32" />
+                                                <RowDefinition Height="32" />
+                                                <RowDefinition Height="32" />
+                                            </Grid.RowDefinitions>
+                                            <TextBlock Foreground="{DynamicResource SgMutedBrush}" Text="Состояние" />
+                                            <TextBlock x:Name="txtAwgState" Grid.Column="1" FontWeight="SemiBold" Text="—" />
+                                            <TextBlock Grid.Column="2" Foreground="{DynamicResource SgMutedBrush}" Text="Endpoint" />
+                                            <TextBlock x:Name="txtAwgEndpoint" Grid.Column="3" FontWeight="SemiBold" Text="—" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Row="1" Foreground="{DynamicResource SgMutedBrush}" Text="UDP-порт" />
+                                            <TextBlock x:Name="txtAwgPort" Grid.Row="1" Grid.Column="1" FontWeight="SemiBold" Text="—" />
+                                            <TextBlock Grid.Row="1" Grid.Column="2" Foreground="{DynamicResource SgMutedBrush}" Text="Последний handshake" />
+                                            <TextBlock x:Name="txtAwgHandshake" Grid.Row="1" Grid.Column="3" FontWeight="SemiBold" Text="—" />
+                                            <TextBlock Grid.Row="2" Foreground="{DynamicResource SgMutedBrush}" Text="Получено" />
+                                            <TextBlock x:Name="txtAwgRx" Grid.Row="2" Grid.Column="1" FontWeight="SemiBold" Text="—" />
+                                            <TextBlock Grid.Row="2" Grid.Column="2" Foreground="{DynamicResource SgMutedBrush}" Text="Отправлено" />
+                                            <TextBlock x:Name="txtAwgTx" Grid.Row="2" Grid.Column="3" FontWeight="SemiBold" Text="—" />
+                                            <TextBlock Grid.Row="3" Foreground="{DynamicResource SgMutedBrush}" Text="Время работы" />
+                                            <TextBlock x:Name="txtAwgUptime" Grid.Row="3" Grid.Column="1" FontWeight="SemiBold" Text="—" />
+                                            <TextBlock Grid.Row="3" Grid.Column="2" Foreground="{DynamicResource SgMutedBrush}" Text="Маскировка" />
+                                            <TextBlock x:Name="txtAwgMasking" Grid.Row="3" Grid.Column="3" FontWeight="SemiBold" Text="—" TextTrimming="CharacterEllipsis" />
+                                        </Grid>
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="1" Margin="0,20,0,0" HorizontalAlignment="Center" Orientation="Horizontal">
+                                        <Button x:Name="btnUnsupportedSecondary" Width="125" Height="38" Margin="0,0,9,0" Content="Не сейчас" Visibility="Collapsed" />
+                                        <Button x:Name="btnUnsupportedRefresh" Width="170" Height="38" Content="Проверить снова" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </Grid>
+
+                        <StackPanel x:Name="closeButtonsPanel" Grid.Row="4" Margin="0,9,0,0" HorizontalAlignment="Right" Orientation="Horizontal" Visibility="Collapsed">
+                            <Button x:Name="btnCloseSelected" Height="34" Margin="0,0,7,0" Content="Закрыть выбранное" IsEnabled="False" />
+                            <Button x:Name="btnCloseAll" Height="34" Content="Закрыть все" IsEnabled="False" />
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Проверить маршрут" Visibility="Collapsed" Tag="SG_HIDDEN_ROUTE_TEST">
+                    <Grid Margin="0,10,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Border Padding="16" Style="{StaticResource ConnectionsPanel}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock FontSize="15" FontWeight="SemiBold" Text="Точная проверка маршрута" />
+                                    <TextBlock Margin="0,5,0,11" Foreground="{DynamicResource SgMutedBrush}" Text="Введите домен или IP. При активном TUN на Xray/sing-box SG Client проверит адресные правила выбранного Routing, затем SG Smart Routing и текущие geoip.dat / geosite.dat. Здесь нет анализа access log и нет догадок." TextWrapping="Wrap" />
+                                    <TextBox x:Name="txtRouteInput" Height="40" materialDesign:HintAssist.Hint="example.ru или 95.163.52.67" Style="{StaticResource ConnectionsTextBox}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="12,34,0,0" Orientation="Horizontal" VerticalAlignment="Top">
+                                    <TextBlock x:Name="routeTestProgress" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource SgMutedBrush}" Text="Проверка…" Visibility="Collapsed" />
+                                    <Button x:Name="btnRouteTest" Height="40" MinWidth="150" Content="Проверить" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <Border x:Name="routeResultPanel" Grid.Row="1" Margin="0,9,0,0" Padding="16" Style="{StaticResource ConnectionsPanel}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1.35*" />
+                                    <ColumnDefinition Width="1*" />
+                                    <ColumnDefinition Width="1*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <StackPanel Grid.ColumnSpan="3" Orientation="Horizontal">
+                                    <Border x:Name="routeResultDot" Width="10" Height="10" Margin="0,4,9,0" Background="{DynamicResource SgMutedBrush}" CornerRadius="5" />
+                                    <TextBlock x:Name="txtRouteStatus" FontSize="14" FontWeight="SemiBold" Text="Введите адрес и нажмите «Проверить»." />
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="1" Margin="0,14,20,0">
+                                    <TextBlock Foreground="{DynamicResource SgMutedBrush}" Text="Совпавшее правило" />
+                                    <TextBlock x:Name="txtMatchedRule" Margin="0,4,0,0" FontFamily="Consolas" FontSize="13" FontWeight="SemiBold" Text="—" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,14,20,0">
+                                    <TextBlock Foreground="{DynamicResource SgMutedBrush}" Text="Действие · приоритет" />
+                                    <TextBlock Margin="0,4,0,0" FontSize="13" FontWeight="SemiBold">
+                                        <Run x:Name="runRouteAction" Text="—" /><Run Text=" · " /><Run x:Name="runRoutePriority" Text="—" />
+                                    </TextBlock>
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,14,0,0">
+                                    <TextBlock Foreground="{DynamicResource SgMutedBrush}" Text="Профиль / выход" />
+                                    <TextBlock x:Name="txtRouteProfile" Margin="0,4,0,0" FontSize="13" FontWeight="SemiBold" Text="—" TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Margin="0,14,0,0">
+                                    <TextBlock x:Name="txtRouteResolved" Foreground="{DynamicResource SgMutedBrush}" Text="" TextWrapping="Wrap" />
+                                    <TextBlock x:Name="txtRouteDetails" Margin="0,5,0,0" Foreground="{DynamicResource SgTextBrush}" Text="" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <TextBlock Grid.Row="2" Margin="2,12,0,7" FontSize="12.5" FontWeight="SemiBold" Text="Проверенные правила по порядку" />
+
+                        <Border Grid.Row="3" Style="{StaticResource ConnectionsPanel}">
+                            <DataGrid x:Name="gridRouteTrace" AutoGenerateColumns="False" Style="{StaticResource ConnectionsDataGrid}" SelectionMode="Single">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Width="72" Binding="{Binding Priority}" Header="№" />
+                                    <DataGridTextColumn Width="2.2*" Binding="{Binding Rule}" Header="Правило" />
+                                    <DataGridTextColumn Width="0.8*" Binding="{Binding Action}" Header="Действие" />
+                                    <DataGridTextColumn Width="0.9*" Binding="{Binding Status}" Header="Результат" />
+                                    <DataGridTextColumn Width="2.2*" Binding="{Binding Details}" Header="Пояснение" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>
+                    </Grid>
+                </TabItem>
+
+
+                <TabItem Header="Проверка VPN" Visibility="Collapsed" Tag="SG_HIDDEN_VPN_CHECK">
+                    <ScrollViewer Margin="0,10,0,0" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <Border Padding="17" Style="{StaticResource ConnectionsPanel}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontSize="16" FontWeight="SemiBold" Text="Проверить, действительно ли работает VPN" />
+                                        <TextBlock Margin="0,6,0,0" MaxWidth="870" FontSize="11" Foreground="{DynamicResource SgMutedBrush}" Text="SG Client покажет активный режим и профиль, маршрут DNS, внешний IP через текущее подключение и правило для адреса сервиса проверки IP. В режиме «Весь интернет» итоговый маршрут обязан быть VPN." TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock x:Name="txtVpnCheckLastRun" Margin="0,0,0,5" HorizontalAlignment="Right" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Проверка не запускалась" />
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                            <TextBlock x:Name="vpnCheckProgress" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource SgMutedBrush}" Text="Проверка…" Visibility="Collapsed" />
+                                            <Button x:Name="btnVpnCheck" Height="40" MinWidth="176" Content="Запустить проверку" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <Border x:Name="vpnCheckResultPanel" Margin="0,9,0,0" Padding="17" Style="{StaticResource ConnectionsPanel}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="1.25*" />
+                                        <ColumnDefinition Width="1.25*" />
+                                        <ColumnDefinition Width="1.25*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.ColumnSpan="3" Orientation="Horizontal">
+                                        <Border x:Name="vpnCheckDot" Width="11" Height="11" Margin="0,4,9,0" Background="{DynamicResource SgMutedBrush}" CornerRadius="6" />
+                                        <StackPanel>
+                                            <TextBlock x:Name="txtVpnCheckStatus" FontSize="15" FontWeight="SemiBold" Text="Проверка ещё не запускалась" />
+                                            <TextBlock x:Name="txtVpnCheckSummary" Margin="0,3,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="Нажмите «Запустить проверку»." TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="1" Margin="0,18,22,0">
+                                        <TextBlock Foreground="{DynamicResource SgMutedBrush}" Text="Режим и Routing" />
+                                        <TextBlock x:Name="txtVpnCheckMode" Margin="0,4,0,0" FontSize="13" FontWeight="SemiBold" Text="—" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,18,22,0">
+                                        <TextBlock Foreground="{DynamicResource SgMutedBrush}" Text="Активный профиль / ядро" />
+                                        <TextBlock x:Name="txtVpnCheckProfile" Margin="0,4,0,0" FontSize="13" FontWeight="SemiBold" Text="—" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,18,0,0">
+                                        <TextBlock Foreground="{DynamicResource SgMutedBrush}" Text="Маршрут DNS" />
+                                        <TextBlock x:Name="txtVpnCheckDns" Margin="0,4,0,0" FontSize="13" FontWeight="SemiBold" Text="—" TextWrapping="Wrap" />
+                                        <Button x:Name="btnOpenDnsRoute" Height="30" Margin="0,7,0,0" HorizontalAlignment="Left" Content="Изменить DNS" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="2" Margin="0,18,22,0">
+                                        <TextBlock Foreground="{DynamicResource SgMutedBrush}" Text="Внешний IP через SG Client" />
+                                        <TextBlock x:Name="txtVpnCheckExternalIp" Margin="0,4,0,0" FontFamily="Consolas" FontSize="14" FontWeight="SemiBold" Text="—" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,18,22,0">
+                                        <TextBlock Foreground="{DynamicResource SgMutedBrush}" Text="Проверенный адрес" />
+                                        <TextBlock x:Name="txtVpnCheckTarget" Margin="0,4,0,0" FontSize="13" FontWeight="SemiBold" Text="—" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="2" Grid.Column="2" Margin="0,18,0,0">
+                                        <TextBlock Foreground="{DynamicResource SgMutedBrush}" Text="Фактическое решение правил" />
+                                        <TextBlock x:Name="txtVpnCheckRoute" Margin="0,4,0,0" FontSize="13" FontWeight="SemiBold" Text="—" TextWrapping="Wrap" />
+                                        <TextBlock x:Name="txtVpnCheckRule" Margin="0,3,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="—" TextWrapping="Wrap" />
+                                    </StackPanel>
+
+                                    <Border Grid.Row="3" Grid.ColumnSpan="3" Margin="0,18,0,0" Padding="13,10" Background="{DynamicResource SgSurfaceSoftBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="10">
+                                        <TextBlock x:Name="txtVpnCheckDetails" FontSize="11" Foreground="{DynamicResource SgTextBrush}" Text="Проверка не заменяет внешний DNS-leak тест, но показывает реальные настройки SG Client и фактический маршрут тестового адреса." TextWrapping="Wrap" />
+                                    </Border>
+                                </Grid>
+                            </Border>
+
+                            <Border Margin="0,9,0,0" Padding="15,12" Background="{DynamicResource SgWarningSoftBrush}" BorderBrush="{DynamicResource SgWarningBrush}" BorderThickness="1" CornerRadius="12">
+                                <StackPanel>
+                                    <TextBlock FontSize="12" FontWeight="SemiBold" Text="Почему 2ip.ru иногда показывает реальный IP" />
+                                    <TextBlock Margin="0,5,0,0" FontSize="10.5" Foreground="{DynamicResource SgTextBrush}" Text="В пресете с российскими сайтами напрямую домен 2ip.ru может сознательно попасть в Direct. Это не универсальный тест VPN. В режиме «Весь интернет» Direct для публичного сайта уже считается ошибкой. Проверяйте конкретный домен во вкладке «Проверить маршрут» и смотрите живую строку VPN / Direct здесь." TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </Border>
+</Window>

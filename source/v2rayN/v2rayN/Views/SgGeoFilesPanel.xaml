@@ -1,0 +1,327 @@
+<UserControl
+    x:Class="v2rayN.Views.SgGeoFilesPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+    Background="Transparent"
+    Foreground="{DynamicResource SgTextBrush}"
+    SnapsToDevicePixels="True"
+    UseLayoutRounding="True">
+    <UserControl.Resources>
+        <Style x:Key="GeoCard" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Padding" Value="18" />
+        </Style>
+        <Style x:Key="GeoTextBox" TargetType="TextBox">
+            <Setter Property="Height" Value="38" />
+            <Setter Property="Padding" Value="10,7" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgInputBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CaretBrush" Value="{DynamicResource SgAccentBrush}" />
+            <Setter Property="SelectionBrush" Value="{DynamicResource SgAccentSoftBrush}" />
+        </Style>
+        <Style x:Key="PrimaryActionButton" BasedOn="{StaticResource SgWindowButtonBase}" TargetType="Button">
+            <Setter Property="Height" Value="38" />
+            <Setter Property="MinWidth" Value="128" />
+            <Setter Property="Padding" Value="16,6" />
+            <Setter Property="Background" Value="{DynamicResource SgAccentBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource SgOnButtonTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgAccentBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontSize" Value="13.5" />
+        </Style>
+        <Style x:Key="SecondaryActionButton" BasedOn="{StaticResource SgWindowButtonBase}" TargetType="Button">
+            <Setter Property="Height" Value="36" />
+            <Setter Property="MinWidth" Value="112" />
+            <Setter Property="Padding" Value="13,5" />
+            <Setter Property="Background" Value="{DynamicResource SgWarningSoftBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource SgWarningBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgWarningBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            x:Name="GeoButtonBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="10">
+                            <ContentPresenter
+                                Margin="{TemplateBinding Padding}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="GeoButtonBorder" Property="Opacity" Value="0.88" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="GeoButtonBorder" Property="Opacity" Value="0.72" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="GeoButtonBorder" Property="Opacity" Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SourceCard" TargetType="RadioButton">
+            <Setter Property="Margin" Value="0,0,10,10" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border
+                            x:Name="SourceBorder"
+                            MinWidth="168"
+                            Height="46"
+                            Padding="14,0"
+                            Background="{DynamicResource SgSurfaceRaisedBrush}"
+                            BorderBrush="{DynamicResource SgBorderStrongBrush}"
+                            BorderThickness="1"
+                            CornerRadius="11">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal">
+                                <Ellipse
+                                    x:Name="SourceDot"
+                                    Width="8"
+                                    Height="8"
+                                    Margin="0,0,9,0"
+                                    Fill="{DynamicResource SgMutedBrush}" />
+                                <ContentPresenter VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="SourceBorder" Property="BorderBrush" Value="{DynamicResource SgAccentBorderBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="SourceBorder" Property="Background" Value="{DynamicResource SgAccentSoftBrush}" />
+                                <Setter TargetName="SourceBorder" Property="BorderBrush" Value="{DynamicResource SgAccentBrush}" />
+                                <Setter TargetName="SourceDot" Property="Fill" Value="{DynamicResource SgAccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.55" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    
+    </UserControl.Resources>
+
+    <Grid>
+<ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel>
+        <Border Margin="0,0,0,12" Style="{StaticResource GeoCard}">
+            <StackPanel>
+                <TextBlock FontSize="17" FontWeight="SemiBold" Text="Установленные файлы" />
+                <TextBlock x:Name="txtCurrentSource" Margin="0,10,0,0" FontSize="11.5" Foreground="{DynamicResource SgAccentBrush}" Text="Источник: определение…" />
+                <Grid Margin="0,14,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="14" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Padding="13" Background="{DynamicResource SgSurfaceSoftBrush}" CornerRadius="10">
+                        <StackPanel>
+                            <TextBlock FontWeight="SemiBold" Text="geoip.dat" />
+                            <TextBlock x:Name="txtGeoIpInfo" Margin="0,6,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="—" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Padding="13" Background="{DynamicResource SgSurfaceSoftBrush}" CornerRadius="10">
+                        <StackPanel>
+                            <TextBlock FontWeight="SemiBold" Text="geosite.dat" />
+                            <TextBlock x:Name="txtGeoSiteInfo" Margin="0,6,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="—" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+                <TextBlock x:Name="txtCurrentValidation" Margin="0,12,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="Проверка: —" />
+                <TextBlock x:Name="txtCurrentFamily" Margin="0,7,0,0" FontSize="10.5" Foreground="{DynamicResource SgAccentBrush}" Text="Семейство категорий: —" />
+                <TextBlock x:Name="txtCurrentCategories" Margin="0,7,0,0" FontSize="10.5" LineHeight="17" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="Категории: —" />
+                <Expander x:Name="expCurrentCategories" Margin="0,7,0,0" Header="Показать все категории">
+                    <Border Margin="0,7,0,0" Padding="10" MaxHeight="220" Background="{DynamicResource SgSurfaceSoftBrush}" CornerRadius="8">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <TextBlock x:Name="txtCurrentCategoriesFull" FontSize="10.5" LineHeight="17" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="—" />
+                        </ScrollViewer>
+                    </Border>
+                </Expander>
+            </StackPanel>
+        </Border>
+
+        <Border Margin="0,0,0,12" Style="{StaticResource GeoCard}">
+            <StackPanel>
+                <TextBlock FontSize="17" FontWeight="SemiBold" Text="Выберите источник" />
+                <TextBlock Margin="0,5,0,13" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="Источник применяется только вручную. SG Client сначала загружает файлы во временную папку, считает SHA-256 и проверяет их установленным Xray." />
+                <WrapPanel>
+                    <RadioButton x:Name="rbBundled" GroupName="GeoSource" IsChecked="True" Checked="SourceChanged" Content="Комплект SG Client" Style="{StaticResource SourceCard}" />
+                    <RadioButton x:Name="rbLoyal" GroupName="GeoSource" Checked="SourceChanged" Content="Loyalsoldier" Style="{StaticResource SourceCard}" />
+                    <RadioButton x:Name="rbRunet" GroupName="GeoSource" Checked="SourceChanged" Content="RunetFreedom" Style="{StaticResource SourceCard}" />
+                    <RadioButton x:Name="rbRoscom" GroupName="GeoSource" Checked="SourceChanged" Content="RoscomVPN" Style="{StaticResource SourceCard}" />
+                    <RadioButton x:Name="rbCustom" GroupName="GeoSource" Checked="SourceChanged" Content="Пользовательские URL" Style="{StaticResource SourceCard}" />
+                    <RadioButton x:Name="rbLocal" GroupName="GeoSource" Checked="SourceChanged" Content="Локальные файлы" Style="{StaticResource SourceCard}" />
+                </WrapPanel>
+
+                <Border
+                    x:Name="roscomInfoPanel"
+                    Margin="0,8,0,0"
+                    Padding="13"
+                    Background="{DynamicResource SgAccentSoftBrush}"
+                    BorderBrush="{DynamicResource SgAccentBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Visibility="Collapsed">
+                    <StackPanel>
+                        <TextBlock FontSize="12" FontWeight="SemiBold" Text="RoscomVPN GeoFiles" />
+                        <TextBlock
+                            Margin="0,5,0,0"
+                            FontSize="10.5"
+                            LineHeight="17"
+                            Foreground="{DynamicResource SgMutedBrush}"
+                            Text="Связанный комплект geoip.dat + geosite.dat для российской раздельной маршрутизации. Файлы загружаются из официальных GitHub Releases и устанавливаются только вместе."
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            Margin="0,5,0,0"
+                            FontSize="10.5"
+                            Foreground="{DynamicResource SgWarningBrush}"
+                            Text="Стандартные category-ads-all, geoip:ru и ru-blocked могут отсутствовать. Перед установкой SG Client проверит текущую маршрутизацию и предложит совместимый пресет."
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <Grid x:Name="customUrlPanel" Margin="0,8,0,0" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="URL GEOIP.DAT" />
+                        <TextBox x:Name="txtGeoIpUrl" Style="{StaticResource GeoTextBox}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="URL GEOSITE.DAT" />
+                        <TextBox x:Name="txtGeoSiteUrl" Style="{StaticResource GeoTextBox}" />
+                    </StackPanel>
+                </Grid>
+
+                <Grid x:Name="localFilePanel" Margin="0,8,0,0" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="10" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBox x:Name="txtGeoIpFile" Grid.Row="0" Style="{StaticResource GeoTextBox}" />
+                    <Button Grid.Row="0" Grid.Column="2" Click="ChooseGeoIp_Click" Content="Выбрать geoip.dat" Style="{StaticResource SecondaryActionButton}" />
+                    <TextBox x:Name="txtGeoSiteFile" Grid.Row="2" Style="{StaticResource GeoTextBox}" />
+                    <Button Grid.Row="2" Grid.Column="2" Click="ChooseGeoSite_Click" Content="Выбрать geosite.dat" Style="{StaticResource SecondaryActionButton}" />
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource GeoCard}">
+            <StackPanel>
+                <TextBlock FontSize="17" FontWeight="SemiBold" Text="Проверка и применение" />
+                <TextBlock x:Name="txtCandidateInfo" Margin="0,10,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="Источник ещё не проверен." />
+                <Expander x:Name="expCandidateCategories" Margin="0,7,0,0" Header="Показать все категории" Visibility="Collapsed">
+                    <Border Margin="0,7,0,0" Padding="10" MaxHeight="220" Background="{DynamicResource SgSurfaceSoftBrush}" CornerRadius="8">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <TextBlock x:Name="txtCandidateCategoriesFull" FontSize="10.5" LineHeight="17" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="—" />
+                        </ScrollViewer>
+                    </Border>
+                </Expander>
+                <TextBlock x:Name="txtGeoStatus" Margin="0,10,0,0" FontSize="11.5" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="Выберите источник и нажмите «Проверить источник»." />
+                <WrapPanel Margin="0,16,0,0">
+                    <Button x:Name="btnPrepare" Margin="0,0,10,0" Click="Prepare_Click" Content="Проверить источник" Style="{StaticResource SecondaryActionButton}" />
+                    <Button x:Name="btnApply" Margin="0,0,10,0" Click="Apply_Click" Content="Обновить GeoFiles" IsEnabled="False" Style="{StaticResource PrimaryActionButton}" />
+                    <Button Margin="0,0,10,0" Click="RestoreBundled_Click" Content="Вернуть комплектные" Style="{StaticResource SecondaryActionButton}" />
+                    <Button Click="OpenBackups_Click" Content="Открыть резервные копии" Style="{StaticResource SecondaryActionButton}" />
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</ScrollViewer>
+
+<Grid x:Name="confirmOverlay" Visibility="Collapsed" Background="#99000000">
+    <Border Width="600" Padding="22" HorizontalAlignment="Center" VerticalAlignment="Center" Background="{DynamicResource SgSurfaceRaisedBrush}" BorderBrush="{DynamicResource SgBorderStrongBrush}" BorderThickness="1" CornerRadius="15">
+        <StackPanel>
+            <TextBlock FontSize="19" FontWeight="SemiBold" Text="Подтверждение замены GeoFiles" />
+            <TextBlock x:Name="txtConfirmBody" Margin="0,10,0,0" FontSize="11.5" LineHeight="18" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" />
+            <Border
+                x:Name="genericCompatibilityOptionsPanel"
+                Margin="0,14,0,0"
+                Padding="13"
+                Background="{DynamicResource SgWarningSoftBrush}"
+                BorderBrush="{DynamicResource SgWarningBrush}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Visibility="Collapsed">
+                <StackPanel>
+                    <CheckBox
+                        x:Name="chkApplySafeGlobalPreset"
+                        Content="Удалить несовместимые Geo-категории и оставить основной выход VPN"
+                        FontWeight="SemiBold"
+                        IsChecked="True" />
+                    <TextBlock
+                        Margin="24,4,0,0"
+                        FontSize="10.5"
+                        Foreground="{DynamicResource SgMutedBrush}"
+                        Text="Обычные пользовательские домены, IP и CIDR сохраняются. Удаляются только geosite:/geoip: ссылки, которых нет в новом комплекте. Отмените операцию, если не хотите менять маршрутизацию."
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <Border
+                x:Name="roscomOptionsPanel"
+                Margin="0,14,0,0"
+                Padding="13"
+                Background="{DynamicResource SgSurfaceSoftBrush}"
+                BorderBrush="{DynamicResource SgBorderStrongBrush}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Visibility="Collapsed">
+                <StackPanel>
+                    <CheckBox
+                        x:Name="chkApplyRoscomPreset"
+                        Click="RoscomPreset_Click"
+                        Content="Применить совместимый пресет RoscomVPN"
+                        FontWeight="SemiBold" />
+                    <TextBlock
+                        Margin="24,4,0,8"
+                        FontSize="10.5"
+                        Foreground="{DynamicResource SgMutedBrush}"
+                        Text="Private, Whitelist, российские сайты и рекомендованные сервисы — Direct; остальное — VPN. Обычные пользовательские домены и IP сохраняются."
+                        TextWrapping="Wrap" />
+                    <CheckBox x:Name="chkRoscomBlockAds" Margin="24,3,0,0" Content="Блокировать category-ads" />
+                    <CheckBox x:Name="chkRoscomBlockWinSpy" Margin="24,3,0,0" Content="Блокировать Windows telemetry (win-spy)" />
+                    <CheckBox x:Name="chkRoscomBlockTorrent" Margin="24,3,0,0" Content="Блокировать torrent-категорию" />
+                </StackPanel>
+            </Border>
+            <StackPanel Margin="0,20,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
+                <Button Margin="0,0,8,0" Click="CancelConfirm_Click" Content="Отмена" Style="{StaticResource SecondaryActionButton}" />
+                <Button Click="ConfirmApply_Click" Content="Обновить GeoFiles" Style="{StaticResource PrimaryActionButton}" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Grid>
+    </Grid>
+</UserControl>

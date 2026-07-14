@@ -1,0 +1,735 @@
+<Window
+    x:Class="v2rayN.Views.SgExpertWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+    xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+    Title="Экспертные настройки SG Client"
+    Width="974"
+    Height="714"
+    MinWidth="900"
+    MinHeight="690"
+    Background="{DynamicResource SgBackgroundBrush}"
+    Foreground="{DynamicResource SgTextBrush}"
+    ResizeMode="CanResize"
+    WindowStartupLocation="CenterOwner"
+    WindowStyle="None"
+    SnapsToDevicePixels="True"
+    UseLayoutRounding="True">
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome
+            CaptionHeight="0"
+            CornerRadius="0"
+            GlassFrameThickness="0"
+            ResizeBorderThickness="7"
+            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <Style x:Key="ExpertCard" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Padding" Value="18" />
+        </Style>
+
+        <Style x:Key="HeaderActionButton" BasedOn="{StaticResource SgWindowButtonBase}" TargetType="Button">
+            <Setter Property="Height" Value="34" />
+            <Setter Property="MinWidth" Value="88" />
+            <Setter Property="Padding" Value="14,5" />
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceRaisedBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style x:Key="PrimaryActionButton" BasedOn="{StaticResource SgWindowButtonBase}" TargetType="Button">
+            <Setter Property="Height" Value="38" />
+            <Setter Property="MinWidth" Value="134" />
+            <Setter Property="Padding" Value="16,6" />
+            <Setter Property="Background" Value="{DynamicResource SgAccentBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource SgOnButtonTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgAccentBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontSize" Value="13.5" />
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
+
+        <Style x:Key="SecondaryActionButton" BasedOn="{StaticResource SgWindowButtonBase}" TargetType="Button">
+            <Setter Property="Height" Value="36" />
+            <Setter Property="MinWidth" Value="112" />
+            <Setter Property="Padding" Value="13,5" />
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceRaisedBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style x:Key="TabButton" TargetType="ToggleButton">
+            <Setter Property="Height" Value="42" />
+            <Setter Property="Padding" Value="16,0" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource SgMutedBrush}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0,0,0,2" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter
+                                Margin="{TemplateBinding Padding}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource SgAccentBrush}" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource SgAccentBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ExpertTextBox" TargetType="TextBox">
+            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="Padding" Value="10,7" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceRaisedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CaretBrush" Value="{DynamicResource SgAccentBrush}" />
+            <Setter Property="SelectionBrush" Value="{DynamicResource SgAccentSoftBrush}" />
+        </Style>
+
+        <Style x:Key="CodeTextBox" BasedOn="{StaticResource ExpertTextBox}" TargetType="TextBox">
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="AcceptsReturn" Value="True" />
+            <Setter Property="AcceptsTab" Value="True" />
+            <Setter Property="TextWrapping" Value="NoWrap" />
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
+        </Style>
+
+        <Style x:Key="ExpertComboItem" TargetType="ComboBoxItem">
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceRaisedBrush}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Style.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+                    <Setter Property="Background" Value="{DynamicResource SgSelectedBrush}" />
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Foreground" Value="{DynamicResource SgAccentBrush}" />
+                    <Setter Property="Background" Value="{DynamicResource SgAccentSoftBrush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="ExpertComboBox" BasedOn="{StaticResource MaterialDesignOutlinedComboBox}" TargetType="ComboBox">
+            <Setter Property="MinHeight" Value="40" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgInputBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" />
+            <Setter Property="ItemContainerStyle" Value="{StaticResource ExpertComboItem}" />
+            <Setter Property="materialDesign:HintAssist.IsFloating" Value="False" />
+        </Style>
+
+        <Style x:Key="ModeCard" TargetType="RadioButton">
+            <Setter Property="Margin" Value="0,0,0,10" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border
+                            x:Name="ModeBorder"
+                            Padding="16"
+                            Background="{DynamicResource SgSurfaceBrush}"
+                            BorderBrush="{DynamicResource SgBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="13">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="30" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Ellipse
+                                    Width="16"
+                                    Height="16"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Top"
+                                    Fill="{DynamicResource SgSurfaceRaisedBrush}"
+                                    Stroke="{DynamicResource SgBorderStrongBrush}"
+                                    StrokeThickness="2" />
+                                <Ellipse
+                                    x:Name="ModeDot"
+                                    Width="8"
+                                    Height="8"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Top"
+                                    Margin="4"
+                                    Fill="{DynamicResource SgAccentBrush}"
+                                    Visibility="Collapsed" />
+                                <ContentPresenter Grid.Column="1" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="ModeBorder" Property="BorderBrush" Value="{DynamicResource SgAccentBrush}" />
+                                <Setter TargetName="ModeBorder" Property="Background" Value="{DynamicResource SgAccentSoftBrush}" />
+                                <Setter TargetName="ModeDot" Property="Fill" Value="{DynamicResource SgAccentBrush}" />
+                                <Setter TargetName="ModeDot" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsChecked" Value="True" />
+                                    <Condition Property="Tag" Value="system-proxy" />
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="ModeBorder" Property="BorderBrush" Value="{DynamicResource SgSystemProxyBrush}" />
+                                <Setter TargetName="ModeBorder" Property="Background" Value="{DynamicResource SgSystemProxySoftBrush}" />
+                                <Setter TargetName="ModeDot" Property="Fill" Value="{DynamicResource SgSystemProxyBrush}" />
+                            </MultiTrigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsChecked" Value="True" />
+                                    <Condition Property="Tag" Value="local-proxy" />
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="ModeBorder" Property="BorderBrush" Value="{DynamicResource SgLocalProxyBrush}" />
+                                <Setter TargetName="ModeBorder" Property="Background" Value="{DynamicResource SgLocalProxySoftBrush}" />
+                                <Setter TargetName="ModeDot" Property="Fill" Value="{DynamicResource SgLocalProxyBrush}" />
+                            </MultiTrigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ModeBorder" Property="BorderBrush" Value="{DynamicResource SgAccentBorderBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border
+        Background="{DynamicResource SgBackgroundBrush}"
+        BorderBrush="{DynamicResource SgBorderStrongBrush}"
+        BorderThickness="1"
+        CornerRadius="16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="62" />
+                <RowDefinition Height="52" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border
+                Grid.Row="0"
+                Padding="20,0,10,0"
+                Background="{DynamicResource SgHeaderBrush}"
+                BorderBrush="{DynamicResource SgBorderBrush}"
+                BorderThickness="0,0,0,1"
+                CornerRadius="15,15,0,0"
+                MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock
+                            FontSize="19"
+                            FontWeight="SemiBold"
+                            Foreground="{DynamicResource SgTextBrush}"
+                            Text="Экспертные настройки" />
+                        <TextBlock
+                            Margin="0,3,0,0"
+                            FontSize="10.5"
+                            Foreground="{DynamicResource SgMutedBrush}"
+                            Text="Полный редактор профилей, ручной DNS и локальный прокси" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Click="Help_Click" Content="Справка" Style="{StaticResource HeaderActionButton}" />
+                        <Button Margin="8,0,0,0" Click="Close_Click" Content="Закрыть" Style="{StaticResource HeaderActionButton}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Border
+                Grid.Row="1"
+                Padding="20,0"
+                Background="{DynamicResource SgSurfaceSoftBrush}"
+                BorderBrush="{DynamicResource SgBorderBrush}"
+                BorderThickness="0,0,0,1">
+                <StackPanel Orientation="Horizontal">
+                    <ToggleButton
+                        x:Name="tabProfile"
+                        IsChecked="True"
+                        Click="ProfileTab_Click"
+                        Style="{StaticResource TabButton}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Width="17" Height="17" Margin="0,0,8,0" Kind="TuneVariant" />
+                            <TextBlock Text="Профиль" />
+                        </StackPanel>
+                    </ToggleButton>
+                    <ToggleButton
+                        x:Name="tabDns"
+                        Click="DnsTab_Click"
+                        Style="{StaticResource TabButton}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Width="17" Height="17" Margin="0,0,8,0" Kind="DnsOutline" />
+                            <TextBlock Text="DNS" />
+                        </StackPanel>
+                    </ToggleButton>
+                    <ToggleButton
+                        x:Name="tabConnection"
+                        Click="ConnectionTab_Click"
+                        Style="{StaticResource TabButton}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Width="17" Height="17" Margin="0,0,8,0" Kind="LanConnect" />
+                            <TextBlock Text="Локальный прокси" />
+                        </StackPanel>
+                    </ToggleButton>
+                </StackPanel>
+            </Border>
+
+            <Grid Grid.Row="2" Margin="18">
+                <ScrollViewer x:Name="profilePanel" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <Border Margin="0,0,0,12" Style="{StaticResource ExpertCard}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock
+                                        FontSize="10"
+                                        FontWeight="Bold"
+                                        Foreground="{DynamicResource SgAccentBrush}"
+                                        Text="● ТЕКУЩИЙ ПРОФИЛЬ" />
+                                    <TextBlock
+                                        x:Name="txtProfileName"
+                                        Margin="0,8,0,0"
+                                        FontSize="18"
+                                        FontWeight="SemiBold"
+                                        Foreground="{DynamicResource SgTextBrush}"
+                                        Text="Загрузка…" />
+                                    <TextBlock
+                                        x:Name="txtProfileMeta"
+                                        Margin="0,5,0,0"
+                                        FontSize="11"
+                                        Foreground="{DynamicResource SgMutedBrush}"
+                                        Text="—" />
+                                </StackPanel>
+                                <Border
+                                    Grid.Column="1"
+                                    Padding="10,5"
+                                    VerticalAlignment="Top"
+                                    Background="{DynamicResource SgAccentSoftBrush}"
+                                    BorderBrush="{DynamicResource SgAccentBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="9">
+                                    <TextBlock
+                                        x:Name="txtProfileSource"
+                                        FontSize="9.5"
+                                        FontWeight="Bold"
+                                        Foreground="{DynamicResource SgAccentBrush}"
+                                        Text="ЛОКАЛЬНЫЙ" />
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <Border Margin="0,0,0,12" Style="{StaticResource ExpertCard}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock
+                                        FontSize="17"
+                                        FontWeight="SemiBold"
+                                        Foreground="{DynamicResource SgTextBrush}"
+                                        Text="Полный редактор профиля" />
+                                    <TextBlock
+                                        Margin="0,6,20,0"
+                                        FontSize="11"
+                                        LineHeight="18"
+                                        Foreground="{DynamicResource SgMutedBrush}"
+                                        TextWrapping="Wrap"
+                                        Text="Русские протокольно-зависимые формы для VLESS raw, VLESS XHTTP, Hysteria2 и AmneziaWG. Показываются все параметры, которые SG Client может сохранить и проверить выбранным ядром." />
+                                </StackPanel>
+                                <Button
+                                    Grid.Column="1"
+                                    MinWidth="190"
+                                    Height="44"
+                                    VerticalAlignment="Center"
+                                    Click="OpenFullProfileEditor_Click"
+                                    Content="Открыть редактор"
+                                    Style="{StaticResource PrimaryActionButton}" />
+                            </Grid>
+                        </Border>
+
+                        <Border Margin="0,0,0,12" Visibility="Collapsed" Style="{StaticResource ExpertCard}">
+                            <StackPanel>
+                                <TextBlock
+                                    FontSize="17"
+                                    FontWeight="SemiBold"
+                                    Foreground="{DynamicResource SgTextBrush}"
+                                    Text="Старый служебный редактор" />
+                                <TextBlock
+                                    Margin="0,5,0,14"
+                                    FontSize="11"
+                                    LineHeight="17"
+                                    Foreground="{DynamicResource SgMutedBrush}"
+                                    TextWrapping="Wrap"
+                                    Text="Редактор изменяет только транспорт, XHTTP Extra и FinalMask. Перед сохранением SG Client создаёт временный полный config.json и выполняет проверку установленным Xray." />
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="14" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="14" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="ЯДРО" />
+                                        <ComboBox x:Name="cmbCore" Style="{StaticResource ExpertComboBox}" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="ТРАНСПОРТ" />
+                                        <ComboBox x:Name="cmbTransport" IsEditable="True" Style="{StaticResource ExpertComboBox}" SelectionChanged="Transport_SelectionChanged" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="РЕЖИМ XHTTP" />
+                                        <ComboBox x:Name="cmbXhttpMode" IsEditable="True" Style="{StaticResource ExpertComboBox}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <TextBlock Margin="0,16,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="XHTTP EXTRA · JSON-ОБЪЕКТ" />
+                                <TextBox
+                                    x:Name="txtXhttpExtra"
+                                    Height="125"
+                                    SpellCheck.IsEnabled="False"
+                                    Style="{StaticResource CodeTextBox}" />
+
+                                <TextBlock Margin="0,16,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="FINALMASK · JSON-ОБЪЕКТ" />
+                                <TextBox
+                                    x:Name="txtFinalmask"
+                                    Height="125"
+                                    SpellCheck.IsEnabled="False"
+                                    Style="{StaticResource CodeTextBox}" />
+
+                                <TextBlock
+                                    x:Name="txtProfileStatus"
+                                    Margin="0,13,0,0"
+                                    FontSize="11"
+                                    Foreground="{DynamicResource SgMutedBrush}"
+                                    Text="Изменения ещё не проверялись."
+                                    TextWrapping="Wrap" />
+
+                                <WrapPanel Margin="0,16,0,0">
+                                    <Button Margin="0,0,10,0" Click="ValidateProfile_Click" Content="Проверить" Style="{StaticResource SecondaryActionButton}" />
+                                    <Button x:Name="btnSaveProfile" Margin="0,0,10,0" Click="SaveProfile_Click" Content="Сохранить локально" Style="{StaticResource PrimaryActionButton}" />
+                                    <Button x:Name="btnCopyProfile" Margin="0,0,10,0" Click="CopyProfile_Click" Content="Создать независимую копию" Style="{StaticResource SecondaryActionButton}" />
+                                    <Button Click="ReloadProfile_Click" Content="Отменить" ToolTip="Отбросить несохранённые изменения" Style="{StaticResource SecondaryActionButton}" />
+                                </WrapPanel>
+
+                                <Border
+                                    Margin="0,15,0,0"
+                                    Padding="12"
+                                    Background="{DynamicResource SgWarningSoftBrush}"
+                                    BorderBrush="{DynamicResource SgWarningBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="10">
+                                    <TextBlock
+                                        FontSize="10.5"
+                                        Foreground="{DynamicResource SgWarningBrush}"
+                                        TextWrapping="Wrap"
+                                        Text="Профиль из подписки может быть заменён при следующем обновлении. Для постоянных изменений используйте независимую локальную копию." />
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <ScrollViewer x:Name="dnsPanel" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <Border Margin="0,0,0,12" Style="{StaticResource ExpertCard}">
+                            <StackPanel>
+                                <TextBlock
+                                    FontSize="10"
+                                    FontWeight="Bold"
+                                    Foreground="{DynamicResource SgAccentBrush}"
+                                    Text="● РУЧНОЙ DNS" />
+                                <TextBlock
+                                    Margin="0,8,0,0"
+                                    FontSize="18"
+                                    FontWeight="SemiBold"
+                                    Foreground="{DynamicResource SgTextBrush}"
+                                    Text="DNS без скрытых ограничений" />
+                                <TextBlock
+                                    Margin="0,6,0,14"
+                                    FontSize="11"
+                                    LineHeight="17"
+                                    Foreground="{DynamicResource SgMutedBrush}"
+                                    TextWrapping="Wrap"
+                                    Text="Можно использовать IP, TCP DNS или DoH. Примеры: 1.1.1.1, tcp://1.1.1.1, https://1.1.1.1/dns-query." />
+
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton
+                                        x:Name="rbDnsViaVpn"
+                                        Margin="0,0,22,0"
+                                        Content="DNS через VPN"
+                                        Foreground="{DynamicResource SgTextBrush}"
+                                        GroupName="DnsRoute" />
+                                    <RadioButton
+                                        x:Name="rbDnsDirect"
+                                        Content="DNS напрямую"
+                                        Foreground="{DynamicResource SgTextBrush}"
+                                        GroupName="DnsRoute" />
+                                </StackPanel>
+
+                                <Grid Margin="0,16,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="ПРЯМОЙ DNS" />
+                                        <TextBox x:Name="txtDirectDns" Style="{StaticResource ExpertTextBox}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="УДАЛЁННЫЙ DNS" />
+                                        <TextBox x:Name="txtRemoteDns" Style="{StaticResource ExpertTextBox}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="BOOTSTRAP DNS" />
+                                        <TextBox x:Name="txtBootstrapDns" Style="{StaticResource ExpertTextBox}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <WrapPanel Margin="0,15,0,0">
+                                    <CheckBox x:Name="chkUseSystemHosts" Margin="0,0,24,0" Content="Использовать hosts Windows" Foreground="{DynamicResource SgTextBrush}" />
+                                    <CheckBox x:Name="chkFakeIp" Margin="0,0,24,0" Content="FakeDNS" Foreground="{DynamicResource SgTextBrush}" />
+                                    <CheckBox x:Name="chkParallelQuery" Content="Параллельные запросы" Foreground="{DynamicResource SgTextBrush}" />
+                                </WrapPanel>
+                                <Border Margin="0,14,0,0" Padding="12" Background="{DynamicResource SgSurfaceSoftBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="10">
+                                    <TextBlock x:Name="txtDnsEffectiveSummary" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="Эффективная конфигурация DNS загружается…" />
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Margin="0,0,0,12" Style="{StaticResource ExpertCard}">
+                            <StackPanel>
+                                <CheckBox
+                                    x:Name="chkXrayCustomDns"
+                                    FontSize="13"
+                                    FontWeight="SemiBold"
+                                    Foreground="{DynamicResource SgTextBrush}"
+                                    Content="Использовать полный JSON DNS для Xray" />
+                                <TextBlock
+                                    Margin="0,5,0,10"
+                                    FontSize="10.5"
+                                    Foreground="{DynamicResource SgMutedBrush}"
+                                    Text="При включении JSON имеет приоритет над простыми полями для соответствующего режима." />
+                                <TextBlock
+                                    x:Name="txtXrayDnsSource"
+                                    Margin="0,0,0,10"
+                                    FontSize="10.5"
+                                    FontWeight="SemiBold"
+                                    Foreground="{DynamicResource SgAccentBrush}"
+                                    Text="Источник: определение эффективной конфигурации…"
+                                    TextWrapping="Wrap" />
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="ОБЫЧНЫЙ РЕЖИМ" />
+                                        <TextBox x:Name="txtXrayNormalDns" Height="145" SpellCheck.IsEnabled="False" Style="{StaticResource CodeTextBox}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="TUN" />
+                                        <TextBox x:Name="txtXrayTunDns" Height="145" SpellCheck.IsEnabled="False" Style="{StaticResource CodeTextBox}" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Margin="0,0,0,12" Style="{StaticResource ExpertCard}">
+                            <StackPanel>
+                                <CheckBox
+                                    x:Name="chkSingCustomDns"
+                                    FontSize="13"
+                                    FontWeight="SemiBold"
+                                    Foreground="{DynamicResource SgTextBrush}"
+                                    Content="Использовать полный JSON DNS для sing-box" />
+                                <TextBlock
+                                    x:Name="txtSingDnsSource"
+                                    Margin="0,6,0,10"
+                                    FontSize="10.5"
+                                    FontWeight="SemiBold"
+                                    Foreground="{DynamicResource SgAccentBrush}"
+                                    Text="Источник: определение эффективной конфигурации…"
+                                    TextWrapping="Wrap" />
+                                <Grid Margin="0,12,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="ОБЫЧНЫЙ РЕЖИМ" />
+                                        <TextBox x:Name="txtSingNormalDns" Height="145" SpellCheck.IsEnabled="False" Style="{StaticResource CodeTextBox}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="TUN" />
+                                        <TextBox x:Name="txtSingTunDns" Height="145" SpellCheck.IsEnabled="False" Style="{StaticResource CodeTextBox}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <TextBlock
+                                    x:Name="txtDnsStatus"
+                                    Margin="0,13,0,0"
+                                    FontSize="11"
+                                    Foreground="{DynamicResource SgMutedBrush}"
+                                    Text="DNS ещё не проверялся."
+                                    TextWrapping="Wrap" />
+
+                                <WrapPanel Margin="0,16,0,0">
+                                    <Button Margin="0,0,10,0" Click="ValidateDns_Click" Content="Проверить DNS" Style="{StaticResource SecondaryActionButton}" />
+                                    <Button Margin="0,0,10,0" Click="SaveDns_Click" Content="Сохранить и применить" Style="{StaticResource PrimaryActionButton}" />
+                                    <Button Click="ReloadDns_Click" Content="Отменить" ToolTip="Отбросить несохранённые изменения" Style="{StaticResource SecondaryActionButton}" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <ScrollViewer x:Name="connectionPanel" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <Border Margin="0,0,0,12" Style="{StaticResource ExpertCard}">
+                            <StackPanel>
+                                <TextBlock
+                                    FontSize="10"
+                                    FontWeight="Bold"
+                                    Foreground="{DynamicResource SgAccentBrush}"
+                                    Text="● ЛОКАЛЬНЫЙ ПРОКСИ" />
+                                <TextBlock
+                                    Margin="0,8,0,0"
+                                    FontSize="18"
+                                    FontWeight="SemiBold"
+                                    Foreground="{DynamicResource SgTextBrush}"
+                                    Text="Локальные HTTP/SOCKS-порты для отдельных программ" />
+                                <TextBlock
+                                    Margin="0,6,0,15"
+                                    FontSize="11"
+                                    LineHeight="17"
+                                    Foreground="{DynamicResource SgMutedBrush}"
+                                    TextWrapping="Wrap"
+                                    Text="TUN и системный прокси теперь переключаются двумя кнопками на главном экране. Здесь оставлен только специальный режим для ручной настройки отдельных приложений." />
+
+                                <Border
+                                    Padding="16"
+                                    Background="{DynamicResource SgSurfaceBrush}"
+                                    BorderBrush="{DynamicResource SgBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="13">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="38" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border
+                                            Width="28"
+                                            Height="28"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Top"
+                                            Background="{DynamicResource SgLocalProxySoftBrush}"
+                                            CornerRadius="9">
+                                            <materialDesign:PackIcon
+                                                Width="16"
+                                                Height="16"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Foreground="{DynamicResource SgLocalProxyBrush}"
+                                                Kind="LanConnect" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Только локальный прокси" />
+                                            <TextBlock Margin="0,4,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="SG Client запускает смешанный HTTP/SOCKS-порт, но не меняет системный трафик Windows. Адрес и порт задаются вручную в нужной программе." />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <TextBlock
+                                    x:Name="txtConnectionStatus"
+                                    Margin="0,14,0,0"
+                                    FontSize="11"
+                                    Foreground="{DynamicResource SgMutedBrush}"
+                                    Text="Состояние локального прокси загружается…"
+                                    TextWrapping="Wrap" />
+
+                                <Button
+                                    x:Name="btnLocalProxyAction"
+                                    Margin="0,16,0,0"
+                                    HorizontalAlignment="Left"
+                                    Click="ToggleLocalProxy_Click"
+                                    Content="Запустить локальный прокси"
+                                    Style="{StaticResource PrimaryActionButton}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource ExpertCard}">
+                            <StackPanel>
+                                <TextBlock
+                                    FontSize="16"
+                                    FontWeight="SemiBold"
+                                    Foreground="{DynamicResource SgTextBrush}"
+                                    Text="Что важно знать" />
+                                <TextBlock
+                                    Margin="0,8,0,0"
+                                    FontSize="11"
+                                    LineHeight="18"
+                                    Foreground="{DynamicResource SgMutedBrush}"
+                                    TextWrapping="Wrap"
+                                    Text="Локальный прокси не направляет Windows через VPN автоматически. Используйте его только там, где программа позволяет вручную указать HTTP или SOCKS5. Kill Switch действует только в режиме TUN." />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

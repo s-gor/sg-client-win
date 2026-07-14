@@ -1,3 +1,4 @@
+using Microsoft.Win32;
 using static ServiceLib.Handler.SysProxy.ProxySettingWindows.InternetConnectionOption;
 
 namespace ServiceLib.Handler.SysProxy;
@@ -33,6 +34,46 @@ public static class ProxySettingWindows
         return true;
     }
 
+    public static bool IsProxyConfigured(string expectedProxy)
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(_regPath);
+            if (key == null)
+            {
+                return false;
+            }
+
+            var enabled = Convert.ToInt32(key.GetValue("ProxyEnable", 0)) == 1;
+            var server = Convert.ToString(key.GetValue("ProxyServer", string.Empty))
+                ?? string.Empty;
+            return enabled
+                && server.Equals(
+                    expectedProxy,
+                    StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("Verify Windows proxy registry", ex);
+            return false;
+        }
+    }
+
+    public static bool IsProxyCleared()
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(_regPath);
+            return key == null
+                || Convert.ToInt32(key.GetValue("ProxyEnable", 0)) == 0;
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("Verify cleared Windows proxy registry", ex);
+            return false;
+        }
+    }
+
     /// <summary>
     // set to use no proxy
     /// </summary>
@@ -51,7 +92,7 @@ public static class ProxySettingWindows
     ///     PROXY_TYPE_DIRECT           = 0x00000001, // direct connection (no proxy)
     ///     PROXY_TYPE_PROXY            = 0x00000002, // via named proxy
     ///     PROXY_TYPE_AUTO_PROXY_URL   = 0x00000004, // autoproxy script URL
-    ///     PROXY_TYPE_AUTO_DETECT      = 0x00000008  // use autoproxy detection
+    ///     PROXY_TYPE_AUTO_DETECT      = 0x00000009  // use autoproxy detection
     /// </param>
     /// <exception cref="ApplicationException">Error message with win32 error code</exception>
     /// <returns>true: one of connection is successfully updated proxy settings</returns>
@@ -330,7 +371,7 @@ public static class ProxySettingWindows
         PROXY_TYPE_DIRECT = 0x00000001,  // direct to net
         PROXY_TYPE_PROXY = 0x00000002,  // via named proxy
         PROXY_TYPE_AUTO_PROXY_URL = 0x00000004,  // autoproxy URL
-        PROXY_TYPE_AUTO_DETECT = 0x00000008   // use autoproxy detection
+        PROXY_TYPE_AUTO_DETECT = 0x00000009   // use autoproxy detection
     }
 
     public enum ErrorCode : uint

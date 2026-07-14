@@ -12,20 +12,30 @@ public class StatisticsManager
 
     private StatisticsXrayService? _statisticsXray;
     private StatisticsSingboxService? _statisticsSingbox;
+    private StatisticsTunInterfaceService? _statisticsTunInterface;
     private static readonly string _tag = "StatisticsHandler";
     public List<ServerStatItem> ServerStat => _lstServerStat;
 
     public async Task Init(Config config, Func<ServerSpeedItem, Task> updateFunc)
     {
+        Close();
         _config = config;
         _updateFunc = updateFunc;
-        if (config.GuiItem.EnableStatistics || _config.GuiItem.DisplayRealTimeSpeed)
-        {
-            await InitData();
+        // SG Client always keeps the compact main-screen traffic card active.
+        // The legacy settings still control the old detailed statistics UI.
+        await InitData();
 
-            _statisticsXray = new StatisticsXrayService(config, UpdateServerStatHandler);
-            _statisticsSingbox = new StatisticsSingboxService(config, UpdateServerStatHandler);
-        }
+        _statisticsXray = new StatisticsXrayService(
+            config,
+            UpdateServerStatHandler);
+
+        _statisticsSingbox = new StatisticsSingboxService(
+            config,
+            UpdateServerStatHandler);
+
+        _statisticsTunInterface = new StatisticsTunInterfaceService(
+            config,
+            UpdateServerStatHandler);
     }
 
     public void Close()
@@ -34,6 +44,7 @@ public class StatisticsManager
         {
             _statisticsXray?.Close();
             _statisticsSingbox?.Close();
+            _statisticsTunInterface?.Close();
         }
         catch (Exception ex)
         {
@@ -104,6 +115,16 @@ public class StatisticsManager
 
     private async Task UpdateServerStat(ServerSpeedItem server)
     {
+        // SG_WINTUN_AUTHORITATIVE_TRAFFIC_COUNTER
+        // In global TUN mode the Windows virtual adapter is the only reliable
+        // source that includes TCP, UDP and QUIC. Suppress parallel Xray/sing-box
+        // counters while the adapter monitor is active to prevent double count.
+        var tunInterfaceIsAuthoritative = _statisticsTunInterface?.IsActive == true;
+        if (tunInterfaceIsAuthoritative != server.IsTunInterfaceTraffic)
+        {
+            return;
+        }
+
         await GetServerStatItem(_config.IndexId);
 
         if (_serverStatItem is null)
@@ -124,6 +145,16 @@ public class StatisticsManager
         server.TotalUp = _serverStatItem.TotalUp;
         server.TotalDown = _serverStatItem.TotalDown;
         await _updateFunc?.Invoke(server);
+    }
+
+    public SgTunInterfaceCounterStatus GetTunInterfaceCounterStatus()
+    {
+        return _statisticsTunInterface?.GetStatus()
+               ?? new SgTunInterfaceCounterStatus
+               {
+                   IsActive = false,
+                   StatusMessage = "Счётчик TUN ещё не запущен",
+               };
     }
 
     private async Task GetServerStatItem(string indexId)

@@ -39,6 +39,7 @@ public partial class App : Application
         }
 
         AppManager.Instance.InitComponents();
+        SgThemeManager.Initialize();
 
         RxAppBuilder.CreateReactiveUIBuilder()
             .WithWpf()

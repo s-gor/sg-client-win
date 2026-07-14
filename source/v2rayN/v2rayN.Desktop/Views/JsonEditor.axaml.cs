@@ -56,7 +56,7 @@ public partial class JsonEditor : UserControl
         var kwColor = dark ? "#569CD6" : "#0000FF";
         var xshd = $"""
             <?xml version="1.0"?>
-            <SyntaxDefinition name="JSON" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+            <SyntaxDefinition name="JSON" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2009">
               <Color name="Key" foreground="{keyColor}" />
               <Color name="String" foreground="{strColor}" />
               <Color name="Number" foreground="{numColor}" />

@@ -91,7 +91,7 @@ public class UIItem
     public int MainGirdHeight2 { get; set; }
     public EGirdOrientation MainGirdOrientation { get; set; } = EGirdOrientation.Vertical;
     public string? ColorPrimaryName { get; set; }
-    public string? CurrentTheme { get; set; }
+    public string? CurrentTheme { get; set; } = "SgGraphite";
     public string CurrentLanguage { get; set; }
     public string CurrentFontFamily { get; set; }
     public int CurrentFontSize { get; set; }
@@ -147,6 +147,56 @@ public class TunModeItem
     public string IcmpRouting { get; set; }
     public bool EnableLegacyProtect { get; set; }
     public List<string>? RouteExcludeAddress { get; set; }
+}
+
+[Serializable]
+public class SgQuickSettingsItem
+{
+    public string ConnectionMode { get; set; } = "off";
+    public bool AutoRecoverTun { get; set; } = true;
+    public bool AllowLocalNetwork { get; set; } = true;
+    public bool DnsThroughTun { get; set; } = true;
+    public bool KillSwitchEnabled { get; set; }
+    public List<string> SplitTunnelApplications { get; set; } = [];
+    public List<string> SplitTunnelAddresses { get; set; } = [];
+    public bool AutoFailoverEnabled { get; set; }
+    public string ReserveProfileId { get; set; } = string.Empty;
+    public string ReserveProfileName { get; set; } = string.Empty;
+    public bool AutomaticTunDefaultsMigrated { get; set; }
+    public bool ProfileBrowserSourceMigrationCompleted { get; set; }
+    public bool ProfileBrowserDuplicateMigrationCompleted { get; set; }
+    // Legacy quick preset retained for migration and backwards compatibility.
+    public string RoutingMode { get; set; } = "global";
+    public SgSmartRoutingItem SmartRouting { get; set; } = new();
+    public string DpiMode { get; set; } = "auto";
+    public string DpiCustomJson { get; set; } = string.Empty;
+    public string RussiaRulesVersion { get; set; } = string.Empty;
+    public DateTime RussiaRulesUpdatedUtc { get; set; }
+    public string ProfileBrowserSort { get; set; } = "original";
+    public string ProfileBrowserSubscriptionFilter { get; set; } = "all";
+    public string ProfileBrowserProtocolFilter { get; set; } = "all";
+    public string ProfileBrowserCountryFilter { get; set; } = "all";
+    public bool ProfileBrowserExcludeCountry { get; set; }
+}
+
+[Serializable]
+public class SgSmartRoutingItem
+{
+    public bool MigratedFromLegacyPreset { get; set; }
+    public bool RussiaScopeMigrated { get; set; }
+    public string Preset { get; set; } = "global";
+    public string LocalNetworkAction { get; set; } = "direct";
+    public string RussiaScope { get; set; } = "none";
+    public string RussiaAction { get; set; } = "proxy";
+    public string BlockedAction { get; set; } = "proxy";
+    public string AdsAction { get; set; } = "proxy";
+    public string DefaultAction { get; set; } = "proxy";
+    public List<string> CustomDirectDomains { get; set; } = [];
+    public List<string> CustomProxyDomains { get; set; } = [];
+    public List<string> CustomBlockDomains { get; set; } = [];
+    public List<string> CustomDirectIps { get; set; } = [];
+    public List<string> CustomProxyIps { get; set; } = [];
+    public List<string> CustomBlockIps { get; set; } = [];
 }
 
 [Serializable]

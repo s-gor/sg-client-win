@@ -1,4 +1,4 @@
-﻿using GlobalHotKeys;
+using GlobalHotKeys;
 using System;
 using System.Reactive.Linq;
 using System.Threading;

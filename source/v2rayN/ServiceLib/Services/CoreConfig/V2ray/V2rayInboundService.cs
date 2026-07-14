@@ -54,15 +54,11 @@ public partial class CoreConfigV2rayService
 
             if (context.IsTunEnabled)
             {
-                if (_config.TunModeItem.Mtu <= 0)
-                {
-                    _config.TunModeItem.Mtu = Global.TunMtus.First();
-                }
                 var tunInbound =
                     JsonUtils.Deserialize<Inbounds4Ray>(EmbedUtils.GetEmbedText(Global.V2raySampleTunInbound)) ??
                     new Inbounds4Ray();
                 tunInbound.settings.name = context.IsMacOS ? $"utun{new Random().Next(99)}" : "xray_tun";
-                tunInbound.settings.MTU = _config.TunModeItem.Mtu;
+                tunInbound.settings.MTU = ConfigHandler.ResolveSgTunMtu(_config, singbox: false);
                 if (!_config.TunModeItem.EnableIPv6Address)
                 {
                     tunInbound.settings.gateway = ["172.18.0.1/30"];
@@ -75,12 +71,13 @@ public partial class CoreConfigV2rayService
                 }
                 tunInbound.sniffing = inbound.sniffing;
 
-                if (_config.TunModeItem.RouteExcludeAddress is { Count: > 0 })
+                var sgRouteExclusions = ConfigHandler.GetSgRouteExclusions(_config);
+                if (sgRouteExclusions.Count > 0)
                 {
                     var wholeInternet = IPNetwork2.Parse("0.0.0.0/0");
                     var wholeInternetV6 = IPNetwork2.Parse("::/0");
 
-                    var excludeList = _config.TunModeItem.RouteExcludeAddress.Select(IPNetwork2.Parse)
+                    var excludeList = sgRouteExclusions.Select(IPNetwork2.Parse)
                         .Where(x => x != null).ToList();
 
                     var includeList = new List<IPNetwork2> { wholeInternet };
@@ -148,9 +145,27 @@ public partial class CoreConfigV2rayService
         inbound.protocol = nameof(EInboundProtocol.mixed);
         inbound.settings.udp = inItem.UdpEnabled;
         inbound.sniffing.enabled = inItem.SniffingEnabled;
-        inbound.sniffing.destOverride = inItem.DestOverride;
+        inbound.sniffing.destOverride = BuildSgSniffingOverrides(inItem);
         inbound.sniffing.routeOnly = inItem.RouteOnly;
 
         return inbound;
     }
+    private static List<string> BuildSgSniffingOverrides(InItem inItem)
+    {
+        var result = (inItem.DestOverride ?? ["http", "tls"])
+            .Where(item => item.IsNotEmpty())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        // HTTP/3 uses QUIC. Without the QUIC sniffer Xray can only report the
+        // destination IP for many modern sites even when the hostname is visible.
+        if (inItem.SniffingEnabled
+            && !result.Contains("quic", StringComparer.OrdinalIgnoreCase))
+        {
+            result.Add("quic");
+        }
+
+        return result;
+    }
+
 }

@@ -1,4 +1,4 @@
-﻿namespace ServiceLib.Manager;
+namespace ServiceLib.Manager;
 
 public sealed class AppManager
 {
@@ -106,9 +106,137 @@ public sealed class AppManager
         Task.Run(async () =>
         {
             await MigrateProfileExtra();
+            await MigrateProfileBrowserSourcesAsync();
+            await MigrateExplicitCountryCodesAsync();
+            await MigrateExactLocalProfileDuplicatesAsync();
         }).Wait();
 
         return true;
+    }
+
+    private async Task MigrateExplicitCountryCodesAsync()
+    {
+        try
+        {
+            var profiles = await SQLiteHelper.Instance.TableAsync<ProfileItem>().ToListAsync();
+            var updates = new List<ProfileItem>();
+
+            foreach (var item in profiles)
+            {
+                var resolved = item.CountryCode == "SG" && SgCountryHelper.IsLegacySgBrandPrefix(item.Remarks)
+                    ? string.Empty
+                    : SgCountryHelper.ResolveCode(item.CountryCode, item.Remarks);
+                if (!string.Equals(item.CountryCode ?? string.Empty, resolved, StringComparison.OrdinalIgnoreCase))
+                {
+                    item.CountryCode = resolved;
+                    updates.Add(item);
+                }
+            }
+
+            if (updates.Count > 0)
+            {
+                await SQLiteHelper.Instance.UpdateAllAsync(updates);
+                Logging.SaveLog($"Country marker migration: updated profiles={updates.Count}.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("MigrateExplicitCountryCodesAsync", ex);
+        }
+    }
+
+    private async Task MigrateProfileBrowserSourcesAsync()
+    {
+        if (_config.SgQuickSettingsItem.ProfileBrowserSourceMigrationCompleted)
+        {
+            return;
+        }
+
+        try
+        {
+            var profiles = await SQLiteHelper.Instance.TableAsync<ProfileItem>().ToListAsync();
+            var updates = new List<ProfileItem>();
+            var falseSgCount = 0;
+            var detachedLocalCount = 0;
+
+            foreach (var item in profiles)
+            {
+                var changed = false;
+                if (item.CountryCode == "SG" && SgCountryHelper.IsLegacySgBrandPrefix(item.Remarks))
+                {
+                    item.CountryCode = string.Empty;
+                    falseSgCount++;
+                    changed = true;
+                }
+                if (!item.IsSub && item.Subid.IsNotEmpty())
+                {
+                    item.Subid = string.Empty;
+                    detachedLocalCount++;
+                    changed = true;
+                }
+                if (changed)
+                {
+                    updates.Add(item);
+                }
+            }
+
+            if (updates.Count > 0)
+            {
+                await SQLiteHelper.Instance.UpdateAllAsync(updates);
+                Logging.SaveLog($"Profile source migration: false SG flags={falseSgCount}; detached local profiles={detachedLocalCount}.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("MigrateProfileBrowserSourcesAsync", ex);
+        }
+
+        _config.SgQuickSettingsItem.ProfileBrowserSourceMigrationCompleted = true;
+        await ConfigHandler.SaveConfig(_config);
+    }
+
+    private async Task MigrateExactLocalProfileDuplicatesAsync()
+    {
+        if (_config.SgQuickSettingsItem.ProfileBrowserDuplicateMigrationCompleted)
+        {
+            return;
+        }
+
+        try
+        {
+            var profiles = (await SQLiteHelper.Instance.TableAsync<ProfileItem>().ToListAsync())
+                .Where(item => !item.IsSub && !item.ConfigType.IsComplexType())
+                .ToList();
+            var duplicates = new List<ProfileItem>();
+
+            foreach (var group in profiles
+                         .Select(item => new { Item = item, ShareUri = FmtHandler.GetShareUri(item) })
+                         .Where(entry => entry.ShareUri.IsNotEmpty())
+                         .GroupBy(entry => entry.ShareUri!, StringComparer.Ordinal))
+            {
+                if (group.Count() < 2)
+                {
+                    continue;
+                }
+
+                var keep = group.FirstOrDefault(entry => entry.Item.IndexId == _config.IndexId)?.Item
+                    ?? group.First().Item;
+                duplicates.AddRange(group.Where(entry => entry.Item.IndexId != keep.IndexId).Select(entry => entry.Item));
+            }
+
+            if (duplicates.Count > 0)
+            {
+                await ConfigHandler.RemoveServers(_config, duplicates);
+                Logging.SaveLog($"Profile browser migration removed {duplicates.Count} exact duplicate local profile(s).");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("MigrateExactLocalProfileDuplicatesAsync", ex);
+        }
+
+        _config.SgQuickSettingsItem.ProfileBrowserDuplicateMigrationCompleted = true;
+        await ConfigHandler.SaveConfig(_config);
     }
 
     public bool Reset()
@@ -203,11 +331,13 @@ public sealed class AppManager
         var sql = @$"select a.IndexId
                            ,a.ConfigType
                            ,a.Remarks
+                           ,a.CountryCode
                            ,a.Address
                            ,a.Port
                            ,a.Network
                            ,a.StreamSecurity
                            ,a.Subid
+                           ,a.IsSub
                            ,b.remarks as subRemarks
                         from ProfileItem a
                         left join SubItem b on a.subid = b.id

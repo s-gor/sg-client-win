@@ -1,8 +1,8 @@
 <Project>
 
     <PropertyGroup>
-        <Version>0.1.0</Version>
-        <InformationalVersion>0.1.0-dev+v2rayN.7.22.7</InformationalVersion>
+        <Version>0.0.74</Version>
+        <InformationalVersion>074-complete-backup-live-routes+v2rayN.7.22.7</InformationalVersion>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -13,7 +13,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Authors>Ser.Gor; 2dust contributors</Authors>
         <PackageLicenseExpression>GPL-3.0</PackageLicenseExpression>
-        <RepositoryUrl>https://github.com/s-gor/sg-awg-client-win</RepositoryUrl>
+        <RepositoryUrl>https://github.com/s-gor/sg-client-win</RepositoryUrl>
         <Copyright>Copyright © 2026 Ser.Gor. Based on v2rayN © 2dust contributors.</Copyright>
         <InvariantGlobalization>false</InvariantGlobalization>
     </PropertyGroup>

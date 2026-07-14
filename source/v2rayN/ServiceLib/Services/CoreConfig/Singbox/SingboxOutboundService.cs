@@ -392,10 +392,15 @@ public partial class CoreConfigSingboxService
                 };
                 serverName = Utils.String2List(host)?.First();
             }
+            var dpiProfile = _node.ConfigType == EConfigType.Hysteria2
+                ? new SgSingboxDpiProfile(false, false, null)
+                : SgDpiModeHelper.GetSingboxProfile(_config.SgQuickSettingsItem);
             var tls = new Tls4Sbox()
             {
                 enabled = true,
-                record_fragment = _config.CoreBasicItem.EnableFragment ? true : null,
+                record_fragment = dpiProfile.RecordFragment ? true : null,
+                fragment = dpiProfile.Fragment ? true : null,
+                fragment_fallback_delay = dpiProfile.Fragment ? dpiProfile.FragmentFallbackDelay : null,
                 server_name = serverName,
                 insecure = _node.GetAllowInsecure(),
                 alpn = _node.GetAlpn(),

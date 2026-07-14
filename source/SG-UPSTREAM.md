@@ -1,10 +1,31 @@
-# SG Client upstream
+# SG Client: техническая основа и изменения
 
-SG Client phase 1 is based on the official v2rayN 7.22.7 source code.
+## Основа
 
-- Upstream project: https://github.com/2dust/v2rayN
-- Upstream tag: 7.22.7
-- License: GNU General Public License v3.0
-- SG Client product name and phase-1 isolation changes: Copyright © 2026 Ser.Gor
+SG Client использует исходный код v2rayN как часть технической инфраструктуры запуска сетевых ядер, конфигурации и взаимодействия с Windows.
 
-The internal C# namespaces remain `v2rayN` in phase 1 intentionally. This preserves the mature Windows, Xray, sing-box, TUN and process-management implementation while the product identity and data storage are isolated.
+Исходная основа сохраняет лицензию GPL-3.0 и сведения об авторах.
+
+## Разработано для SG Client
+
+Пользовательский интерфейс и прикладная SG-логика разработаны заново:
+
+- работа с профилями SG-Panel и SG-AWG-Panel;
+- выбор подходящего движка по типу профиля;
+- единый сценарий включения, отключения и переключения TUN;
+- система подтверждённых состояний подключения;
+- SG Window Standard;
+- интерфейс и проверка DPI до и после применения;
+- встроенная русская справка;
+- белый список пользовательских обновлений Xray и sing-box.
+
+## Адаптировано и объединено
+
+- запуск Xray и sing-box;
+- интеграция AmneziaWG и Wintun;
+- маршрутизация;
+- Kill Switch;
+- резервный профиль;
+- локальная конфигурация и журналы.
+
+Полный список компонентов и лицензий: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

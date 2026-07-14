@@ -14,6 +14,7 @@ public class Config
 
     public CoreBasicItem CoreBasicItem { get; set; }
     public TunModeItem TunModeItem { get; set; }
+    public SgQuickSettingsItem SgQuickSettingsItem { get; set; }
     public KcpItem KcpItem { get; set; }
     public GrpcItem GrpcItem { get; set; }
     public RoutingBasicItem RoutingBasicItem { get; set; }

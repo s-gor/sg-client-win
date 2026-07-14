@@ -1,4 +1,4 @@
-﻿using System.Collections.Specialized;
+using System.Collections.Specialized;
 using System.Security.Principal;
 using CliWrap;
 using CliWrap.Buffered;
@@ -198,17 +198,20 @@ public class Utils
             return result;
         }
 
-        var parts = query[1..].Split('&', StringSplitOptions.RemoveEmptyEntries);
+        var rawQuery = query[0] == '?' ? query[1..] : query;
+        var parts = rawQuery.Split('&', StringSplitOptions.RemoveEmptyEntries);
         foreach (var part in parts)
         {
-            var keyValue = part.Split('=');
-            if (keyValue.Length != 2)
+            // Split only at the first '='. Modern share links may contain
+            // unescaped Base64/JSON values with additional '=' characters.
+            var separator = part.IndexOf('=');
+            if (separator <= 0)
             {
                 continue;
             }
 
-            var key = Uri.UnescapeDataString(keyValue.First());
-            var val = Uri.UnescapeDataString(keyValue.Last());
+            var key = SafeUnescapeQueryComponent(part[..separator]);
+            var val = SafeUnescapeQueryComponent(part[(separator + 1)..]);
 
             if (result[key] is null)
             {
@@ -217,6 +220,20 @@ public class Utils
         }
 
         return result;
+    }
+
+    private static string SafeUnescapeQueryComponent(string value)
+    {
+        try
+        {
+            return Uri.UnescapeDataString(value);
+        }
+        catch (UriFormatException)
+        {
+            // An unknown or malformed optional query parameter must not make
+            // the complete share link unusable. Keep its original value.
+            return value;
+        }
     }
 
     public static string GetMd5(string str)

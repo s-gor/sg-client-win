@@ -203,7 +203,7 @@ public partial class CoreConfigSingboxService
 
             var domainStrategy = _config.RoutingBasicItem.DomainStrategy4Singbox.NullIfEmpty();
             var routing = context.RoutingItem;
-            if (routing.DomainStrategy4Singbox.IsNotEmpty())
+            if (!context.IsTunEnabled && routing?.DomainStrategy4Singbox.IsNotEmpty() == true)
             {
                 domainStrategy = routing.DomainStrategy4Singbox;
             }
@@ -218,7 +218,7 @@ public partial class CoreConfigSingboxService
             }
 
             var ipRules = new List<RulesItem>();
-            if (routing != null)
+            if (!context.IsTunEnabled && routing != null)
             {
                 var rules = JsonUtils.Deserialize<List<RulesItem>>(routing.RuleSet);
                 foreach (var item1 in rules ?? [])
@@ -241,7 +241,8 @@ public partial class CoreConfigSingboxService
                     }
                 }
             }
-            if (_config.RoutingBasicItem.DomainStrategy == Global.IPIfNonMatch)
+            if (!context.IsTunEnabled
+                && _config.RoutingBasicItem.DomainStrategy == Global.IPIfNonMatch)
             {
                 _coreConfig.route.rules.Add(resolveRule);
                 foreach (var item2 in ipRules)
@@ -249,11 +250,109 @@ public partial class CoreConfigSingboxService
                     GenRoutingUserRule(item2);
                 }
             }
+
+            // SG_TUN_ROUTING_AUTHORITATIVE_SINGBOX
+            // In TUN, only SG Smart Routing may decide Direct/Proxy. Legacy
+            // routing sets are intentionally ignored so the Global preset is
+            // truly global and QUIC/UDP 443 cannot be inherited as Block/Direct.
+            ApplySgSmartRouting4Sbox();
         }
         catch (Exception ex)
         {
             Logging.SaveLog(_tag, ex);
         }
+    }
+
+    private void ApplySgSmartRouting4Sbox()
+    {
+        if (!context.IsTunEnabled || _coreConfig.route?.rules == null)
+        {
+            return;
+        }
+
+        var item = SgSmartRoutingHelper.Normalize(_config.SgQuickSettingsItem);
+
+        AddSgSboxIpRule(["geoip:private"], item.LocalNetworkAction);
+
+        if (item.Preset == SgSmartRoutingHelper.PresetCustom)
+        {
+            AddSgSboxDomainRule(item.CustomBlockDomains, SgSmartRoutingHelper.ActionBlock);
+            AddSgSboxIpRule(item.CustomBlockIps, SgSmartRoutingHelper.ActionBlock);
+            AddSgSboxDomainRule(item.CustomDirectDomains, SgSmartRoutingHelper.ActionDirect);
+            AddSgSboxIpRule(item.CustomDirectIps, SgSmartRoutingHelper.ActionDirect);
+            AddSgSboxDomainRule(item.CustomProxyDomains, SgSmartRoutingHelper.ActionProxy);
+            AddSgSboxIpRule(item.CustomProxyIps, SgSmartRoutingHelper.ActionProxy);
+        }
+
+        if (SgSmartRoutingHelper.RequiresCommunityRules(item))
+        {
+            if (item.AdsAction != item.DefaultAction)
+            {
+                AddSgSboxDomainRule(["geosite:category-ads-all"], item.AdsAction);
+            }
+            if (item.BlockedAction != item.DefaultAction)
+            {
+                AddSgSboxDomainRule(["geosite:ru-blocked"], item.BlockedAction);
+                AddSgSboxIpRule(["geoip:ru-blocked"], item.BlockedAction);
+            }
+            AddSgSboxDomainRule(SgSmartRoutingHelper.GetRussiaDomainRules(item), item.RussiaAction);
+            AddSgSboxIpRule(SgSmartRoutingHelper.GetRussiaIpRules(item), item.RussiaAction);
+        }
+
+        _coreConfig.route.final = item.DefaultAction == SgSmartRoutingHelper.ActionDirect
+            ? Global.DirectTag
+            : Global.ProxyTag;
+    }
+
+    private void AddSgSboxDomainRule(IEnumerable<string>? domains, string action)
+    {
+        var normalizedAction = SgSmartRoutingHelper.NormalizeAction(action);
+        if (normalizedAction == SgSmartRoutingHelper.ActionNone)
+        {
+            return;
+        }
+
+        var rule = NewSgSboxRule(normalizedAction);
+        foreach (var domain in domains?.Where(value => value.IsNotEmpty()).Distinct(StringComparer.OrdinalIgnoreCase) ?? [])
+        {
+            ParseV2Domain(domain, rule);
+        }
+
+        if (rule.domain?.Count > 0
+            || rule.domain_suffix?.Count > 0
+            || rule.domain_keyword?.Count > 0
+            || rule.domain_regex?.Count > 0
+            || rule.geosite?.Count > 0)
+        {
+            _coreConfig.route.rules.Add(rule);
+        }
+    }
+
+    private void AddSgSboxIpRule(IEnumerable<string>? addresses, string action)
+    {
+        var normalizedAction = SgSmartRoutingHelper.NormalizeAction(action);
+        if (normalizedAction == SgSmartRoutingHelper.ActionNone)
+        {
+            return;
+        }
+
+        var rule = NewSgSboxRule(normalizedAction);
+        foreach (var address in addresses?.Where(value => value.IsNotEmpty()).Distinct(StringComparer.OrdinalIgnoreCase) ?? [])
+        {
+            ParseV2Address(address, rule);
+        }
+
+        if (rule.ip_is_private == true || rule.ip_cidr?.Count > 0 || rule.geoip?.Count > 0)
+        {
+            _coreConfig.route.rules.Add(rule);
+        }
+    }
+
+    private static Rule4Sbox NewSgSboxRule(string action)
+    {
+        return action == SgSmartRoutingHelper.ActionBlock
+            ? new Rule4Sbox { action = "reject" }
+            : new Rule4Sbox { outbound = SgSmartRoutingHelper.ToOutboundTag(action) };
     }
 
     private static (List<string> lstDnsExe, List<string> lstDirectExe) BuildRoutingDirectExe()
@@ -278,6 +377,12 @@ public partial class CoreConfigSingboxService
                 }
                 directExeSet.Add(Utils.GetExeName(baseExeName));
             }
+        }
+
+        var splitApps = AppManager.Instance.Config.SgQuickSettingsItem?.SplitTunnelApplications ?? [];
+        foreach (var application in splitApps.Where(item => item.IsNotEmpty()))
+        {
+            directExeSet.Add(System.IO.Path.GetFileName(application));
         }
 
         var lstDnsExe = new List<string>(dnsExeSet);

@@ -18,6 +18,7 @@ public static class AppEvents
     public static readonly EventChannel<string> SendMsgViewRequested = new();
 
     public static readonly EventChannel<Unit> AppExitRequested = new();
+    public static readonly EventChannel<Unit> ShowLogsRequested = new();
     public static readonly EventChannel<bool> ShutdownRequested = new();
 
     public static readonly EventChannel<Unit> AdjustMainLvColWidthRequested = new();

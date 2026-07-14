@@ -30,6 +30,8 @@ public class Policy4Ray
 
 public class SystemPolicy4Ray
 {
+    public bool statsInboundUplink { get; set; }
+    public bool statsInboundDownlink { get; set; }
     public bool statsOutboundUplink { get; set; }
     public bool statsOutboundDownlink { get; set; }
 }
@@ -41,6 +43,8 @@ public class Log4Ray
     public string? error { get; set; }
 
     public string? loglevel { get; set; }
+
+    public bool dnsLog { get; set; }
 }
 
 public class Inbounds4Ray
@@ -510,11 +514,17 @@ public class MaskSettings4Ray
     // fragment
     public string? packets { get; set; }
 
+    // Xray 26.5.9 FinalMask fragment schema used by the bundled core.
     public string? length { get; set; }
     public string? delay { get; set; }
 
+    // Retained only for reading imported configs created for newer Xray schemas.
+    public List<string>? lengths { get; set; }
+    public List<string>? delays { get; set; }
+    public string? maxSplit { get; set; }
+
     // noise
-    public int? reset { get; set; }
+    public string? reset { get; set; }
 
     public List<NoiseMask4Ray>? noise { get; set; }
 }
@@ -522,6 +532,9 @@ public class MaskSettings4Ray
 public class NoiseMask4Ray
 {
     public string? rand { get; set; }
+    public string? randRange { get; set; }
+    public string? type { get; set; }
+    public object? packet { get; set; }
     public string? delay { get; set; }
 }
 

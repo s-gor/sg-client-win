@@ -22,7 +22,12 @@ public class HttpClientHelper
         this.httpClient = httpClient;
     }
 
-    public async Task<string?> TryGetAsync(string url)
+    public Task<string?> TryGetAsync(string url)
+    {
+        return TryGetAsync(url, CancellationToken.None);
+    }
+
+    public async Task<string?> TryGetAsync(string url, CancellationToken cancellationToken)
     {
         if (url.IsNullOrEmpty())
         {
@@ -31,8 +36,15 @@ public class HttpClientHelper
 
         try
         {
-            var response = await httpClient.GetAsync(url);
-            return await response.Content.ReadAsStringAsync();
+            using var response = await httpClient.GetAsync(
+                url,
+                HttpCompletionOption.ResponseHeadersRead,
+                cancellationToken).ConfigureAwait(false);
+            return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch
         {
@@ -67,8 +79,13 @@ public class HttpClientHelper
         await httpClient.PatchAsync(url, byteContent);
     }
 
-    public async Task DeleteAsync(string url)
+    public Task DeleteAsync(string url)
     {
-        await httpClient.DeleteAsync(url);
+        return DeleteAsync(url, CancellationToken.None);
+    }
+
+    public async Task DeleteAsync(string url, CancellationToken cancellationToken)
+    {
+        using var response = await httpClient.DeleteAsync(url, cancellationToken).ConfigureAwait(false);
     }
 }

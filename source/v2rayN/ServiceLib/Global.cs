@@ -1,4 +1,4 @@
-﻿namespace ServiceLib;
+namespace ServiceLib;
 
 public class Global
 {

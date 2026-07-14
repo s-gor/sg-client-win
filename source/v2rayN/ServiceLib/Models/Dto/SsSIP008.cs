@@ -1,6 +1,6 @@
 namespace ServiceLib.Models.Dto;
 
-public class SsSIP008
+public class SsSIP009
 {
     public List<SsServer>? servers { get; set; }
 }

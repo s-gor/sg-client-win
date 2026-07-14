@@ -57,6 +57,24 @@ public partial class MsgView
         }
     }
 
+
+    public string GetText()
+    {
+        return txtMsg.Text;
+    }
+
+    public void SetInitialText(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        txtMsg.Text = text;
+        txtMsg.CaretIndex = txtMsg.Text.Length;
+        txtMsg.ScrollToEnd();
+    }
+
     public void ClearMsg()
     {
         txtMsg.Clear();

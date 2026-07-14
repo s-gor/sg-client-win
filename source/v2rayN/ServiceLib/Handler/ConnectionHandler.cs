@@ -10,9 +10,18 @@ public static class ConnectionHandler
     public static async Task<string> RunAvailabilityCheck()
     {
         var time = await GetRealPingTimeInfo();
-        var ip = time > 0 ? await GetIPInfo() : Global.None;
+        if (time <= 0)
+        {
+            return "Сервер не отвечает";
+        }
 
-        return string.Format(ResUI.TestMeOutput, time, ip);
+        var ip = await GetIPInfo();
+        if (ip == null || ip.ToString().IsNullOrEmpty() || ip.ToString() == Global.None)
+        {
+            return $"Задержка: {time} мс";
+        }
+
+        return $"Задержка: {time} мс · {ip}";
     }
 
     /// <summary>

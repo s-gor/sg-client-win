@@ -109,7 +109,9 @@ public partial class CoreConfigSingboxService
                         format = "binary",
                         tag = item,
                         url = string.Format(srsUrl, item.StartsWith(geosite) ? geosite : geoip, item),
-                        download_detour = Global.ProxyTag
+                        download_detour = item.Contains("ru-", StringComparison.OrdinalIgnoreCase)
+                            ? Global.DirectTag
+                            : Global.ProxyTag
                     };
                 }
             }

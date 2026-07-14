@@ -822,10 +822,16 @@ public partial class CoreConfigV2rayService
     {
         var actOutboundWithTlsList =
             _coreConfig.outbounds.Where(n => n.streamSettings?.security.IsNullOrEmpty() == false
+                                             && !string.Equals(n.protocol, "hysteria", StringComparison.OrdinalIgnoreCase)
                                              && (n.streamSettings?.sockopt?.dialerProxy?.IsNullOrEmpty() ?? true))
                 .ToList();
 
-        var (fragmentMask, noiseMask) = BuildFragmentsMasks();
+        var profile = SgDpiModeHelper.GetXrayProfile(_config.SgQuickSettingsItem);
+        if (!profile.Enabled)
+        {
+            return;
+        }
+        var (fragmentMask, noiseMask) = BuildFragmentsMasks(profile);
 
         foreach (var outbound in actOutboundWithTlsList)
         {
@@ -845,14 +851,14 @@ public partial class CoreConfigV2rayService
             var tcpFinalmaskList = finalMaskJsonObj["tcp"] as JsonArray ?? [];
             if (tcpFinalmaskList.Count == 0)
             {
-                tcpFinalmaskList.Add(JsonUtils.SerializeToNode(fragmentMask));
+                tcpFinalmaskList.Add(JsonUtils.ParseJson(JsonUtils.Serialize(fragmentMask)));
                 finalMaskJsonObj["tcp"] = tcpFinalmaskList;
             }
             // udp noise
             var udpFinalmaskList = finalMaskJsonObj["udp"] as JsonArray ?? [];
-            if (udpFinalmaskList.Count == 0)
+            if (profile.EnableUdpNoise && udpFinalmaskList.Count == 0)
             {
-                udpFinalmaskList.Add(JsonUtils.SerializeToNode(noiseMask));
+                udpFinalmaskList.Add(JsonUtils.ParseJson(JsonUtils.Serialize(noiseMask)));
                 finalMaskJsonObj["udp"] = udpFinalmaskList;
             }
             // write back
@@ -862,7 +868,12 @@ public partial class CoreConfigV2rayService
 
     private void ApplyFinalFragment()
     {
-        var (fragmentMask, noiseMask) = BuildFragmentsMasks();
+        var profile = SgDpiModeHelper.GetXrayProfile(_config.SgQuickSettingsItem);
+        if (!profile.Enabled)
+        {
+            return;
+        }
+        var (fragmentMask, noiseMask) = BuildFragmentsMasks(profile);
         var actOutboundList = _coreConfig.outbounds.Where(n => n.tag.StartsWith(Global.ProxyTag)).ToList();
 
         var fragmentFreedom = new Outbounds4Ray()
@@ -874,7 +885,7 @@ public partial class CoreConfigV2rayService
                 finalmask = new Finalmask4Ray
                 {
                     tcp = [fragmentMask],
-                    udp = [noiseMask],
+                    udp = profile.EnableUdpNoise ? [noiseMask] : null,
                 }
             }
         };
@@ -894,20 +905,17 @@ public partial class CoreConfigV2rayService
         }
     }
 
-    private (Mask4Ray tcpFragment, Mask4Ray udpNoise) BuildFragmentsMasks()
+    private static (Mask4Ray tcpFragment, Mask4Ray udpNoise) BuildFragmentsMasks(SgXrayDpiProfile profile)
     {
-        var configPackets = _config.Fragment4RayItem?.Packets ?? "tlshello";
-        var configLength = _config.Fragment4RayItem?.Length ?? "50-100";
-        var configDelay = _config.Fragment4RayItem?.Interval ?? "10-20";
-
         var fragmentMask = new Mask4Ray
         {
             type = "fragment",
             settings = new MaskSettings4Ray
             {
-                packets = configPackets,
-                length = configLength,
-                delay = configDelay,
+                packets = profile.Packets,
+                length = profile.Lengths.FirstOrDefault(),
+                delay = profile.Delays.FirstOrDefault(),
+                maxSplit = profile.MaxSplit,
             }
         };
         var noiseMask = new Mask4Ray
@@ -915,8 +923,16 @@ public partial class CoreConfigV2rayService
             type = "noise",
             settings = new MaskSettings4Ray
             {
-                length = "10-20",
-                delay = "10-16",
+                reset = profile.NoiseReset,
+                noise =
+                [
+                    new NoiseMask4Ray
+                    {
+                        rand = profile.NoiseLength,
+                        randRange = "0-255",
+                        delay = profile.NoiseDelay,
+                    }
+                ],
             }
         };
 

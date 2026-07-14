@@ -37,14 +37,14 @@ public partial class CoreConfigV2rayService
                 _coreConfig.routing.domainStrategy = _config.RoutingBasicItem.DomainStrategy;
 
                 var routing = context.RoutingItem;
-                if (routing != null)
+                if (routing != null && !context.IsTunEnabled)
                 {
                     if (routing.DomainStrategy.IsNotEmpty())
                     {
                         _coreConfig.routing.domainStrategy = routing.DomainStrategy;
                     }
                     var rules = JsonUtils.Deserialize<List<RulesItem>>(routing.RuleSet);
-                    foreach (var item in rules)
+                    foreach (var item in rules ?? [])
                     {
                         if (!item.Enabled)
                         {
@@ -60,6 +60,14 @@ public partial class CoreConfigV2rayService
                         GenRoutingUserRule(item2);
                     }
                 }
+
+                // SG_TUN_ROUTING_AUTHORITATIVE_XRAY
+                // In TUN, the SG routing screen is the sole source of user
+                // routing. This prevents an old v2rayN routing set (for example
+                // UDP/443 block or geoip direct rules) from silently overriding
+                // "Весь интернет через VPN" before the SG final proxy rule.
+                ApplySgSmartRouting4Ray();
+
                 var balancerTagList = _coreConfig.routing.balancers
                     ?.Select(p => p.tag)
                     .ToList() ?? [];
@@ -232,6 +240,105 @@ public partial class CoreConfigV2rayService
         return finalRule;
     }
 
+    private void ApplySgSmartRouting4Ray()
+    {
+        if (!context.IsTunEnabled || _coreConfig.routing?.rules == null)
+        {
+            return;
+        }
+
+        var item = SgSmartRoutingHelper.Normalize(_config.SgQuickSettingsItem);
+        var customPresetActive = item.Preset == SgSmartRoutingHelper.PresetCustom;
+        if (SgSmartRoutingHelper.RequiresCommunityRules(item)
+            || (customPresetActive
+                && (item.CustomDirectIps.Count > 0
+                    || item.CustomProxyIps.Count > 0
+                    || item.CustomBlockIps.Count > 0)))
+        {
+            // Match domain rules first; only resolve to IP when no domain rule matched.
+            _coreConfig.routing.domainStrategy = Global.IPIfNonMatch;
+        }
+
+        AddSgRayIpRule(["geoip:private"], item.LocalNetworkAction);
+
+        // Stored custom lists are preserved when switching presets, but they
+        // are active only in "Пользовательская". Otherwise an old Direct entry
+        // could silently violate "Весь интернет через VPN".
+        if (customPresetActive)
+        {
+            AddSgRayDomainRule(item.CustomBlockDomains, SgSmartRoutingHelper.ActionBlock);
+            AddSgRayIpRule(item.CustomBlockIps, SgSmartRoutingHelper.ActionBlock);
+            AddSgRayDomainRule(item.CustomDirectDomains, SgSmartRoutingHelper.ActionDirect);
+            AddSgRayIpRule(item.CustomDirectIps, SgSmartRoutingHelper.ActionDirect);
+            AddSgRayDomainRule(item.CustomProxyDomains, SgSmartRoutingHelper.ActionProxy);
+            AddSgRayIpRule(item.CustomProxyIps, SgSmartRoutingHelper.ActionProxy);
+        }
+
+        if (SgSmartRoutingHelper.RequiresCommunityRules(item))
+        {
+            if (item.AdsAction != item.DefaultAction)
+            {
+                AddSgRayDomainRule(["geosite:category-ads-all"], item.AdsAction);
+            }
+
+            // Blocked rules must precede Russian IP rules: a blocked Russian address still goes through VPN.
+            if (item.BlockedAction != item.DefaultAction)
+            {
+                AddSgRayDomainRule(["geosite:ru-blocked"], item.BlockedAction);
+                AddSgRayIpRule(["geoip:ru-blocked"], item.BlockedAction);
+            }
+
+            // The two Russian presets are mutually exclusive:
+            // tld-ru matches only Russian domain zones; category-ru already includes tld-ru
+            // and also covers Russian services in other TLDs. Do not generate regex duplicates.
+            AddSgRayDomainRule(SgSmartRoutingHelper.GetRussiaDomainRules(item), item.RussiaAction);
+            AddSgRayIpRule(SgSmartRoutingHelper.GetRussiaIpRules(item), item.RussiaAction);
+        }
+
+        // Make the default action explicit for TUN instead of relying on outbound ordering.
+        _coreConfig.routing.rules.Add(new RulesItem4Ray
+        {
+            type = "field",
+            inboundTag = ["tun"],
+            network = "tcp,udp",
+            outboundTag = SgSmartRoutingHelper.ToOutboundTag(item.DefaultAction),
+        });
+    }
+
+    private void AddSgRayDomainRule(IEnumerable<string>? domains, string action)
+    {
+        var normalizedAction = SgSmartRoutingHelper.NormalizeAction(action);
+        var values = domains?.Where(value => value.IsNotEmpty()).Distinct(StringComparer.OrdinalIgnoreCase).ToList() ?? [];
+        if (normalizedAction == SgSmartRoutingHelper.ActionNone || values.Count == 0)
+        {
+            return;
+        }
+
+        _coreConfig.routing.rules.Add(new RulesItem4Ray
+        {
+            type = "field",
+            domain = values,
+            outboundTag = SgSmartRoutingHelper.ToOutboundTag(normalizedAction),
+        });
+    }
+
+    private void AddSgRayIpRule(IEnumerable<string>? addresses, string action)
+    {
+        var normalizedAction = SgSmartRoutingHelper.NormalizeAction(action);
+        var values = addresses?.Where(value => value.IsNotEmpty()).Distinct(StringComparer.OrdinalIgnoreCase).ToList() ?? [];
+        if (normalizedAction == SgSmartRoutingHelper.ActionNone || values.Count == 0)
+        {
+            return;
+        }
+
+        _coreConfig.routing.rules.Add(new RulesItem4Ray
+        {
+            type = "field",
+            ip = values,
+            outboundTag = SgSmartRoutingHelper.ToOutboundTag(normalizedAction),
+        });
+    }
+
     private static (List<string> lstDnsExe, List<string> lstDirectExe) BuildRoutingDirectExe()
     {
         var dnsExeSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -258,6 +365,12 @@ public partial class CoreConfigV2rayService
 
         directExeSet.Add("xray/");
         directExeSet.Add("self/");
+
+        var splitApps = AppManager.Instance.Config.SgQuickSettingsItem?.SplitTunnelApplications ?? [];
+        foreach (var application in splitApps.Where(item => item.IsNotEmpty()))
+        {
+            directExeSet.Add(System.IO.Path.GetFileName(application));
+        }
 
         var lstDnsExe = new List<string>(dnsExeSet);
         var lstDirectExe = new List<string>(directExeSet);

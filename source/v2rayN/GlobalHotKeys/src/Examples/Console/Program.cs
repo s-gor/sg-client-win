@@ -1,4 +1,4 @@
-﻿using GlobalHotKeys;
+using GlobalHotKeys;
 using System;
 
 void HotKeyPressed(HotKey hotKey) =>

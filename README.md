@@ -8,26 +8,43 @@ Windows-клиент для профилей, создаваемых **SG-Panel*
 ![Package](https://img.shields.io/badge/package-Portable%20ZIP-243447)
 ![License](https://img.shields.io/badge/license-GPL--3.0-8b5cf6)
 
-> Текущая версия: **v0.0.74**. Официальный формат — чистый Portable ZIP для Windows x64.
+> Текущая версия исходного кода: **v0.0.74**. Готовая Portable-сборка распространяется отдельно от исходного репозитория.
 
-## Скачать
+## Интерфейс SG Client 074
 
-- [SG Client 074 Portable x64](https://github.com/s-gor/sg-client-win/releases/download/v0.0.74/SG-CLIENT-074-PORTABLE-x64.zip)
-- [Страница релиза v0.0.74](https://github.com/s-gor/sg-client-win/releases/tag/v0.0.74)
-- [SHA-256](https://github.com/s-gor/sg-client-win/releases/download/v0.0.74/SG-CLIENT-074-PORTABLE-x64.zip.sha256)
+### TUN
 
-Полностью распакуйте ZIP в отдельную папку и запускайте `SG-Client.exe`. Не запускайте программу непосредственно из архива.
+![SG Client 074 — TUN](assets/screenshots/074-main-tun.png)
+
+### System Proxy
+
+![SG Client 074 — System Proxy](assets/screenshots/074-main-system-proxy.png)
+
+### Статистика трафика по профилям
+
+![SG Client 074 — статистика трафика](assets/screenshots/074-traffic-statistics.png)
+
+### Живые соединения VPN / Direct / Block
+
+![SG Client 074 — живые соединения](assets/screenshots/074-live-connections.png)
+
+### Полная резервная копия и восстановление
+
+![SG Client 074 — резервные копии](assets/screenshots/074-backup-restore.png)
+
+### Большое окно журнала
+
+![SG Client 074 — журнал](assets/screenshots/074-full-log.png)
 
 ## Новое в SG Client 074
 
-- восстановлено живое окно маршрутов и соединений с фактическими направлениями `VPN`, `Direct` и `Block`;
+- восстановлено живое окно соединений и маршрутов с фактическими направлениями `VPN`, `Direct` и `Block`;
 - резервная копия теперь рекурсивно сохраняет всё постоянное состояние клиента, включая локальные профили AmneziaWG;
 - восстановление сначала проверяется во временной папке и только затем заменяет текущие данные;
 - сохраняются профили, подписки, настройки, статистика и `guiConfigs\sg-awg\profiles\*.conf`;
 - временный каталог `guiConfigs\sg-awg\runtime` в резервную копию не включается;
 - сохранены современный импорт VLESS/XHTTP, поддержка AmneziaWG, месячная статистика по профилям, большое окно журнала и учёт TUN-трафика TCP/UDP/QUIC.
 
-Подробности: [RELEASE-NOTES-074.md](RELEASE-NOTES-074.md).
 
 ## Обновление с предыдущей версии
 
@@ -111,7 +128,7 @@ dotnet publish v2rayN\v2rayN\v2rayN.csproj -c Release -r win-x64 -p:SelfContaine
 - [Маскировка DPI](docs/04-DPI.md)
 - [Диагностика](docs/05-TROUBLESHOOTING.md)
 - [Сборка](docs/06-BUILD.md)
-- [Проверка релиза](docs/07-RELEASE-CHECKLIST.md)
+- [Проверка сборки](docs/07-BUILD-CHECKLIST.md)
 - [История изменений](CHANGELOG.md)
 
 ## Техническая основа и лицензии

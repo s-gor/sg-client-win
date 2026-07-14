@@ -1,234 +1,736 @@
-﻿<reactiveui:ReactiveUserControl
+<reactiveui:ReactiveUserControl
     x:Class="v2rayN.Views.StatusBarView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2009"
+    xmlns:enums="clr-namespace:ServiceLib.Enums;assembly=ServiceLib"
     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:reactiveui="http://reactiveui.net"
-    xmlns:resx="clr-namespace:ServiceLib.Resx;assembly=ServiceLib"
     xmlns:tb="clr-namespace:H.NotifyIcon;assembly=H.NotifyIcon.Wpf"
     xmlns:vms="clr-namespace:ServiceLib.ViewModels;assembly=ServiceLib"
-    d:DesignHeight="450"
-    d:DesignWidth="800"
+    d:DesignHeight="520"
+    d:DesignWidth="720"
     x:TypeArguments="vms:StatusBarViewModel"
-    Style="{StaticResource ViewGlobal}"
+    Background="Transparent"
     mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <Style x:Key="SgModeButton" TargetType="Button">
+            <Setter Property="Width" Value="268" />
+            <Setter Property="Height" Value="54" />
+            <Setter Property="Foreground" Value="{DynamicResource SgPrimaryActionTextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgPrimaryActionBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgPrimaryActionBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            x:Name="ButtonBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="14">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="12" Direction="270" Opacity="0.14" ShadowDepth="2" Color="#203E66" />
+                            </Border.Effect>
+                            <ContentPresenter
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource SgPrimaryActionHoverBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource SgPrimaryActionBorderBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource SgPrimaryActionPressedBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="{DynamicResource SgDisabledBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource SgDisabledTextBrush}" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource SgDisabledBorderBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="1" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="StatusCaption" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="9" />
+            <Setter Property="Foreground" Value="{DynamicResource SgMutedBrush}" />
+        </Style>
+        <Style x:Key="StatusValue" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,4,0,0" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+        <Style x:Key="ErrorLinkButton" TargetType="Button">
+            <Setter Property="Margin" Value="0,9,0,0" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource SgErrorBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgErrorBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Setter Property="Template">
+                <Setter.Value><ControlTemplate TargetType="Button"><Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="9"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" /></Border></ControlTemplate></Setter.Value>
+            </Setter>
+            <Style.Triggers><DataTrigger Binding="{Binding TunUiState}" Value="{x:Static enums:ETunUiState.Error}"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
+        </Style>
+
+        <Style x:Key="ModeSceneCard" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource SgTrafficCardBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <Style x:Key="ModeSceneIconCard" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource SgTileIconBrush}" />
+        </Style>
+
+        <Style x:Key="ModeSceneAccentIcon" TargetType="materialDesign:PackIcon">
+            <Setter Property="Foreground" Value="{DynamicResource SgAccentBrush}" />
+        </Style>
+
+        <Style x:Key="QuickSettingTile" TargetType="ToggleButton">
+            <Setter Property="Height" Value="64" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Background" Value="{DynamicResource SgTileBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="TileBorder" Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TileBorder" Property="Background" Value="{DynamicResource SgTileHoverBrush}" />
+                                <Setter TargetName="TileBorder" Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="TileBorder" Property="Background" Value="{DynamicResource SgTileActiveBrush}" />
+                                <Setter TargetName="TileBorder" Property="BorderBrush" Value="{DynamicResource SgAccentBorderBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="TileBorder" Property="Background" Value="{DynamicResource SgPressedBrush}" /></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="TileBorder" Property="Background" Value="{DynamicResource SgDisabledBrush}" /><Setter TargetName="TileBorder" Property="BorderBrush" Value="{DynamicResource SgDisabledBorderBrush}" /><Setter Property="Foreground" Value="{DynamicResource SgDisabledTextBrush}" /></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="QuickActionTile" TargetType="Button">
+            <Setter Property="Height" Value="66" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Background" Value="{DynamicResource SgTileBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="TileBorder" Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="TileBorder" Property="Background" Value="{DynamicResource SgTileHoverBrush}" /><Setter TargetName="TileBorder" Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" /></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="TileBorder" Property="Background" Value="{DynamicResource SgPressedBrush}" /></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="TileBorder" Property="Background" Value="{DynamicResource SgDisabledBrush}" /><Setter TargetName="TileBorder" Property="BorderBrush" Value="{DynamicResource SgDisabledBorderBrush}" /><Setter Property="Foreground" Value="{DynamicResource SgDisabledTextBrush}" /></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="QuickStateText" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,3,0,0" />
+            <Setter Property="FontSize" Value="9.5" />
+            <Setter Property="Foreground" Value="{DynamicResource SgMutedBrush}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}}" Value="True">
+                    <Setter Property="Foreground" Value="{DynamicResource SgAccentBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="TrafficResetIconButton" TargetType="Button">
+            <Setter Property="Width" Value="30" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="{DynamicResource SgIconButtonBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="ToolTipService.InitialShowDelay" Value="180" />
+            <Setter Property="ToolTipService.ShowDuration" Value="5000" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            x:Name="ResetButtonBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="9">
+                            <ContentPresenter
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter
+                                    TargetName="ResetButtonBorder"
+                                    Property="Background"
+                                    Value="{DynamicResource SgIconButtonHoverBrush}" />
+                                <Setter
+                                    TargetName="ResetButtonBorder"
+                                    Property="BorderBrush"
+                                    Value="{DynamicResource SgAccentBorderBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter
+                                    TargetName="ResetButtonBorder"
+                                    Property="Background"
+                                    Value="{DynamicResource SgIconButtonPressedBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
     <Grid>
-        <materialDesign:ColorZone
-            Height="auto"
-            Margin="{StaticResource Margin4}"
-            Mode="Standard">
-            <DockPanel>
-                <StackPanel
-                    Margin="{StaticResource MarginLeftRight8}"
-                    VerticalAlignment="Center"
-                    DockPanel.Dock="Right">
-                    <TextBlock
-                        x:Name="txtSpeedProxyDisplay"
-                        HorizontalAlignment="Right"
-                        Style="{StaticResource StatusbarItem}" />
-                    <Border Margin="1" />
-                    <TextBlock
-                        x:Name="txtSpeedDirectDisplay"
-                        HorizontalAlignment="Right"
-                        Style="{StaticResource StatusbarItem}" />
+        <Border CornerRadius="18">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="{DynamicResource SgHeroBrush}" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding TunUiState}" Value="{x:Static enums:ETunUiState.On}"><Setter Property="Background" Value="{DynamicResource SgTunHeroBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource SgSuccessBrush}" /></DataTrigger>
+                        <DataTrigger Binding="{Binding ConnectionModeKey}" Value="system-proxy"><Setter Property="Background" Value="{DynamicResource SgSystemProxyHeroBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource SgSystemProxyBorderBrush}" /></DataTrigger>
+                        <DataTrigger Binding="{Binding ConnectionModeKey}" Value="local-proxy"><Setter Property="Background" Value="{DynamicResource SgLocalProxyHeroBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource SgLocalProxyBorderBrush}" /></DataTrigger>
+                        <DataTrigger Binding="{Binding TunBusy}" Value="True"><Setter Property="Background" Value="{DynamicResource SgHeroBusyBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource SgWarningBrush}" /></DataTrigger>
+                        <DataTrigger Binding="{Binding TunUiState}" Value="{x:Static enums:ETunUiState.Error}"><Setter Property="Background" Value="{DynamicResource SgHeroErrorBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource SgErrorBrush}" /></DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" Margin="22,15,22,0" Padding="10,4" HorizontalAlignment="Left" CornerRadius="12">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="{DynamicResource SgSurfaceRaisedBrush}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding TunUiState}" Value="{x:Static enums:ETunUiState.On}"><Setter Property="Background" Value="{DynamicResource SgSuccessSoftBrush}" /></DataTrigger>
+                                <DataTrigger Binding="{Binding ConnectionModeKey}" Value="system-proxy"><Setter Property="Background" Value="{DynamicResource SgSystemProxySoftBrush}" /></DataTrigger>
+                                <DataTrigger Binding="{Binding ConnectionModeKey}" Value="local-proxy"><Setter Property="Background" Value="{DynamicResource SgLocalProxySoftBrush}" /></DataTrigger>
+                                <DataTrigger Binding="{Binding TunBusy}" Value="True"><Setter Property="Background" Value="{DynamicResource SgWarningSoftBrush}" /></DataTrigger>
+                                <DataTrigger Binding="{Binding TunUiState}" Value="{x:Static enums:ETunUiState.Error}"><Setter Property="Background" Value="{DynamicResource SgErrorSoftBrush}" /></DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="7" Height="7" Margin="0,0,7,0" VerticalAlignment="Center">
+                            <Ellipse.Style><Style TargetType="Ellipse"><Setter Property="Fill" Value="{DynamicResource SgOffBrush}" /><Style.Triggers><DataTrigger Binding="{Binding TunUiState}" Value="{x:Static enums:ETunUiState.On}"><Setter Property="Fill" Value="{DynamicResource SgSuccessBrush}" /></DataTrigger><DataTrigger Binding="{Binding ConnectionModeKey}" Value="system-proxy"><Setter Property="Fill" Value="{DynamicResource SgSystemProxyBrush}" /></DataTrigger><DataTrigger Binding="{Binding ConnectionModeKey}" Value="local-proxy"><Setter Property="Fill" Value="{DynamicResource SgLocalProxyBrush}" /></DataTrigger><DataTrigger Binding="{Binding TunBusy}" Value="True"><Setter Property="Fill" Value="{DynamicResource SgWarningBrush}" /></DataTrigger><DataTrigger Binding="{Binding TunUiState}" Value="{x:Static enums:ETunUiState.Error}"><Setter Property="Fill" Value="{DynamicResource SgErrorBrush}" /></DataTrigger></Style.Triggers></Style></Ellipse.Style>
+                        </Ellipse>
+                        <TextBlock x:Name="txtTunStatusDisplay" FontSize="10.5" FontWeight="SemiBold" Text="{Binding TunStatusText}">
+                            <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Foreground" Value="{DynamicResource SgMutedBrush}" /><Style.Triggers><DataTrigger Binding="{Binding TunUiState}" Value="{x:Static enums:ETunUiState.On}"><Setter Property="Foreground" Value="{DynamicResource SgSuccessBrush}" /></DataTrigger><DataTrigger Binding="{Binding ConnectionModeKey}" Value="system-proxy"><Setter Property="Foreground" Value="{DynamicResource SgSystemProxyBrush}" /></DataTrigger><DataTrigger Binding="{Binding ConnectionModeKey}" Value="local-proxy"><Setter Property="Foreground" Value="{DynamicResource SgLocalProxyBrush}" /></DataTrigger><DataTrigger Binding="{Binding TunBusy}" Value="True"><Setter Property="Foreground" Value="{DynamicResource SgWarningBrush}" /></DataTrigger><DataTrigger Binding="{Binding TunUiState}" Value="{x:Static enums:ETunUiState.Error}"><Setter Property="Foreground" Value="{DynamicResource SgErrorBrush}" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Grid.Row="1" Margin="24,-14,24,5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Grid Width="66" Height="66" Margin="0,0,0,9">
+                        <Ellipse x:Name="stateHalo" Margin="1" Opacity="0.28" StrokeThickness="1.5">
+                            <Ellipse.Style>
+                                <Style TargetType="Ellipse">
+                                    <Setter Property="Stroke" Value="{DynamicResource SgBorderStrongBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding TunUiState}" Value="{x:Static enums:ETunUiState.On}"><Setter Property="Stroke" Value="{DynamicResource SgSuccessBrush}" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding ConnectionModeKey}" Value="system-proxy"><Setter Property="Stroke" Value="{DynamicResource SgSystemProxyBrush}" /><Setter Property="Opacity" Value="0.50" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding ConnectionModeKey}" Value="local-proxy"><Setter Property="Stroke" Value="{DynamicResource SgLocalProxyBrush}" /><Setter Property="Opacity" Value="0.50" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding TunBusy}" Value="True"><Setter Property="Stroke" Value="{DynamicResource SgWarningBrush}" /><Setter Property="Opacity" Value="0.55" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding TunUiState}" Value="{x:Static enums:ETunUiState.Error}"><Setter Property="Stroke" Value="{DynamicResource SgErrorBrush}" /><Setter Property="Opacity" Value="0.55" /></DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Ellipse.Style>
+                        </Ellipse>
+                        <Ellipse Margin="7">
+                            <Ellipse.Style>
+                                <Style TargetType="Ellipse">
+                                    <Setter Property="Fill" Value="{DynamicResource SgSurfaceRaisedBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ConnectionModeKey}" Value="tun"><Setter Property="Fill" Value="{DynamicResource SgSuccessSoftBrush}" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding ConnectionModeKey}" Value="system-proxy"><Setter Property="Fill" Value="{DynamicResource SgSystemProxySoftBrush}" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding ConnectionModeKey}" Value="local-proxy"><Setter Property="Fill" Value="{DynamicResource SgLocalProxySoftBrush}" /></DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Ellipse.Style>
+                        </Ellipse>
+                        <materialDesign:PackIcon x:Name="stateIcon" Width="27" Height="27" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                            <materialDesign:PackIcon.RenderTransform>
+                                <RotateTransform Angle="0" />
+                            </materialDesign:PackIcon.RenderTransform>
+                            <materialDesign:PackIcon.Style>
+                                <Style TargetType="materialDesign:PackIcon">
+                                    <Setter Property="Kind" Value="LanConnect" />
+                                    <Setter Property="Foreground" Value="{DynamicResource SgOffBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding TunUiState}" Value="{x:Static enums:ETunUiState.On}"><Setter Property="Kind" Value="ShieldLockOutline" /><Setter Property="Foreground" Value="{DynamicResource SgSuccessBrush}" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding ConnectionModeKey}" Value="system-proxy"><Setter Property="Kind" Value="Web" /><Setter Property="Foreground" Value="{DynamicResource SgSystemProxyBrush}" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding ConnectionModeKey}" Value="local-proxy"><Setter Property="Kind" Value="LanConnect" /><Setter Property="Foreground" Value="{DynamicResource SgLocalProxyBrush}" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding TunBusy}" Value="True">
+                                            <Setter Property="Kind" Value="Reload" />
+                                            <Setter Property="Foreground" Value="{DynamicResource SgWarningBrush}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding TunUiState}" Value="{x:Static enums:ETunUiState.Error}"><Setter Property="Kind" Value="InformationOutline" /><Setter Property="Foreground" Value="{DynamicResource SgErrorBrush}" /></DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </materialDesign:PackIcon.Style>
+                        </materialDesign:PackIcon>
+                    </Grid>
+                    <TextBlock x:Name="txtRunningServerDisplay" MaxWidth="550" MaxHeight="52" TextAlignment="Center" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" FontSize="21" LineHeight="25" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="{Binding ProfileNameDisplay}" ToolTip="{Binding ProfileNameDisplay}" />
+                    <Border Padding="10,3" Margin="0,7,0,0" HorizontalAlignment="Center" CornerRadius="9" Style="{StaticResource ModeSceneIconCard}">
+                        <TextBlock x:Name="txtProtocolDisplay" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource SgMutedBrush}" Text="{Binding ProfileProtocolDisplay}" />
+                    </Border>
+                    <TextBlock x:Name="txtRunningInfoDisplay" MaxWidth="570" Margin="0,7,0,0" TextAlignment="Center" TextWrapping="Wrap" FontSize="10.5" LineHeight="15" Foreground="{DynamicResource SgMutedBrush}" Text="{Binding TunDetailText}" />
+                    <TextBlock x:Name="txtTunSessionDisplay" Margin="0,7,0,0" TextAlignment="Center" FontSize="10.5" FontWeight="SemiBold" Visibility="Collapsed">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{DynamicResource SgAccentBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ConnectionModeKey}" Value="tun"><Setter Property="Foreground" Value="{DynamicResource SgSuccessBrush}" /></DataTrigger>
+                                    <DataTrigger Binding="{Binding ConnectionModeKey}" Value="system-proxy"><Setter Property="Foreground" Value="{DynamicResource SgSystemProxyBrush}" /></DataTrigger>
+                                    <DataTrigger Binding="{Binding ConnectionModeKey}" Value="local-proxy"><Setter Property="Foreground" Value="{DynamicResource SgLocalProxyBrush}" /></DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <Grid Margin="0,14,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="268" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="268" />
+                        </Grid.ColumnDefinitions>
+
+                        <Button
+                            x:Name="btnToggleTunMode"
+                            Grid.Column="0"
+                            Tag="SG_TUN_ESCAPE_ALWAYS"
+                            Style="{StaticResource SgModeButton}"
+                            ToolTip="Включить TUN или немедленно отключить активный/зависший переход">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon
+                                    Width="20"
+                                    Height="20"
+                                    Margin="0,0,11,0"
+                                    VerticalAlignment="Center"
+                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                    Kind="ShieldLockOutline" />
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontSize="12"
+                                    FontWeight="Bold"
+                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                    Text="{Binding TunModeButtonText}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button
+                            x:Name="btnToggleSystemProxyMode"
+                            Grid.Column="2"
+                            IsEnabled="{Binding CanUseSystemProxyMode}"
+                            ToolTip="{Binding SystemProxyModeToolTip}"
+                            Style="{StaticResource SgModeButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon
+                                    Width="20"
+                                    Height="20"
+                                    Margin="0,0,11,0"
+                                    VerticalAlignment="Center"
+                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                    Kind="Web" />
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontSize="12"
+                                    FontWeight="Bold"
+                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                    Text="{Binding SystemProxyModeButtonText}" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
                 </StackPanel>
 
-                <StackPanel
-                    Width="Auto"
-                    Margin="{StaticResource MarginLeftRight8}"
-                    VerticalAlignment="Center"
-                    DockPanel.Dock="Left">
-                    <TextBlock x:Name="txtInboundDisplay" Style="{StaticResource StatusbarItem}" />
-                    <Border Margin="1" />
-                    <TextBlock x:Name="txtInboundLanDisplay" Style="{StaticResource StatusbarItem}" />
-                </StackPanel>
 
-                <StackPanel
-                    x:Name="spEnableTun"
-                    Width="Auto"
-                    Margin="{StaticResource MarginLeftRight8}"
-                    VerticalAlignment="Center"
-                    DockPanel.Dock="Left"
-                    Orientation="Horizontal">
-                    <TextBlock
-                        Margin="{StaticResource MarginLeftRight8}"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource StatusbarItem}"
-                        Text="{x:Static resx:ResUI.TbEnableTunAs}" />
-                    <ToggleButton
-                        x:Name="togEnableTun"
-                        Margin="{StaticResource Margin4}"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Center"
-                        AutomationProperties.Name="{x:Static resx:ResUI.TbEnableTunAs}" />
-                </StackPanel>
+                <Border
+                    Grid.Row="2"
+                    Margin="18,0,18,12"
+                    Padding="12,9"
+                    CornerRadius="13"
+                    Style="{StaticResource ModeSceneCard}">
+                    <Grid Height="94">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="48" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="48" />
+                        </Grid.ColumnDefinitions>
 
-                <StackPanel
-                    Margin="{StaticResource MarginLeftRight8}"
-                    VerticalAlignment="Center"
-                    DockPanel.Dock="Left"
-                    Orientation="Horizontal">
-                    <ComboBox
-                        x:Name="cmbSystemProxy"
-                        Width="160"
-                        Margin="{StaticResource MarginLeftRight8}"
-                        materialDesign:HintAssist.Hint="{x:Static resx:ResUI.menuSystemproxy}"
-                        AutomationProperties.Name="{x:Static resx:ResUI.menuSystemproxy}"
-                        FontSize="{DynamicResource StdFontSize}"
-                        Style="{StaticResource MaterialDesignFloatingHintComboBox}">
-                        <ComboBoxItem Content="{x:Static resx:ResUI.menuSystemProxyClear}" />
-                        <ComboBoxItem Content="{x:Static resx:ResUI.menuSystemProxySet}" />
-                        <ComboBoxItem Content="{x:Static resx:ResUI.menuSystemProxyNothing}" />
-                        <ComboBoxItem Content="{x:Static resx:ResUI.menuSystemProxyPac}" />
-                    </ComboBox>
+                        <Grid Grid.Column="0" Margin="0,0,8,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="34" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
 
-                    <ComboBox
-                        x:Name="cmbRoutings2"
-                        Width="160"
-                        Margin="{StaticResource MarginLeftRight8}"
-                        materialDesign:HintAssist.Hint="{x:Static resx:ResUI.menuRouting}"
-                        AutomationProperties.Name="{x:Static resx:ResUI.menuRouting}"
-                        DisplayMemberPath="Remarks"
-                        FontSize="{DynamicResource StdFontSize}"
-                        Style="{StaticResource MaterialDesignFloatingHintComboBox}" />
-                </StackPanel>
+                            <Button
+                                x:Name="btnTrafficResetSession"
+                                HorizontalAlignment="Center"
+                                AutomationProperties.Name="Сбросить статистику текущего сеанса"
+                                Style="{StaticResource TrafficResetIconButton}"
+                                ToolTip="Сбросить статистику текущего сеанса">
+                                <materialDesign:PackIcon
+                                    Width="16"
+                                    Height="16"
+                                    Foreground="{DynamicResource SgTrafficDownloadBrush}"
+                                    Kind="Reload" />
+                            </Button>
 
-                <StackPanel Margin="{StaticResource MarginLeftRight8}" VerticalAlignment="Center">
-                    <TextBlock x:Name="txtRunningServerDisplay" Style="{StaticResource StatusbarItem}" />
-                    <Border Margin="1" />
-                    <TextBlock x:Name="txtRunningInfoDisplay" Style="{StaticResource StatusbarItem}" />
-                </StackPanel>
-            </DockPanel>
-        </materialDesign:ColorZone>
+                            <Border
+                                Grid.Row="1"
+                                Width="10"
+                                Height="50"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Bottom"
+                                Background="{DynamicResource SgTrafficSectionBrush}"
+                                CornerRadius="5">
+                                <Grid VerticalAlignment="Bottom">
+                                    <Border
+                                        Height="{Binding TrafficDownloadLevel}"
+                                        VerticalAlignment="Bottom"
+                                        Background="{DynamicResource SgTrafficDownloadBrush}"
+                                        CornerRadius="5" />
+                                </Grid>
+                            </Border>
+                        </Grid>
 
-        <tb:TaskbarIcon
-            x:Name="tbNotify"
-            IconSource="/Resources/v2rayN.ico"
-            NoLeftClickDelay="True"
-            ToolTipText="SG Client">
+                        <Grid Grid.Column="1">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="24" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel
+                                    Grid.Column="0"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center">
+                                    <materialDesign:PackIcon
+                                        Width="18"
+                                        Height="18"
+                                        Margin="0,0,7,0"
+                                        Foreground="{DynamicResource SgAccentBrush}"
+                                        Kind="ChartLine" />
+                                    <StackPanel>
+                                        <TextBlock
+                                            FontSize="12.5"
+                                            FontWeight="SemiBold"
+                                            Foreground="{DynamicResource SgTextBrush}"
+                                            Text="Трафик профиля" />
+                                        <TextBlock
+                                            Margin="0,2,0,0"
+                                            MaxWidth="250"
+                                            FontSize="8.8"
+                                            Foreground="{DynamicResource SgMutedBrush}"
+                                            Text="{Binding TrafficProfileNameDisplay}"
+                                            TextTrimming="CharacterEllipsis"
+                                            ToolTip="Учитывается только трафик, действительно отправленный через активный VPN-профиль" />
+                                    </StackPanel>
+                                    <Button
+                                        x:Name="btnTrafficProfiles"
+                                        Width="30"
+                                        Height="30"
+                                        Margin="9,0,0,0"
+                                        VerticalAlignment="Center"
+                                        AutomationProperties.Name="Открыть статистику по профилям"
+                                        Style="{StaticResource TrafficResetIconButton}"
+                                        ToolTip="Трафик по профилям">
+                                        <materialDesign:PackIcon
+                                            Width="16"
+                                            Height="16"
+                                            Foreground="{DynamicResource SgAccentBrush}"
+                                            Kind="FormatListBulleted" />
+                                    </Button>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                    <TextBlock
+                                        HorizontalAlignment="Right"
+                                        FontSize="8.5"
+                                        Foreground="{DynamicResource SgMutedBrush}"
+                                        Text="СКАЧИВАНИЕ" />
+                                    <TextBlock
+                                        Margin="0,2,0,0"
+                                        HorizontalAlignment="Right"
+                                        FontSize="16"
+                                        FontWeight="Bold"
+                                        Foreground="{DynamicResource SgTrafficDownloadBrush}"
+                                        Text="{Binding TrafficCurrentDownloadDisplay}" />
+                                </StackPanel>
+
+                                <Border
+                                    Grid.Column="2"
+                                    Width="1"
+                                    Margin="11,2"
+                                    Background="{DynamicResource SgBorderBrush}" />
+
+                                <StackPanel Grid.Column="3" HorizontalAlignment="Left">
+                                    <TextBlock
+                                        FontSize="8.5"
+                                        Foreground="{DynamicResource SgMutedBrush}"
+                                        Text="ОТДАЧА" />
+                                    <TextBlock
+                                        Margin="0,2,0,0"
+                                        FontSize="16"
+                                        FontWeight="Bold"
+                                        Foreground="{DynamicResource SgTrafficUploadBrush}"
+                                        Text="{Binding TrafficCurrentUploadDisplay}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid Grid.Row="1" Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="1" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="1" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="1" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                                    <TextBlock
+                                        HorizontalAlignment="Center"
+                                        FontSize="9"
+                                        Foreground="{DynamicResource SgMutedBrush}"
+                                        Text="За сеанс" />
+                                    <StackPanel Margin="0,4,0,0" Orientation="Horizontal">
+                                        <TextBlock
+                                            FontSize="10.5"
+                                            FontWeight="SemiBold"
+                                            Foreground="{DynamicResource SgTrafficDownloadBrush}"
+                                            Text="{Binding TrafficSessionDownloadDisplay}" />
+                                        <TextBlock
+                                            Margin="11,0,0,0"
+                                            FontSize="10.5"
+                                            FontWeight="SemiBold"
+                                            Foreground="{DynamicResource SgTrafficUploadBrush}"
+                                            Text="{Binding TrafficSessionUploadDisplay}" />
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <Border
+                                    Grid.Column="1"
+                                    Margin="0,1"
+                                    Background="{DynamicResource SgBorderBrush}" />
+
+                                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                    <TextBlock
+                                        HorizontalAlignment="Center"
+                                        FontSize="9"
+                                        Foreground="{DynamicResource SgMutedBrush}"
+                                        Text="Сегодня" />
+                                    <StackPanel Margin="0,4,0,0" Orientation="Horizontal">
+                                        <TextBlock
+                                            FontSize="10.5"
+                                            FontWeight="SemiBold"
+                                            Foreground="{DynamicResource SgTrafficDownloadBrush}"
+                                            Text="{Binding TrafficTodayDownloadDisplay}" />
+                                        <TextBlock
+                                            Margin="11,0,0,0"
+                                            FontSize="10.5"
+                                            FontWeight="SemiBold"
+                                            Foreground="{DynamicResource SgTrafficUploadBrush}"
+                                            Text="{Binding TrafficTodayUploadDisplay}" />
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <Border
+                                    Grid.Column="3"
+                                    Margin="0,1"
+                                    Background="{DynamicResource SgBorderBrush}" />
+
+                                <StackPanel Grid.Column="4" HorizontalAlignment="Center">
+                                    <TextBlock
+                                        HorizontalAlignment="Center"
+                                        FontSize="9"
+                                        Foreground="{DynamicResource SgMutedBrush}"
+                                        Text="Этот месяц" />
+                                    <StackPanel Margin="0,4,0,0" Orientation="Horizontal">
+                                        <TextBlock
+                                            FontSize="10"
+                                            FontWeight="SemiBold"
+                                            Foreground="{DynamicResource SgTrafficDownloadBrush}"
+                                            Text="{Binding TrafficMonthDownloadDisplay}" />
+                                        <TextBlock
+                                            Margin="8,0,0,0"
+                                            FontSize="10"
+                                            FontWeight="SemiBold"
+                                            Foreground="{DynamicResource SgTrafficUploadBrush}"
+                                            Text="{Binding TrafficMonthUploadDisplay}" />
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <Border
+                                    Grid.Column="5"
+                                    Margin="0,1"
+                                    Background="{DynamicResource SgBorderBrush}" />
+
+                                <StackPanel Grid.Column="6" HorizontalAlignment="Center">
+                                    <TextBlock
+                                        HorizontalAlignment="Center"
+                                        FontSize="9"
+                                        Foreground="{DynamicResource SgMutedBrush}"
+                                        Text="Всего" />
+                                    <StackPanel Margin="0,4,0,0" Orientation="Horizontal">
+                                        <TextBlock
+                                            FontSize="10"
+                                            FontWeight="SemiBold"
+                                            Foreground="{DynamicResource SgTrafficDownloadBrush}"
+                                            Text="{Binding TrafficTotalDownloadDisplay}" />
+                                        <TextBlock
+                                            Margin="8,0,0,0"
+                                            FontSize="10"
+                                            FontWeight="SemiBold"
+                                            Foreground="{DynamicResource SgTrafficUploadBrush}"
+                                            Text="{Binding TrafficTotalUploadDisplay}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+
+                        <Grid Grid.Column="2" Margin="8,0,0,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="34" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <Button
+                                x:Name="btnTrafficResetAll"
+                                HorizontalAlignment="Center"
+                                AutomationProperties.Name="Сбросить статистику текущего профиля"
+                                Style="{StaticResource TrafficResetIconButton}"
+                                ToolTip="Сбросить статистику текущего профиля">
+                                <materialDesign:PackIcon
+                                    Width="16"
+                                    Height="16"
+                                    Foreground="{DynamicResource SgTrafficUploadBrush}"
+                                    Kind="Delete" />
+                            </Button>
+
+                            <Border
+                                Grid.Row="1"
+                                Width="10"
+                                Height="50"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Bottom"
+                                Background="{DynamicResource SgTrafficSectionBrush}"
+                                CornerRadius="5">
+                                <Grid VerticalAlignment="Bottom">
+                                    <Border
+                                        Height="{Binding TrafficUploadLevel}"
+                                        VerticalAlignment="Bottom"
+                                        Background="{DynamicResource SgTrafficUploadBrush}"
+                                        CornerRadius="5" />
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Row="3" Margin="18,0,18,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" /><ColumnDefinition Width="9" /><ColumnDefinition Width="*" /><ColumnDefinition Width="9" /><ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="9" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+
+                    <Button x:Name="btnQuickRouting" Grid.Row="0" Grid.Column="0" IsEnabled="{Binding TunBusy, Converter={StaticResource InverseBooleanConverter}}" Style="{StaticResource QuickActionTile}">
+                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><Border Width="34" Height="34" Margin="0,0,9,0" CornerRadius="9" Style="{StaticResource ModeSceneIconCard}"><materialDesign:PackIcon Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource ModeSceneAccentIcon}" Kind="Routes" /></Border><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock FontSize="11" FontWeight="SemiBold" Text="Маршрутизация" /><TextBlock Margin="0,3,0,0" FontSize="9.5" Foreground="{DynamicResource SgMutedBrush}" Text="{Binding QuickRoutingSummary}" TextTrimming="CharacterEllipsis" /></StackPanel><materialDesign:PackIcon Grid.Column="2" Width="16" Height="16" VerticalAlignment="Center" Foreground="{DynamicResource SgMutedBrush}" Kind="ChevronRight" /></Grid>
+                    </Button>
+
+                    <Button x:Name="btnQuickDpi" Grid.Row="0" Grid.Column="2" IsEnabled="{Binding TunBusy, Converter={StaticResource InverseBooleanConverter}}" Style="{StaticResource QuickActionTile}">
+                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><Border Width="34" Height="34" Margin="0,0,9,0" CornerRadius="9" Style="{StaticResource ModeSceneIconCard}"><materialDesign:PackIcon Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource ModeSceneAccentIcon}" Kind="ShieldHalfFull" /></Border><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock FontSize="11" FontWeight="SemiBold" Text="Маскировка DPI" /><TextBlock Margin="0,3,0,0" FontSize="9.5" Foreground="{DynamicResource SgMutedBrush}" Text="{Binding QuickDpiSummary}" TextTrimming="CharacterEllipsis" /></StackPanel><materialDesign:PackIcon Grid.Column="2" Width="16" Height="16" VerticalAlignment="Center" Foreground="{DynamicResource SgMutedBrush}" Kind="ChevronRight" /></Grid>
+                    </Button>
+
+                    <ToggleButton x:Name="btnQuickKillSwitch" Grid.Row="0" Grid.Column="4" IsEnabled="{Binding TunBusy, Converter={StaticResource InverseBooleanConverter}}" Style="{StaticResource QuickSettingTile}">
+                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><Border Width="34" Height="34" Margin="0,0,9,0" CornerRadius="9" Style="{StaticResource ModeSceneIconCard}"><materialDesign:PackIcon Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource ModeSceneAccentIcon}" Kind="ShieldLockOutline" /></Border><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock FontSize="11" FontWeight="SemiBold" Text="Kill Switch" /><TextBlock FontSize="9.5" Margin="0,3,0,0" Foreground="{DynamicResource SgMutedBrush}" Text="{Binding QuickKillSwitchStatus}" /></StackPanel></Grid>
+                    </ToggleButton>
+
+                    <Button x:Name="btnQuickSplitTunnel" Grid.Row="2" Grid.Column="0" IsEnabled="{Binding TunBusy, Converter={StaticResource InverseBooleanConverter}}" Style="{StaticResource QuickActionTile}">
+                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><Border Width="34" Height="34" Margin="0,0,9,0" CornerRadius="9" Style="{StaticResource ModeSceneIconCard}"><materialDesign:PackIcon Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource ModeSceneAccentIcon}" Kind="ArrowSplitVertical" /></Border><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock FontSize="11" FontWeight="SemiBold" Text="Раздельный TUN" /><TextBlock Margin="0,3,0,0" FontSize="9.5" Foreground="{DynamicResource SgMutedBrush}" Text="{Binding QuickSplitTunnelSummary}" /></StackPanel><materialDesign:PackIcon Grid.Column="2" Width="16" Height="16" VerticalAlignment="Center" Foreground="{DynamicResource SgMutedBrush}" Kind="SettingsOutline" /></Grid>
+                    </Button>
+
+                    <Button x:Name="btnQuickDns" Grid.Row="2" Grid.Column="2" IsEnabled="{Binding TunBusy, Converter={StaticResource InverseBooleanConverter}}" Style="{StaticResource QuickActionTile}" ToolTip="Открыть явный выбор маршрута DNS">
+                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><Border Width="34" Height="34" Margin="0,0,9,0" CornerRadius="9" Style="{StaticResource ModeSceneIconCard}"><materialDesign:PackIcon Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource ModeSceneAccentIcon}" Kind="Dns" /></Border><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock FontSize="11" FontWeight="SemiBold" Text="Маршрут DNS" /><TextBlock Style="{StaticResource QuickStateText}" Text="{Binding QuickDnsStatusDisplay}" /></StackPanel><materialDesign:PackIcon Grid.Column="2" Width="16" Height="16" VerticalAlignment="Center" Foreground="{DynamicResource SgMutedBrush}" Kind="SettingsOutline" /></Grid>
+                    </Button>
+
+                    <ToggleButton x:Name="btnQuickLocalNetwork" Grid.Row="2" Grid.Column="4" IsEnabled="{Binding TunBusy, Converter={StaticResource InverseBooleanConverter}}" Style="{StaticResource QuickSettingTile}">
+                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><Border Width="34" Height="34" Margin="0,0,9,0" CornerRadius="9" Style="{StaticResource ModeSceneIconCard}"><materialDesign:PackIcon Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource ModeSceneAccentIcon}" Kind="LanConnect" /></Border><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock FontSize="11" FontWeight="SemiBold" Text="Локальная сеть" /><TextBlock Style="{StaticResource QuickStateText}" Text="{Binding QuickLocalNetworkStatusDisplay}" /></StackPanel></Grid>
+                    </ToggleButton>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <Grid Visibility="Collapsed"><TextBlock x:Name="txtSpeedProxyDisplay" /><TextBlock x:Name="txtSpeedDirectDisplay" /></Grid>
+
+        <tb:TaskbarIcon x:Name="tbNotify" IconSource="/Resources/v2rayN.ico" NoLeftClickDelay="True" ToolTipText="SG Client 074">
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu Style="{StaticResource DefContextMenu}">
-                    <MenuItem
-                        x:Name="menuSystemProxyClear"
-                        Height="{StaticResource MenuItemHeight}"
-                        AutomationProperties.Name="{x:Static resx:ResUI.menuSystemProxyClear}">
-                        <MenuItem.Header>
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon
-                                    x:Name="menuSystemProxyClear2"
-                                    Margin="{StaticResource MarginRight8}"
-                                    VerticalAlignment="Center"
-                                    Kind="Check" />
-                                <TextBlock Text="{x:Static resx:ResUI.menuSystemProxyClear}" />
-                            </StackPanel>
-                        </MenuItem.Header>
-                    </MenuItem>
-                    <MenuItem
-                        x:Name="menuSystemProxySet"
-                        Height="{StaticResource MenuItemHeight}"
-                        AutomationProperties.Name="{x:Static resx:ResUI.menuSystemProxySet}">
-                        <MenuItem.Header>
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon
-                                    x:Name="menuSystemProxySet2"
-                                    Margin="{StaticResource MarginRight8}"
-                                    VerticalAlignment="Center"
-                                    Kind="Check" />
-                                <TextBlock Text="{x:Static resx:ResUI.menuSystemProxySet}" />
-                            </StackPanel>
-                        </MenuItem.Header>
-                    </MenuItem>
-                    <MenuItem
-                        x:Name="menuSystemProxyNothing"
-                        Height="{StaticResource MenuItemHeight}"
-                        AutomationProperties.Name="{x:Static resx:ResUI.menuSystemProxyNothing}">
-                        <MenuItem.Header>
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon
-                                    x:Name="menuSystemProxyNothing2"
-                                    Margin="{StaticResource MarginRight8}"
-                                    VerticalAlignment="Center"
-                                    Kind="Check" />
-                                <TextBlock Text="{x:Static resx:ResUI.menuSystemProxyNothing}" />
-                            </StackPanel>
-                        </MenuItem.Header>
-                    </MenuItem>
-                    <MenuItem
-                        x:Name="menuSystemProxyPac"
-                        Height="{StaticResource MenuItemHeight}"
-                        AutomationProperties.Name="{x:Static resx:ResUI.menuSystemProxyPac}">
-                        <MenuItem.Header>
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon
-                                    x:Name="menuSystemProxyPac2"
-                                    Margin="{StaticResource MarginRight8}"
-                                    VerticalAlignment="Center"
-                                    Kind="Check" />
-                                <TextBlock Text="{x:Static resx:ResUI.menuSystemProxyPac}" />
-                            </StackPanel>
-                        </MenuItem.Header>
-                    </MenuItem>
-                    <Separator x:Name="sepRoutings" />
-                    <MenuItem
-                        x:Name="menuRoutings"
-                        Height="Auto"
-                        AutomationProperties.Name="{x:Static resx:ResUI.menuRouting}">
-                        <MenuItem.Header>
-                            <DockPanel>
-                                <ComboBox
-                                    x:Name="cmbRoutings"
-                                    MaxWidth="300"
-                                    materialDesign:HintAssist.Hint="{x:Static resx:ResUI.menuRouting}"
-                                    AutomationProperties.Name="{x:Static resx:ResUI.menuRouting}"
-                                    DisplayMemberPath="Remarks"
-                                    FontSize="{DynamicResource StdFontSize}"
-                                    Style="{StaticResource MaterialDesignFilledComboBox}" />
-                            </DockPanel>
-                        </MenuItem.Header>
-                    </MenuItem>
-                    <MenuItem Height="Auto" AutomationProperties.Name="{x:Static resx:ResUI.menuServers}">
-                        <MenuItem.Header>
-                            <DockPanel>
-                                <ComboBox
-                                    x:Name="cmbServers"
-                                    MaxWidth="300"
-                                    materialDesign:HintAssist.Hint="{x:Static resx:ResUI.menuServers}"
-                                    AutomationProperties.Name="{x:Static resx:ResUI.menuServers}"
-                                    DisplayMemberPath="Text"
-                                    FontSize="{DynamicResource StdFontSize}"
-                                    Style="{StaticResource MaterialDesignFilledComboBox}" />
-                            </DockPanel>
-                        </MenuItem.Header>
-                    </MenuItem>
+                    <MenuItem x:Name="menuTrayStatus" Header="SG Client — TUN выключен" IsEnabled="False" />
+                    <MenuItem x:Name="menuTrayProfile" Header="Профиль: не выбран" IsEnabled="False" />
                     <Separator />
-                    <MenuItem
-                        x:Name="menuAddServerViaClipboard2"
-                        Height="{StaticResource MenuItemHeight}"
-                        Header="{x:Static resx:ResUI.menuAddServerViaClipboard}" />
-                    <MenuItem
-                        x:Name="menuAddServerViaScan2"
-                        Height="{StaticResource MenuItemHeight}"
-                        Header="{x:Static resx:ResUI.menuAddServerViaScan}" />
-                    <MenuItem
-                        x:Name="menuSubUpdate2"
-                        Height="{StaticResource MenuItemHeight}"
-                        Header="{x:Static resx:ResUI.menuSubUpdate}" />
-                    <MenuItem
-                        x:Name="menuSubUpdateViaProxy2"
-                        Height="{StaticResource MenuItemHeight}"
-                        Header="{x:Static resx:ResUI.menuSubUpdateViaProxy}" />
+                    <MenuItem x:Name="menuShow" Header="Открыть SG Client" />
+                    <MenuItem x:Name="menuTun" Header="Включить TUN" IsCheckable="True" />
+                    <MenuItem x:Name="menuProfiles" Header="Профили" />
+                    <MenuItem x:Name="menuLogs" Header="Журнал" />
                     <Separator />
-                    <MenuItem
-                        x:Name="menuCopyProxyCmdToClipboard"
-                        Height="{StaticResource MenuItemHeight}"
-                        Header="{x:Static resx:ResUI.menuCopyProxyCmdToClipboard}" />
+                    <MenuItem x:Name="menuAddServerViaClipboard2" Header="Импортировать ссылку из буфера" />
                     <Separator />
-                    <MenuItem
-                        x:Name="menuExit"
-                        Height="{StaticResource MenuItemHeight}"
-                        Header="{x:Static resx:ResUI.menuExit}" />
+                    <MenuItem x:Name="menuExit" Header="Выйти" />
                 </ContextMenu>
             </tb:TaskbarIcon.ContextMenu>
         </tb:TaskbarIcon>

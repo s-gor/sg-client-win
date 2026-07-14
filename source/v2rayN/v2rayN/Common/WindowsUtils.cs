@@ -50,6 +50,32 @@ internal static partial class WindowsUtils
             BitmapSizeOptions.FromEmptyOptions());
     }
 
+    public static void SetSgBorderlessFrame(Window window)
+    {
+        try
+        {
+            var hWnd = new WindowInteropHelper(window).EnsureHandle();
+
+            // Windows 11 can draw a bright DWM border even for WindowStyle=None.
+            // DWMWA_COLOR_NONE suppresses that external border while preserving
+            // the native resize hit area supplied by WindowChrome/ResizeMode.
+            var noBorder = unchecked((int)0xFFFFFFFE);
+            var attributeSize = (uint)Marshal.SizeOf(noBorder);
+            DwmSetWindowAttribute(hWnd, DWMWINDOWATTRIBUTE.DWMWA_BORDER_COLOR, ref noBorder, attributeSize);
+
+            if (window.TryFindResource("SgHeaderBrush") is SolidColorBrush headerBrush)
+            {
+                var color = headerBrush.Color;
+                var captionColor = color.R | (color.G << 8) | (color.B << 16);
+                DwmSetWindowAttribute(hWnd, DWMWINDOWATTRIBUTE.DWMWA_CAPTION_COLOR, ref captionColor, attributeSize);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("Set SG borderless frame", ex);
+        }
+    }
+
     public static void SetDarkBorder(Window window, string? theme)
     {
         var isDark = theme switch
@@ -87,6 +113,8 @@ internal static partial class WindowsUtils
     {
         DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19,
         DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
+        DWMWA_BORDER_COLOR = 34,
+        DWMWA_CAPTION_COLOR = 35,
     }
 
     #endregion Windows API

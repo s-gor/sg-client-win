@@ -29,7 +29,9 @@ public partial class CoreConfigV2rayService
                 {
                     type = "field",
                     inboundTag = new List<string> { Global.DnsTag },
-                    outboundTag = Global.ProxyTag,
+                    outboundTag = context.AppConfig.SgQuickSettingsItem?.DnsThroughTun == false
+                        ? Global.DirectTag
+                        : Global.ProxyTag,
                 });
                 return;
             }
@@ -91,13 +93,14 @@ public partial class CoreConfigV2rayService
             }
 
             var finalRule = BuildFinalRule();
+            var dnsThroughTun = context.AppConfig.SgQuickSettingsItem?.DnsThroughTun != false;
             dnsItem.tag = Global.DnsTag;
             _coreConfig.routing.rules.Add(new()
             {
                 type = "field",
                 inboundTag = [Global.DnsTag],
-                outboundTag = finalRule.outboundTag,
-                balancerTag = finalRule.balancerTag,
+                outboundTag = dnsThroughTun ? finalRule.outboundTag : Global.DirectTag,
+                balancerTag = dnsThroughTun ? finalRule.balancerTag : null,
             });
 
             _coreConfig.dns = dnsItem;

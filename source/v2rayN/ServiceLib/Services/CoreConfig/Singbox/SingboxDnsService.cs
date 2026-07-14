@@ -19,23 +19,10 @@ public partial class CoreConfigSingboxService
             _coreConfig.dns ??= new Dns4Sbox();
             _coreConfig.dns.independent_cache = true;
 
-            // final dns
-            var routing = context.RoutingItem;
-            var useDirectDns = false;
-            if (routing != null)
-            {
-                var rules = JsonUtils.Deserialize<List<RulesItem>>(routing.RuleSet) ?? [];
-
-                if (rules?.LastOrDefault() is { OutboundTag: Global.DirectTag } lastRule)
-                {
-                    var noDomain = lastRule.Domain == null || lastRule.Domain.Count == 0;
-                    var noProcess = lastRule.Process == null || lastRule.Process.Count == 0;
-                    var isAnyIp = lastRule.Ip == null || lastRule.Ip.Count == 0 || lastRule.Ip.Contains("0.0.0.0/0");
-                    var isAnyPort = string.IsNullOrEmpty(lastRule.Port) || lastRule.Port == "0-65535";
-                    var isAnyNetwork = string.IsNullOrEmpty(lastRule.Network) || lastRule.Network == "tcp,udp";
-                    useDirectDns = noDomain && noProcess && isAnyIp && isAnyPort && isAnyNetwork;
-                }
-            }
+            // SG Client exposes this as a direct quick setting. When enabled,
+            // all ordinary DNS queries use the remote DNS server through the
+            // selected TUN profile. When disabled, they use the direct server.
+            var useDirectDns = context.AppConfig.SgQuickSettingsItem?.DnsThroughTun == false;
             _coreConfig.dns.final = useDirectDns ? Global.SingboxDirectDNSTag : Global.SingboxRemoteDNSTag;
             var simpleDnsItem = context.SimpleDnsItem;
             if ((!useDirectDns) && simpleDnsItem.FakeIP == true && simpleDnsItem.GlobalFakeIp == false)

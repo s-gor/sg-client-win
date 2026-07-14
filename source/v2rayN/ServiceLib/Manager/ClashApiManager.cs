@@ -144,15 +144,22 @@ public sealed class ClashApiManager
         }
     }
 
-    public async Task<ClashConnections?> GetClashConnectionsAsync()
+    public Task<ClashConnections?> GetClashConnectionsAsync()
+    {
+        return GetClashConnectionsAsync(CancellationToken.None);
+    }
+
+    public async Task<ClashConnections?> GetClashConnectionsAsync(CancellationToken cancellationToken)
     {
         try
         {
             var url = $"{GetApiUrl()}/connections";
-            var result = await HttpClientHelper.Instance.TryGetAsync(url);
-            var clashConnections = JsonUtils.Deserialize<ClashConnections>(result);
-
-            return clashConnections;
+            var result = await HttpClientHelper.Instance.TryGetAsync(url, cancellationToken).ConfigureAwait(false);
+            return JsonUtils.Deserialize<ClashConnections>(result);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -162,12 +169,21 @@ public sealed class ClashApiManager
         return null;
     }
 
-    public async Task ClashConnectionClose(string id)
+    public Task ClashConnectionClose(string id)
+    {
+        return ClashConnectionClose(id, CancellationToken.None);
+    }
+
+    public async Task ClashConnectionClose(string id, CancellationToken cancellationToken)
     {
         try
         {
             var url = $"{GetApiUrl()}/connections/{id}";
-            await HttpClientHelper.Instance.DeleteAsync(url);
+            await HttpClientHelper.Instance.DeleteAsync(url, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {

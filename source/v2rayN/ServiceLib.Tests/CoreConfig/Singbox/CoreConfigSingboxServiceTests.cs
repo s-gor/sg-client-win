@@ -370,35 +370,18 @@ public class CoreConfigSingboxServiceTests
     }
 
     [Fact]
-    public void GenerateClientConfigContent_DnsFallback_LastRuleDirect_ShouldUseDirectFinalDns()
+    public void GenerateClientConfigContent_DnsThroughTunDisabled_LastRuleDirect_ShouldUseDirectFinalDns()
     {
         var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
         config.SimpleDNSItem.DirectDNS = "1.1.1.1";
         config.SimpleDNSItem.RemoteDNS = "9.9.9.9";
+        config.SgQuickSettingsItem.DnsThroughTun = false;
         CoreConfigTestFactory.BindAppManagerConfig(config);
 
         var node = CoreConfigTestFactory.CreateSocksNode(ECoreType.sing_box, "n-main", "main");
         var context = CoreConfigTestFactory.CreateContext(config, node, ECoreType.sing_box) with
         {
-            RoutingItem = new RoutingItem
-            {
-                Id = "r-direct-final",
-                Remarks = "direct-final",
-                RuleSet = JsonUtils.Serialize(new List<RulesItem>
-                {
-                    new()
-                    {
-                        Enabled = true,
-                        RuleType = ERuleType.Routing,
-                        OutboundTag = Global.DirectTag,
-                        Ip = ["0.0.0.0/0"],
-                        Port = "0-65535",
-                        Network = "tcp,udp",
-                    }
-                }),
-                DomainStrategy = Global.AsIs,
-                DomainStrategy4Singbox = string.Empty,
-            }
+            RoutingItem = CreateDirectFinalRoutingItem()
         };
 
         var result = new CoreConfigSingboxService(context).GenerateClientConfigContent();
@@ -407,6 +390,52 @@ public class CoreConfigSingboxServiceTests
         var cfg = JsonUtils.Deserialize<SingboxConfig>(result.Data!.ToString())!;
 
         cfg.dns.final.Should().Be(Global.SingboxDirectDNSTag);
+    }
+
+    [Fact]
+    public void GenerateClientConfigContent_DnsThroughTunEnabled_LastRuleDirect_ShouldUseRemoteFinalDns()
+    {
+        var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
+        config.SimpleDNSItem.DirectDNS = "1.1.1.1";
+        config.SimpleDNSItem.RemoteDNS = "9.9.9.9";
+        config.SgQuickSettingsItem.DnsThroughTun = true;
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+
+        var node = CoreConfigTestFactory.CreateSocksNode(ECoreType.sing_box, "n-main", "main");
+        var context = CoreConfigTestFactory.CreateContext(config, node, ECoreType.sing_box) with
+        {
+            RoutingItem = CreateDirectFinalRoutingItem()
+        };
+
+        var result = new CoreConfigSingboxService(context).GenerateClientConfigContent();
+
+        result.Success.Should().BeTrue($"ret msg: {result.Msg}");
+        var cfg = JsonUtils.Deserialize<SingboxConfig>(result.Data!.ToString())!;
+
+        cfg.dns.final.Should().Be(Global.SingboxRemoteDNSTag);
+    }
+
+    private static RoutingItem CreateDirectFinalRoutingItem()
+    {
+        return new RoutingItem
+        {
+            Id = "r-direct-final",
+            Remarks = "direct-final",
+            RuleSet = JsonUtils.Serialize(new List<RulesItem>
+            {
+                new()
+                {
+                    Enabled = true,
+                    RuleType = ERuleType.Routing,
+                    OutboundTag = Global.DirectTag,
+                    Ip = ["0.0.0.0/0"],
+                    Port = "0-65535",
+                    Network = "tcp,udp",
+                }
+            }),
+            DomainStrategy = Global.AsIs,
+            DomainStrategy4Singbox = string.Empty,
+        };
     }
 
     [Fact]

@@ -1,0 +1,48 @@
+name: Windows CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore v2rayN/v2rayN.sln
+
+      - name: Unit tests
+        run: dotnet test v2rayN/ServiceLib.Tests/ServiceLib.Tests.csproj -c Release --no-restore --logger "trx;LogFileName=service-lib-tests.trx"
+
+      - name: Publish SG Client
+        run: dotnet publish v2rayN/v2rayN/v2rayN.csproj -c Release -r win-x64 -p:SelfContained=true -p:EnableWindowsTargeting=true -o artifacts/sg-client
+
+      - name: Verify output
+        shell: cmd
+        run: |
+          if not exist "artifacts\sg-client\SG-Client-040.exe" exit /b 1
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sg-client-040-source-build
+          path: artifacts/sg-client
+          if-no-files-found: error

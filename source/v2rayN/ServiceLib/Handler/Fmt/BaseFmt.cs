@@ -8,6 +8,15 @@ public class BaseFmt
 
     private static string UrlEncodeSafe(string? value) => Utils.UrlEncode(value ?? string.Empty);
 
+    private static void ToUriQueryCountry(ProfileItem item, ref Dictionary<string, string> dicQuery)
+    {
+        var countryCode = SgCountryHelper.ResolveCode(item.CountryCode, item.Remarks);
+        if (countryCode.IsNotEmpty())
+        {
+            dicQuery["country_code"] = countryCode;
+        }
+    }
+
     protected static string GetIpv6(string address)
     {
         if (Utils.IsIpv6(address))
@@ -24,6 +33,7 @@ public class BaseFmt
     protected static int ToUriQuery(ProfileItem item, string? securityDef, ref Dictionary<string, string> dicQuery)
     {
         var transport = item.GetTransportExtra();
+        ToUriQueryCountry(item, ref dicQuery);
 
         if (item.StreamSecurity.IsNotEmpty())
         {
@@ -187,6 +197,7 @@ public class BaseFmt
 
     protected static int ToUriQueryLite(ProfileItem item, ref Dictionary<string, string> dicQuery)
     {
+        ToUriQueryCountry(item, ref dicQuery);
         if (item.Sni.IsNotEmpty())
         {
             dicQuery.Add("sni", Utils.UrlEncode(item.Sni));
@@ -233,6 +244,17 @@ public class BaseFmt
         item.EchConfigList = GetQueryDecoded(query, "ech");
         item.VerifyPeerCertByName = GetQueryDecoded(query, "vcn");
         item.CertSha = GetQueryDecoded(query, "pcs");
+
+        var countryCode = GetQueryDecoded(query, "country_code");
+        if (countryCode.IsNullOrEmpty())
+        {
+            countryCode = GetQueryDecoded(query, "sg_country");
+        }
+        if (countryCode.IsNullOrEmpty())
+        {
+            countryCode = GetQueryDecoded(query, "cc");
+        }
+        item.CountryCode = SgCountryHelper.NormalizeCode(countryCode);
 
         var finalmaskDecoded = GetQueryDecoded(query, "fm");
         if (finalmaskDecoded.IsNotEmpty())
@@ -348,6 +370,7 @@ public class BaseFmt
         }
 
         item.SetTransportExtra(transport);
+        item.CountryCode = SgCountryHelper.ResolveCode(item.CountryCode, item.Remarks);
 
         return 0;
     }

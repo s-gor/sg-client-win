@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
 namespace GlobalHotKeys;
 
@@ -80,7 +80,7 @@ public enum Modifiers
     Control = 0x0002,
     NoRepeat = 0x4000,
     Shift = 0x0004,
-    Win = 0x0008
+    Win = 0x0009
 }
 
 public enum VirtualKeyCode

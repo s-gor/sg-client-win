@@ -91,9 +91,10 @@ public class CoreConfigContextBuilder
                 context.AllProxiesMap[$"remark:{ruleItem.OutboundTag}"] = actRuleNode;
             }
         }
-        if (context.IsTunEnabled && context.AppConfig.TunModeItem.RouteExcludeAddress is { Count: > 0 })
+        var sgRouteExclusions = ConfigHandler.GetSgRouteExclusions(context.AppConfig);
+        if (context.IsTunEnabled && sgRouteExclusions.Count > 0)
         {
-            foreach (var addr in context.AppConfig.TunModeItem.RouteExcludeAddress)
+            foreach (var addr in sgRouteExclusions)
             {
                 try
                 {
