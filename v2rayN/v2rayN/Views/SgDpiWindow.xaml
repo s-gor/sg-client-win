@@ -1,0 +1,184 @@
+<Window
+    x:Class="v2rayN.Views.SgDpiWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+    Title="Маскировка DPI"
+    Width="974"
+    Height="714"
+    MinWidth="780"
+    MinHeight="680"
+    Background="{DynamicResource SgBackgroundBrush}"
+    Foreground="{DynamicResource SgTextBrush}"
+    WindowStartupLocation="CenterOwner"
+    ResizeMode="CanResize"
+    WindowStyle="None"
+    SnapsToDevicePixels="True"
+    UseLayoutRounding="True"
+    Closing="SgDpiWindow_Closing">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome
+            CaptionHeight="0"
+            CornerRadius="0"
+            GlassFrameThickness="0"
+            ResizeBorderThickness="7"
+            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+    <Window.Resources>
+        <Style x:Key="HeaderActionButton" BasedOn="{StaticResource SgWindowButtonBase}" TargetType="Button">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="MinWidth" Value="86" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+            <Setter Property="Padding" Value="12,4" />
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceRaisedBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="DpiOption" TargetType="RadioButton">
+            <Setter Property="Margin" Value="0,0,0,10" />
+            <Setter Property="Padding" Value="15,13" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceSoftBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Card" Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <Ellipse x:Name="Ring" Width="16" Height="16" VerticalAlignment="Top" Margin="0,2,0,0" Stroke="{DynamicResource SgMutedBrush}" StrokeThickness="1.5" />
+                                <Ellipse x:Name="Dot" Width="8" Height="8" VerticalAlignment="Top" Margin="0,6,0,0" Fill="{DynamicResource SgAccentBrush}" Visibility="Collapsed" />
+                                <ContentPresenter Grid.Column="1" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource SgAccentBrush}" />
+                                <Setter TargetName="Card" Property="Background" Value="{DynamicResource SgAccentSoftBrush}" />
+                                <Setter TargetName="Ring" Property="Stroke" Value="{DynamicResource SgAccentBrush}" />
+                                <Setter TargetName="Dot" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Card" Property="Background" Value="{DynamicResource SgHoverBrush}" /></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Border Margin="0" Background="{DynamicResource SgBackgroundBrush}" BorderBrush="{DynamicResource SgBorderStrongBrush}" BorderThickness="1" CornerRadius="16">
+        <Grid>
+            <Grid.RowDefinitions><RowDefinition Height="58" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+            <Border Padding="20,0,10,0" Background="{DynamicResource SgHeaderBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="0,0,0,1" CornerRadius="15,15,0,0" MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Маскировка DPI" />
+                        <TextBlock Margin="0,2,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="Сравнение активного, будущего и фактически применённого config.json" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal">
+                        <Button Style="{StaticResource HeaderActionButton}" Click="Help_Click" Content="Справка" />
+                        <Button Style="{StaticResource HeaderActionButton}" Click="Close_Click" Content="Закрыть" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="24,20">
+                    <Border x:Name="stateCard" Padding="16" Margin="0,0,0,14" Background="{DynamicResource SgSuccessSoftBrush}" BorderBrush="{DynamicResource SgSuccessBrush}" BorderThickness="2" CornerRadius="13">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock FontSize="15" FontWeight="Bold" Foreground="{DynamicResource SgTextBrush}" Text="Состояние маскировки" />
+                                    <TextBlock Margin="0,4,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="Рабочий файл не изменяется до нажатия «Применить»" />
+                                </StackPanel>
+                                <Border x:Name="statusBadge" Grid.Column="1" Padding="10,5" VerticalAlignment="Top" Background="{DynamicResource SgSuccessSoftBrush}" BorderBrush="{DynamicResource SgSuccessBrush}" BorderThickness="1" CornerRadius="9">
+                                    <TextBlock x:Name="tbApplyStatus" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource SgSuccessBrush}" Text="ПРОВЕРКА…" />
+                                </Border>
+                            </Grid>
+
+                            <Grid Margin="0,14,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition x:Name="comparisonBeforeColumn" Width="*" />
+                                    <ColumnDefinition x:Name="comparisonGapColumn" Width="0" />
+                                    <ColumnDefinition x:Name="comparisonAfterColumn" Width="0" />
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="comparisonBeforeCard" Padding="12" Background="{DynamicResource SgInputBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="9">
+                                    <StackPanel>
+                                        <TextBlock x:Name="tbBeforeCaption" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource SgMutedBrush}" Text="АКТИВНАЯ КОНФИГУРАЦИЯ" />
+                                        <TextBlock x:Name="tbBeforeState" Margin="0,3,0,0" FontSize="9" Foreground="{DynamicResource SgMutedBrush}" Text="ПРИМЕНЕНО СЕЙЧАС" TextWrapping="Wrap" />
+                                        <TextBlock x:Name="tbBeforeMode" Margin="0,8,0,0" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" TextWrapping="Wrap" />
+                                        <Separator Margin="0,9,0,8" Background="{DynamicResource SgBorderBrush}" />
+                                        <TextBlock x:Name="tbBeforeParameters" FontFamily="Consolas" FontSize="10" Foreground="{DynamicResource SgTextBrush}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                                <Border x:Name="comparisonAfterCard" Grid.Column="2" Padding="12" Background="{DynamicResource SgWarningSoftBrush}" BorderBrush="{DynamicResource SgWarningBrush}" BorderThickness="1.5" CornerRadius="9" Visibility="Collapsed">
+                                    <StackPanel>
+                                        <TextBlock x:Name="tbAfterCaption" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource SgMutedBrush}" Text="БУДЕТ ПОСЛЕ ПРИМЕНЕНИЯ" />
+                                        <TextBlock x:Name="tbAfterMode" Margin="0,8,0,0" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" TextWrapping="Wrap" />
+                                        <Separator Margin="0,9,0,8" Background="{DynamicResource SgBorderBrush}" />
+                                        <TextBlock x:Name="tbAfterParameters" FontFamily="Consolas" FontSize="10" Foreground="{DynamicResource SgTextBrush}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <TextBlock x:Name="tbApplyDetail" Margin="0,12,0,0" FontSize="10.5" Foreground="{DynamicResource SgTextBrush}" TextWrapping="Wrap" />
+                            <Border Margin="0,10,0,0" Padding="12" Background="{DynamicResource SgInputBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="9">
+                                <StackPanel>
+                                    <TextBlock FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource SgMutedBrush}" Text="ПРОВЕРКА РАБОЧЕГО CONFIG.JSON" />
+                                    <TextBlock x:Name="tbDiagnostic" Margin="0,6,0,0" FontFamily="Consolas" FontSize="10" Foreground="{DynamicResource SgTextBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <RadioButton x:Name="rbAuto" GroupName="dpi" Style="{StaticResource DpiOption}" Checked="DpiMode_Checked"><StackPanel><TextBlock FontSize="13" FontWeight="SemiBold" Text="Автоматически — рекомендуется" /><TextBlock Margin="0,4,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="Xray: мягкий FinalMask ClientHello. sing-box: TLS record_fragment. Hysteria2 не получает несовместимые настройки, AmneziaWG использует маскировку из профиля." /></StackPanel></RadioButton>
+                    <RadioButton x:Name="rbOff" GroupName="dpi" Style="{StaticResource DpiOption}" Checked="DpiMode_Checked"><StackPanel><TextBlock FontSize="13" FontWeight="SemiBold" Text="Выключена" /><TextBlock Margin="0,4,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="Без дополнительного дробления и шума. Выбирайте для диагностики, максимальной скорости или если соединение и так стабильно." /></StackPanel></RadioButton>
+                    <RadioButton x:Name="rbTls" GroupName="dpi" Style="{StaticResource DpiOption}" Checked="DpiMode_Checked"><StackPanel><TextBlock FontSize="13" FontWeight="SemiBold" Text="Дробление TLS / ClientHello" /><TextBlock Margin="0,4,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="Xray: усиленное дробление ClientHello. sing-box: TCP-fragment. Пробуйте, если автоматический режим не помогает." /></StackPanel></RadioButton>
+                    <RadioButton x:Name="rbNoise" GroupName="dpi" Style="{StaticResource DpiOption}" Checked="DpiMode_Checked"><StackPanel><TextBlock FontSize="13" FontWeight="SemiBold" Text="Дробление TLS + шум — экспериментально" /><TextBlock Margin="0,4,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="Xray: более сильное дробление и корректный UDP-noise для UDP-транспорта. sing-box: сочетание record_fragment и TCP-fragment. Может ухудшить совместимость." /></StackPanel></RadioButton>
+                    <RadioButton x:Name="rbCustom" GroupName="dpi" Style="{StaticResource DpiOption}" Checked="DpiMode_Checked"><StackPanel><TextBlock FontSize="13" FontWeight="SemiBold" Text="Пользовательские параметры" /><TextBlock Margin="0,4,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="Для опытных пользователей: редактируемый JSON Xray и sing-box с обязательной проверкой выбранным ядром перед применением." /></StackPanel></RadioButton>
+
+                    <Border x:Name="customEditorCard" Padding="15" Margin="0,2,0,12" Background="{DynamicResource SgSurfaceSoftBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="12">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock FontSize="14" FontWeight="SemiBold" Text="Расширенные параметры JSON" />
+                                    <TextBlock Margin="0,4,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="Сначала показан фактически используемый пресет. Редактирование включает режим «Пользовательские параметры»." />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <Button x:Name="btnEditJson" Style="{StaticResource HeaderActionButton}" Click="EditJson_Click" Content="Редактировать" ToolTip="Разрешить ручное редактирование текущего JSON" />
+                                    <Button x:Name="btnValidateJson" Style="{StaticResource HeaderActionButton}" Click="ValidateJson_Click" Content="Проверить" IsEnabled="False" ToolTip="Проверить полный временный config.json выбранным ядром" />
+                                    <Button x:Name="btnDefaultJson" Style="{StaticResource HeaderActionButton}" Click="DefaultJson_Click" Content="По умолчанию" ToolTip="Вернуть комплектные настройки SG Client" />
+                                </StackPanel>
+                            </Grid>
+                            <TextBox x:Name="txtCustomJson" Margin="0,12,0,0" MinHeight="210" Padding="12" AcceptsReturn="True" AcceptsTab="True" FontFamily="Consolas" FontSize="10.5" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" TextWrapping="NoWrap" IsReadOnly="True" TextChanged="CustomJson_TextChanged" />
+                            <TextBlock x:Name="txtCustomJsonStatus" Margin="0,9,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="JSON доступен только для чтения. Нажмите «Редактировать» для создания пользовательского режима." TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Padding="13" Margin="0,2,0,0" Background="{DynamicResource SgAccentSoftBrush}" BorderBrush="{DynamicResource SgAccentBorderBrush}" BorderThickness="1" CornerRadius="11"><TextBlock FontSize="10.5" Foreground="{DynamicResource SgTextBrush}" TextWrapping="Wrap" Text="Фрагментация не шифрует и не гарантирует сокрытие SNI. Она может затруднить анализ ClientHello некоторыми системами DPI. Hysteria2 работает поверх QUIC/UDP: обычное Xray-дробление к ней не применяется. В AmneziaWG уже используются Jc/Jmin/Jmax, S1–S4 и H1–H4 из импортированного .conf." /></Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <Border Grid.Row="2" Padding="20,14" Background="{DynamicResource SgHeaderBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="0,1,0,0" CornerRadius="0,0,15,15">
+                <Grid>
+                    <TextBlock x:Name="txtFooterStatus" VerticalAlignment="Center" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Изменения будут применены после нажатия кнопки справа." />
+                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                        <Button Width="104" Height="38" Click="Close_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Content="Отмена" />
+                        <Button x:Name="btnApply" Width="140" Height="38" Margin="10,0,0,0" Click="Apply_Click" Style="{StaticResource MaterialDesignRaisedButton}" Content="Применить" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

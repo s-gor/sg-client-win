@@ -1,0 +1,6 @@
+{
+	"type": "vless",
+	"tag": "proxy",
+	"server": "",
+	"server_port": 443
+}

@@ -1,0 +1,349 @@
+<Window
+    x:Class="v2rayN.Views.SgRoutingWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+    xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+    Title="Умная маршрутизация"
+    Width="974"
+    Height="714"
+    MinWidth="780"
+    MinHeight="580"
+    Background="{DynamicResource SgBackgroundBrush}"
+    Foreground="{DynamicResource SgTextBrush}"
+    WindowStartupLocation="CenterOwner"
+    ResizeMode="CanResize"
+    WindowStyle="None"
+    SnapsToDevicePixels="True"
+    UseLayoutRounding="True">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome
+            CaptionHeight="0"
+            CornerRadius="0"
+            GlassFrameThickness="0"
+            ResizeBorderThickness="7"
+            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+    <Window.Resources>
+        <Style x:Key="SectionCard" TargetType="Border">
+            <Setter Property="Padding" Value="14" />
+            <Setter Property="Margin" Value="0,0,0,10" />
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceSoftBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+        </Style>
+
+        <Style x:Key="SelectedConfigurationCard" TargetType="Border">
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+            <Setter Property="Background" Value="{DynamicResource SgAccentSoftBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgAccentBrush}" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="CornerRadius" Value="13" />
+        </Style>
+
+        <Style x:Key="UserRulesHighlightCard" TargetType="Border">
+            <Setter Property="Padding" Value="15" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+            <Setter Property="Background" Value="{DynamicResource SgSelectedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="CornerRadius" Value="13" />
+        </Style>
+
+        <Style x:Key="SegmentRadio" TargetType="RadioButton">
+            <Setter Property="MinHeight" Value="38" />
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="Padding" Value="8,5" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource SgMutedBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceRaisedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border
+                            x:Name="Root"
+                            Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="8">
+                            <ContentPresenter
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                RecognizesAccessKey="True" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource SgAccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource SgAccentBrush}" />
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource SgAccentSoftBrush}" />
+                                <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource SgAccentBrush}" />
+                                <Setter TargetName="Root" Property="BorderThickness" Value="2" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PresetRadio" TargetType="RadioButton" BasedOn="{StaticResource SegmentRadio}">
+            <Setter Property="MinHeight" Value="46" />
+            <Setter Property="FontSize" Value="10.5" />
+            <Setter Property="Margin" Value="3" />
+        </Style>
+
+        <Style x:Key="RuleTextBox" TargetType="TextBox" BasedOn="{StaticResource MaterialDesignOutlinedTextBox}">
+            <Setter Property="AcceptsReturn" Value="True" />
+            <Setter Property="TextWrapping" Value="NoWrap" />
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
+            <Setter Property="MinHeight" Value="105" />
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="FontSize" Value="11" />
+        </Style>
+
+        <Style x:Key="RuleTitle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+        </Style>
+        <Style x:Key="RuleDescription" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,3,0,0" />
+            <Setter Property="FontSize" Value="10.5" />
+            <Setter Property="Foreground" Value="{DynamicResource SgMutedBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <Style x:Key="HeaderActionButton" BasedOn="{StaticResource SgWindowButtonBase}" TargetType="Button">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="MinWidth" Value="86" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+            <Setter Property="Padding" Value="12,4" />
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceRaisedBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+    </Window.Resources>
+
+    <Border Margin="0" Background="{DynamicResource SgBackgroundBrush}" BorderBrush="{DynamicResource SgBorderStrongBrush}" BorderThickness="1" CornerRadius="16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="58" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Border Padding="18,0,8,0" Background="{DynamicResource SgHeaderBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="0,0,0,1" CornerRadius="15,15,0,0" MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Умная маршрутизация" />
+                        <TextBlock Margin="0,2,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="Одинаковые правила для Xray и sing-box" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal">
+                        <Button Style="{StaticResource HeaderActionButton}" Click="Help_Click" Content="Справка" ToolTip="Открыть справку по маршрутизации" />
+                        <Button Style="{StaticResource HeaderActionButton}" Click="Cancel_Click" Content="Закрыть" ToolTip="Закрыть окно без сохранения" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="18,12,18,28">
+                    <Border Style="{StaticResource SelectedConfigurationCard}">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock FontSize="15" FontWeight="Bold" Foreground="{DynamicResource SgAccentBrush}" Text="Выбранная конфигурация" />
+                                    <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+                                        <TextBlock FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="Схема:" />
+                                        <TextBlock x:Name="txtSelectedPreset" Margin="7,0,0,0" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Весь интернет через VPN" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <Button Grid.Column="1" MinWidth="112" Height="34" Padding="12,5" Click="RefreshDiagnostic_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Content="Обновить" />
+                            </Grid>
+                            <Border Margin="0,12,0,0" Padding="12" Background="{DynamicResource SgInputBrush}" BorderBrush="{DynamicResource SgAccentBorderBrush}" BorderThickness="1" CornerRadius="9">
+                                <TextBlock x:Name="tbDiagnostic" FontFamily="Consolas" FontSize="10.5" Foreground="{DynamicResource SgTextBrush}" TextWrapping="Wrap" />
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource UserRulesHighlightCard}">
+                        <Expander IsExpanded="False" Background="Transparent" BorderThickness="0">
+                            <Expander.Header>
+                                <StackPanel>
+                                    <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Пользовательские правила" />
+                                    <TextBlock Margin="0,3,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="Ваши домены и IP/подсети. После применения диагностика покажет наличие, направление и приоритет каждой записи в рабочем config.json." />
+                                </StackPanel>
+                            </Expander.Header>
+                            <StackPanel Margin="0,12,0,0">
+                                <TextBlock Margin="0,0,0,10" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="По одной записи в строке. full:host.example — только точный хост; domain:example — домен и все его поддомены. Без префикса используется domain:." />
+                                <TabControl Background="Transparent" BorderThickness="0">
+                                    <TabItem Header="Direct">
+                                        <Grid Margin="0,10,0,0">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <StackPanel><TextBlock Margin="0,0,0,6" FontWeight="SemiBold" Text="Домены" /><TextBox x:Name="txtDirectDomains" Style="{StaticResource RuleTextBox}" TextChanged="CustomRules_TextChanged" /></StackPanel>
+                                            <StackPanel Grid.Column="2"><TextBlock Margin="0,0,0,6" FontWeight="SemiBold" Text="IP и подсети" /><TextBox x:Name="txtDirectIps" Style="{StaticResource RuleTextBox}" TextChanged="CustomRules_TextChanged" /></StackPanel>
+                                        </Grid>
+                                    </TabItem>
+                                    <TabItem Header="VPN">
+                                        <Grid Margin="0,10,0,0">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <StackPanel><TextBlock Margin="0,0,0,6" FontWeight="SemiBold" Text="Домены" /><TextBox x:Name="txtProxyDomains" Style="{StaticResource RuleTextBox}" TextChanged="CustomRules_TextChanged" /></StackPanel>
+                                            <StackPanel Grid.Column="2"><TextBlock Margin="0,0,0,6" FontWeight="SemiBold" Text="IP и подсети" /><TextBox x:Name="txtProxyIps" Style="{StaticResource RuleTextBox}" TextChanged="CustomRules_TextChanged" /></StackPanel>
+                                        </Grid>
+                                    </TabItem>
+                                    <TabItem Header="Block">
+                                        <Grid Margin="0,10,0,0">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <StackPanel><TextBlock Margin="0,0,0,6" FontWeight="SemiBold" Text="Домены" /><TextBox x:Name="txtBlockDomains" Style="{StaticResource RuleTextBox}" TextChanged="CustomRules_TextChanged" /></StackPanel>
+                                            <StackPanel Grid.Column="2"><TextBlock Margin="0,0,0,6" FontWeight="SemiBold" Text="IP и подсети" /><TextBox x:Name="txtBlockIps" Style="{StaticResource RuleTextBox}" TextChanged="CustomRules_TextChanged" /></StackPanel>
+                                        </Grid>
+                                    </TabItem>
+                                </TabControl>
+                            </StackPanel>
+                        </Expander>
+                    </Border>
+
+                    <Border Style="{StaticResource SectionCard}">
+                        <StackPanel>
+                            <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Базовая схема" />
+                            <TextBlock Margin="0,4,0,8" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="Выберите основу маршрутизации. Любое ручное изменение ниже создаст пользовательскую схему." />
+                            <UniformGrid x:Name="presetOptions" Columns="2">
+                                <RadioButton GroupName="RoutingPreset" Tag="global" Style="{StaticResource PresetRadio}" Checked="PresetRadio_Checked" Content="Весь интернет через VPN" />
+                                <RadioButton GroupName="RoutingPreset" Tag="ru_except" Style="{StaticResource PresetRadio}" Checked="PresetRadio_Checked" Content="Россия напрямую, остальное через VPN" />
+                                <RadioButton GroupName="RoutingPreset" Tag="ru_blocked" Style="{StaticResource PresetRadio}" Checked="PresetRadio_Checked" Content="Только заблокированное через VPN" />
+                                <RadioButton GroupName="RoutingPreset" Tag="custom" Style="{StaticResource PresetRadio}" Checked="PresetRadio_Checked" Content="Пользовательская схема" />
+                            </UniformGrid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource SectionCard}">
+                        <StackPanel>
+                            <TextBlock Margin="0,0,0,10" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Основные правила" />
+
+                            <Grid Margin="0,0,0,9">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="3*" /></Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center"><TextBlock Style="{StaticResource RuleTitle}" Text="Локальная сеть" /><TextBlock Style="{StaticResource RuleDescription}" Text="Домашний роутер, NAS, принтеры и частные адреса" /></StackPanel>
+                                <UniformGrid x:Name="localActions" Grid.Column="1" Columns="3" Margin="12,0,0,0">
+                                    <RadioButton GroupName="LocalAction" Tag="direct" Style="{StaticResource SegmentRadio}" Checked="RuleRadio_Checked" Content="Direct" />
+                                    <RadioButton GroupName="LocalAction" Tag="proxy" Style="{StaticResource SegmentRadio}" Checked="RuleRadio_Checked" Content="VPN" />
+                                    <RadioButton GroupName="LocalAction" Tag="block" Style="{StaticResource SegmentRadio}" Checked="RuleRadio_Checked" Content="Block" />
+                                </UniformGrid>
+                            </Grid>
+
+                            <Border Margin="0,0,0,10" Padding="12" Background="{DynamicResource SgInputBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="10">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource RuleTitle}" Text="Российская маршрутизация" />
+                                    <TextBlock Style="{StaticResource RuleDescription}" Text="Выберите только один набор. category-ru уже включает tld-ru, ru.com, ru.net и российские сервисы в других доменных зонах." />
+                                    <UniformGrid x:Name="russiaScopeOptions" Columns="3" Margin="0,10,0,0">
+                                        <RadioButton GroupName="RussiaScope" Tag="none" Style="{StaticResource SegmentRadio}" Checked="RussiaScopeRadio_Checked" Content="Выключено" />
+                                        <RadioButton GroupName="RussiaScope" Tag="tld" Style="{StaticResource SegmentRadio}" Checked="RussiaScopeRadio_Checked" Content="Только доменные зоны" ToolTip="geosite:tld-ru" />
+                                        <RadioButton GroupName="RussiaScope" Tag="sites_ip" Style="{StaticResource SegmentRadio}" Checked="RussiaScopeRadio_Checked" Content="Сайты и IP" ToolTip="geosite:category-ru + geoip:ru" />
+                                    </UniformGrid>
+                                    <Grid Margin="0,10,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="3*" /></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Style="{StaticResource RuleTitle}" Text="Действие выбранного набора" />
+                                            <TextBlock x:Name="txtRussiaSyntax" Style="{StaticResource RuleDescription}" Text="Правило выключено" />
+                                        </StackPanel>
+                                        <UniformGrid x:Name="russiaActions" Grid.Column="1" Columns="3" Margin="12,0,0,0">
+                                            <RadioButton GroupName="RussiaAction" Tag="direct" Style="{StaticResource SegmentRadio}" Checked="RuleRadio_Checked" Content="Direct" />
+                                            <RadioButton GroupName="RussiaAction" Tag="proxy" Style="{StaticResource SegmentRadio}" Checked="RuleRadio_Checked" Content="VPN" />
+                                            <RadioButton GroupName="RussiaAction" Tag="block" Style="{StaticResource SegmentRadio}" Checked="RuleRadio_Checked" Content="Block" />
+                                        </UniformGrid>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <Grid Margin="0,0,0,9">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="3*" /></Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center"><TextBlock Style="{StaticResource RuleTitle}" Text="Заблокированные ресурсы" /><TextBlock Style="{StaticResource RuleDescription}" Text="Отдельный российский community ruleset" /></StackPanel>
+                                <UniformGrid x:Name="blockedActions" Grid.Column="1" Columns="3" Margin="12,0,0,0">
+                                    <RadioButton GroupName="BlockedAction" Tag="direct" Style="{StaticResource SegmentRadio}" Checked="RuleRadio_Checked" Content="Direct" />
+                                    <RadioButton GroupName="BlockedAction" Tag="proxy" Style="{StaticResource SegmentRadio}" Checked="RuleRadio_Checked" Content="VPN" />
+                                    <RadioButton GroupName="BlockedAction" Tag="block" Style="{StaticResource SegmentRadio}" Checked="RuleRadio_Checked" Content="Block" />
+                                </UniformGrid>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,9">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="3*" /></Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center"><TextBlock Style="{StaticResource RuleTitle}" Text="Реклама и трекеры" /><TextBlock Style="{StaticResource RuleDescription}" Text="Категория category-ads-all" /></StackPanel>
+                                <UniformGrid x:Name="adsActions" Grid.Column="1" Columns="3" Margin="12,0,0,0">
+                                    <RadioButton GroupName="AdsAction" Tag="direct" Style="{StaticResource SegmentRadio}" Checked="RuleRadio_Checked" Content="Direct" />
+                                    <RadioButton GroupName="AdsAction" Tag="proxy" Style="{StaticResource SegmentRadio}" Checked="RuleRadio_Checked" Content="VPN" />
+                                    <RadioButton GroupName="AdsAction" Tag="block" Style="{StaticResource SegmentRadio}" Checked="RuleRadio_Checked" Content="Block" />
+                                </UniformGrid>
+                            </Grid>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="3*" /></Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center"><TextBlock Style="{StaticResource RuleTitle}" Text="Остальной трафик" /><TextBlock Style="{StaticResource RuleDescription}" Text="Действие, если ни одно правило выше не совпало" /></StackPanel>
+                                <UniformGrid x:Name="defaultActions" Grid.Column="1" Columns="2" Margin="12,0,0,0">
+                                    <RadioButton GroupName="DefaultAction" Tag="proxy" Style="{StaticResource SegmentRadio}" Checked="RuleRadio_Checked" Content="VPN" />
+                                    <RadioButton GroupName="DefaultAction" Tag="direct" Style="{StaticResource SegmentRadio}" Checked="RuleRadio_Checked" Content="Direct" />
+                                </UniformGrid>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="warningCard" Padding="13" Margin="0,0,0,10" Background="{DynamicResource SgWarningSoftBrush}" BorderBrush="{DynamicResource SgWarningBrush}" BorderThickness="1" CornerRadius="11">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Width="19" Height="19" Margin="0,0,10,0" Foreground="{DynamicResource SgWarningBrush}" Kind="AlertOutline" />
+                            <TextBlock x:Name="txtWarning" FontSize="10.5" Foreground="{DynamicResource SgTextBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource SectionCard}">
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Наборы geosite / geoip / rule-set" />
+                                <TextBlock x:Name="txtVersion" Margin="0,3,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="Не загружены" />
+                                <TextBlock x:Name="txtIntegrity" Margin="0,2,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" />
+                                <TextBlock x:Name="txtEngineSupport" Margin="0,8,0,0" FontSize="10.5" Foreground="{DynamicResource SgAccentBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <Button x:Name="btnUpdate" Grid.Column="1" Width="194" Height="40" Padding="14,5" Click="Update_Click" Background="{DynamicResource SgNeutralActionBrush}" BorderBrush="{DynamicResource SgNeutralActionBorderBrush}" Foreground="{DynamicResource SgNeutralActionTextBrush}">
+                                <TextBlock FontSize="11.5" FontWeight="SemiBold" Text="Проверить обновления" />
+                            </Button>
+                        </Grid>
+                    </Border>
+                    <TextBlock x:Name="txtProgress" Margin="0,0,0,10" FontSize="10" Foreground="{DynamicResource SgAccentBrush}" TextWrapping="Wrap" />
+
+                </StackPanel>
+            </ScrollViewer>
+
+            <Border Grid.Row="2" Padding="18,10" Background="{DynamicResource SgHeaderBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="0,1,0,0" CornerRadius="0,0,15,15">
+                <Grid>
+                    <TextBlock x:Name="txtFooterStatus" VerticalAlignment="Center" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Изменения будут применены после нажатия кнопки справа." />
+                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                        <Button Width="104" Height="38" Click="Cancel_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Content="Отмена" />
+                        <Button x:Name="btnSave" Width="150" Height="38" Margin="10,0,0,0" Click="Save_Click" Style="{StaticResource MaterialDesignRaisedButton}" Content="Применить" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

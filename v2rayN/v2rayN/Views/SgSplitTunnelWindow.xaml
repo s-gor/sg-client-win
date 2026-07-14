@@ -1,0 +1,125 @@
+<Window
+    x:Class="v2rayN.Views.SgSplitTunnelWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+    xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+    Title="Раздельный TUN"
+    Width="974"
+    Height="714"
+    MinWidth="780"
+    MinHeight="580"
+    Background="{DynamicResource SgBackgroundBrush}"
+    Foreground="{DynamicResource SgTextBrush}"
+    WindowStartupLocation="CenterOwner"
+    ResizeMode="CanResize"
+    WindowStyle="None"
+    SnapsToDevicePixels="True"
+    UseLayoutRounding="True">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome
+            CaptionHeight="0"
+            CornerRadius="0"
+            GlassFrameThickness="0"
+            ResizeBorderThickness="7"
+            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+    <Window.Resources>
+        <Style x:Key="HeaderActionButton" BasedOn="{StaticResource SgWindowButtonBase}" TargetType="Button">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="MinWidth" Value="86" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+            <Setter Property="Padding" Value="12,4" />
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceRaisedBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+    </Window.Resources>
+    <Border Margin="0" Background="{DynamicResource SgBackgroundBrush}" BorderBrush="{DynamicResource SgBorderStrongBrush}" BorderThickness="1" CornerRadius="16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="58" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Border Padding="18,0,8,0" Background="{DynamicResource SgHeaderBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="0,0,0,1" CornerRadius="15,15,0,0" MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Раздельный TUN" />
+                        <TextBlock Margin="0,2,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="Выбранные приложения и адреса работают вне туннеля" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal">
+                        <Button Style="{StaticResource HeaderActionButton}" Click="Help_Click" Content="Справка" ToolTip="Открыть справку по раздельному TUN" />
+                        <Button Style="{StaticResource HeaderActionButton}" Click="Cancel_Click" Content="Закрыть" ToolTip="Закрыть окно без сохранения" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="20,18">
+                    <Border Padding="16" Background="{DynamicResource SgSidebarBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="14">
+                        <Grid>
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                            <StackPanel>
+                                <TextBlock FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Приложения вне TUN" />
+                                <TextBlock Margin="0,4,0,10" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="Правило действует для профилей Xray и Hysteria2/sing-box." />
+                            </StackPanel>
+                            <ListBox x:Name="lstApps" Grid.Row="1" MinHeight="118" MaxHeight="165" Background="{DynamicResource SgSurfaceSoftBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" Foreground="{DynamicResource SgTextBrush}" />
+                            <StackPanel Grid.Row="2" Margin="0,10,0,0" Orientation="Horizontal">
+                                <Button Padding="14,7" Click="AddApp_Click" Style="{StaticResource MaterialDesignOutlinedButton}">
+                                    <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Width="16" Height="16" Margin="0,0,7,0" Kind="Plus" /><TextBlock Text="Добавить EXE" /></StackPanel>
+                                </Button>
+                                <Button Margin="8,0,0,0" Padding="14,7" Click="RemoveApp_Click" Style="{StaticResource MaterialDesignOutlinedButton}">
+                                    <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Width="16" Height="16" Margin="0,0,7,0" Kind="Delete" /><TextBlock Text="Удалить" /></StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Margin="0,14,0,0" Padding="16" Background="{DynamicResource SgSidebarBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="14">
+                        <Grid>
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                            <StackPanel>
+                                <TextBlock FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Адреса и подсети вне TUN" />
+                                <TextBlock Margin="0,4,0,10" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="Примеры: 203.0.113.25, 192.168.50.0/24, 2001:db8::/32" />
+                            </StackPanel>
+                            <Grid Grid.Row="1" Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="10" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <TextBox x:Name="txtAddress" Height="38" Padding="10,0" VerticalContentAlignment="Center" Background="{DynamicResource SgSurfaceSoftBrush}" BorderBrush="{DynamicResource SgBorderBrush}" Foreground="{DynamicResource SgTextBrush}" KeyDown="Address_KeyDown" />
+                                <Button Grid.Column="2" Padding="16,7" Click="AddAddress_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Content="Добавить" />
+                            </Grid>
+                            <ListBox x:Name="lstAddresses" Grid.Row="2" MinHeight="105" MaxHeight="150" Background="{DynamicResource SgSurfaceSoftBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" Foreground="{DynamicResource SgTextBrush}" />
+                            <Button Grid.Row="3" Margin="0,10,0,0" HorizontalAlignment="Left" Padding="14,7" Click="RemoveAddress_Click" Style="{StaticResource MaterialDesignOutlinedButton}">
+                                <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Width="16" Height="16" Margin="0,0,7,0" Kind="Delete" /><TextBlock Text="Удалить выбранное" /></StackPanel>
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <Border Margin="0,14,0,0" Padding="12" Background="{DynamicResource SgAccentSoftBrush}" BorderBrush="{DynamicResource SgAccentBorderBrush}" BorderThickness="1" CornerRadius="11">
+                        <TextBlock FontSize="10.5" Foreground="{DynamicResource SgTextBrush}" TextWrapping="Wrap" Text="Для AmneziaWG применяются адреса и подсети. Исключение отдельных приложений на уровне WireGuard недоступно без отдельного системного фильтра." />
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <Border Grid.Row="2" Padding="20,14" Background="{DynamicResource SgHeaderBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="0,1,0,0" CornerRadius="0,0,15,15">
+                <Grid>
+                    <TextBlock x:Name="txtFooterStatus" VerticalAlignment="Center" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Изменения будут применены после нажатия кнопки справа." />
+                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                        <Button Width="112" Height="38" Click="Cancel_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Content="Отмена" />
+                        <Button Width="150" Height="38" Margin="10,0,0,0" Click="Save_Click" Style="{StaticResource MaterialDesignRaisedButton}" Content="Применить" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

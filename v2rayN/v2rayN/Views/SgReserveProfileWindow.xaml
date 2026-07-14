@@ -1,0 +1,85 @@
+<Window
+    x:Class="v2rayN.Views.SgReserveProfileWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+    xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+    Title="Резервный профиль"
+    Width="600"
+    Height="410"
+    MinWidth="540"
+    MinHeight="380"
+    Background="{DynamicResource SgBackgroundBrush}"
+    Foreground="{DynamicResource SgTextBrush}"
+    WindowStartupLocation="CenterOwner"
+    ResizeMode="CanResize"
+    WindowStyle="None"
+    SnapsToDevicePixels="True"
+    UseLayoutRounding="True"
+    Loaded="Window_Loaded">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome
+            CaptionHeight="0"
+            CornerRadius="0"
+            GlassFrameThickness="0"
+            ResizeBorderThickness="7"
+            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+    <Window.Resources>
+        <Style x:Key="HeaderActionButton" BasedOn="{StaticResource SgWindowButtonBase}" TargetType="Button">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="MinWidth" Value="86" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+            <Setter Property="Padding" Value="12,4" />
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceRaisedBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+    </Window.Resources>
+    <Border Margin="0" Background="{DynamicResource SgBackgroundBrush}" BorderBrush="{DynamicResource SgBorderStrongBrush}" BorderThickness="1" CornerRadius="16">
+        <Grid>
+            <Grid.RowDefinitions><RowDefinition Height="58" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+            <Border Padding="20,0,10,0" Background="{DynamicResource SgHeaderBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="0,0,0,1" CornerRadius="15,15,0,0" MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Резервный профиль" />
+                        <TextBlock Margin="0,2,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="Автоматическое переключение при подтверждённом отказе TUN" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal">
+                        <Button Style="{StaticResource HeaderActionButton}" Click="Help_Click" Content="Справка" />
+                        <Button Style="{StaticResource HeaderActionButton}" Click="Cancel_Click" Content="Закрыть" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <StackPanel Grid.Row="1" Margin="24,22">
+                <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Профиль для аварийного переключения" />
+                <ComboBox x:Name="cmbProfiles" Height="42" Margin="0,8,0,0" Padding="10,0" VerticalContentAlignment="Center" Background="{DynamicResource SgSurfaceSoftBrush}" BorderBrush="{DynamicResource SgBorderBrush}" Foreground="{DynamicResource SgTextBrush}" DisplayMemberPath="DisplayName" />
+
+                <CheckBox x:Name="chkAutoFailover" Margin="0,20,0,0" FontSize="12" Foreground="{DynamicResource SgTextBrush}" Content="Автоматически переключаться на резервный профиль" />
+                <TextBlock Margin="26,5,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="SG Client переключится только после двух последовательных неудачных проверок. Одновременный запуск двух TUN-движков исключён." />
+
+                <Border Margin="0,18,0,0" Padding="12" Background="{DynamicResource SgAccentSoftBrush}" BorderBrush="{DynamicResource SgAccentBorderBrush}" BorderThickness="1" CornerRadius="11">
+                    <TextBlock FontSize="10.5" Foreground="{DynamicResource SgTextBrush}" TextWrapping="Wrap" Text="Резервным может быть VLESS, Hysteria2 или AmneziaWG. Текущий профиль не показывается в списке." />
+                </Border>
+            </StackPanel>
+
+            <Border Grid.Row="2" Padding="20,14" Background="{DynamicResource SgHeaderBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="0,1,0,0" CornerRadius="0,0,15,15">
+                <Grid>
+                    <Button HorizontalAlignment="Left" Width="130" Height="38" Click="Clear_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Content="Сбросить" />
+                    <TextBlock x:Name="txtFooterStatus" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Изменения будут применены после нажатия кнопки справа." />
+                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                        <Button Width="104" Height="38" Click="Cancel_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Content="Отмена" />
+                        <Button Width="140" Height="38" Margin="10,0,0,0" Click="Save_Click" Style="{StaticResource MaterialDesignRaisedButton}" Content="Применить" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>
