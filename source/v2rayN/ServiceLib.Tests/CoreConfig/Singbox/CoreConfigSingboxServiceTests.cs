@@ -375,6 +375,7 @@ public class CoreConfigSingboxServiceTests
         var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
         config.SimpleDNSItem.DirectDNS = "1.1.1.1";
         config.SimpleDNSItem.RemoteDNS = "9.9.9.9";
+        config.SgQuickSettingsItem ??= new();
         config.SgQuickSettingsItem.DnsThroughTun = false;
         CoreConfigTestFactory.BindAppManagerConfig(config);
 
@@ -398,6 +399,7 @@ public class CoreConfigSingboxServiceTests
         var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
         config.SimpleDNSItem.DirectDNS = "1.1.1.1";
         config.SimpleDNSItem.RemoteDNS = "9.9.9.9";
+        config.SgQuickSettingsItem ??= new();
         config.SgQuickSettingsItem.DnsThroughTun = true;
         CoreConfigTestFactory.BindAppManagerConfig(config);
 
