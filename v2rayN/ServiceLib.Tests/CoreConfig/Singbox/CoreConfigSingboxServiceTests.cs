@@ -635,11 +635,11 @@ public class CoreConfigSingboxServiceTests
         cfg.route.final.Should().Be(Global.DirectTag);
         cfg.route.rules.Should().Contain(rule =>
             rule.outbound == Global.ProxyTag
-            && (rule.domain_suffix?.Contains("only-vpn.example") == true
-                || rule.domain?.Contains("only-vpn.example") == true));
+            && ((rule.domain_suffix != null && rule.domain_suffix.Contains("only-vpn.example"))
+                || (rule.domain != null && rule.domain.Contains("only-vpn.example"))));
         cfg.route.rules.Should().NotContain(rule =>
-            rule.domain_suffix?.Contains("legacy-should-not-win.example") == true
-            || rule.domain?.Contains("legacy-should-not-win.example") == true);
+            (rule.domain_suffix != null && rule.domain_suffix.Contains("legacy-should-not-win.example"))
+            || (rule.domain != null && rule.domain.Contains("legacy-should-not-win.example")));
     }
 
 }

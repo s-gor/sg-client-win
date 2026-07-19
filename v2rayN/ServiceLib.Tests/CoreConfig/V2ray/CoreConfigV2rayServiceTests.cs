@@ -604,14 +604,17 @@ public class CoreConfigV2rayServiceTests
         result.Success.Should().BeTrue($"ret msg: {result.Msg}");
         var cfg = JsonUtils.Deserialize<V2rayConfig>(result.Data!.ToString())!;
         cfg.routing.rules.Should().Contain(rule =>
-            rule.domain?.Contains("domain:only-vpn.example") == true
+            rule.domain != null
+            && rule.domain.Contains("domain:only-vpn.example")
             && rule.outboundTag == Global.ProxyTag);
         cfg.routing.rules.Should().NotContain(rule =>
-            rule.domain?.Contains("domain:legacy-should-not-win.example") == true);
+            rule.domain != null
+            && rule.domain.Contains("domain:legacy-should-not-win.example"));
         cfg.routing.rules.Should().Contain(rule =>
             rule.outboundTag == Global.DirectTag
             && rule.network == "tcp,udp"
-            && rule.inboundTag?.Contains(nameof(EInboundProtocol.socks)) == true);
+            && rule.inboundTag != null
+            && rule.inboundTag.Contains(nameof(EInboundProtocol.socks)));
     }
 
 }

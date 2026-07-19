@@ -17,12 +17,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: false
 
       - name: Setup .NET 10
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
@@ -38,11 +38,11 @@ jobs:
       - name: Verify output
         shell: cmd
         run: |
-          if not exist "artifacts\sg-client\SG-Client-040.exe" exit /b 1
+          if not exist "artifacts\sg-client\SG-Client.exe" exit /b 1
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
-          name: sg-client-040-source-build
+          name: sg-client-095-source-build
           path: artifacts/sg-client
           if-no-files-found: error

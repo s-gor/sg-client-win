@@ -4,7 +4,7 @@
 
 [Скачать последнюю Portable-версию](../../releases/latest)
 
-![SG Client 095 — TUN](docs/images/sg-client-095/02-tun-active.png)
+![SG Client 095 — главный экран](docs/images/sg-client-095/01-main-idle.png)
 
 ## Главное в версии 095
 
