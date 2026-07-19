@@ -46,7 +46,29 @@ public static class SgSmartRoutingHelper
 
         if (!item.MigratedFromLegacyPreset)
         {
-            ApplyPreset(item, NormalizePreset(settings.RoutingMode), preserveCustomLists: true);
+            // A fully populated SmartRouting block is newer and more precise than
+            // the old single RoutingMode value. Do not overwrite an explicit
+            // custom preset or its lists during one-time legacy migration.
+            var hasExplicitSmartRouting =
+                NormalizePreset(item.Preset) != PresetGlobal
+                || NormalizeAction(item.DefaultAction, ActionProxy) != ActionProxy
+                || NormalizeAction(item.LocalNetworkAction, ActionDirect) != ActionDirect
+                || NormalizeRussiaScope(item.RussiaScope) != RussiaScopeNone
+                || NormalizeAction(item.RussiaAction, ActionProxy) != ActionProxy
+                || NormalizeAction(item.BlockedAction, ActionProxy) != ActionProxy
+                || NormalizeAction(item.AdsAction, ActionProxy) != ActionProxy
+                || item.CustomDirectDomains?.Count > 0
+                || item.CustomProxyDomains?.Count > 0
+                || item.CustomBlockDomains?.Count > 0
+                || item.CustomDirectIps?.Count > 0
+                || item.CustomProxyIps?.Count > 0
+                || item.CustomBlockIps?.Count > 0;
+
+            if (!hasExplicitSmartRouting)
+            {
+                ApplyPreset(item, NormalizePreset(settings.RoutingMode), preserveCustomLists: true);
+            }
+
             item.MigratedFromLegacyPreset = true;
         }
 
