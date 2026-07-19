@@ -12,8 +12,8 @@ namespace v2rayN.Common;
 public static class SgWindowSizing
 {
     // Physical pixels measured by the user on the target layout.
-    public const double MainWidth = 1650d;
-    public const double MainHeight = 1186d;
+    public const double MainWidth = 1730d;
+    public const double MainHeight = 1182d;
     public const double LargeWidth = 1460d;
     public const double LargeHeight = 1071d;
     public const double ConnectionsWidth = LargeWidth;
@@ -26,7 +26,7 @@ public static class SgWindowSizing
 
     public static void AttachMain(Window window)
     {
-        Attach(window, MainWidth, MainHeight);
+        Attach(window, MainWidth, MainHeight, enforcePhysicalMinimum: true);
     }
 
     public static void AttachLarge(Window window)
@@ -39,7 +39,7 @@ public static class SgWindowSizing
         Attach(window, ConnectionsWidth, ConnectionsHeight);
     }
 
-    private static void Attach(Window window, double preferredPhysicalWidth, double preferredPhysicalHeight)
+    private static void Attach(Window window, double preferredPhysicalWidth, double preferredPhysicalHeight, bool enforcePhysicalMinimum = false)
     {
         ArgumentNullException.ThrowIfNull(window);
 
@@ -47,7 +47,7 @@ public static class SgWindowSizing
 
         window.SourceInitialized += (_, _) =>
         {
-            Apply(window, preferredPhysicalWidth, preferredPhysicalHeight);
+            Apply(window, preferredPhysicalWidth, preferredPhysicalHeight, enforcePhysicalMinimum);
         };
 
         // WindowBase may restore an older saved WPF size during Loaded.
@@ -61,11 +61,11 @@ public static class SgWindowSizing
             }
 
             appliedAfterLoad = true;
-            Apply(window, preferredPhysicalWidth, preferredPhysicalHeight);
+            Apply(window, preferredPhysicalWidth, preferredPhysicalHeight, enforcePhysicalMinimum);
         };
     }
 
-    private static void Apply(Window window, double preferredPhysicalWidth, double preferredPhysicalHeight)
+    private static void Apply(Window window, double preferredPhysicalWidth, double preferredPhysicalHeight, bool enforcePhysicalMinimum)
     {
         try
         {
@@ -105,8 +105,12 @@ public static class SgWindowSizing
 
             var maxWidthPx = Math.Max(1, workWidthPx - (EdgeMarginPx * 2));
             var maxHeightPx = Math.Max(1, workHeightPx - (EdgeMarginPx * 2));
-            var targetWidthPx = (int)Math.Round(Math.Min(preferredPhysicalWidth, maxWidthPx));
-            var targetHeightPx = (int)Math.Round(Math.Min(preferredPhysicalHeight, maxHeightPx));
+            var targetWidthPx = enforcePhysicalMinimum
+                ? (int)Math.Round(preferredPhysicalWidth)
+                : (int)Math.Round(Math.Min(preferredPhysicalWidth, maxWidthPx));
+            var targetHeightPx = enforcePhysicalMinimum
+                ? (int)Math.Round(preferredPhysicalHeight)
+                : (int)Math.Round(Math.Min(preferredPhysicalHeight, maxHeightPx));
 
             var targetWidthDip = targetWidthPx / dpiScale;
             var targetHeightDip = targetHeightPx / dpiScale;
@@ -117,12 +121,25 @@ public static class SgWindowSizing
                 window.WindowState = WindowState.Normal;
             }
 
-            // Prevent XAML minimums from forcing a larger physical window on
-            // monitors using 175% or 200% scaling.
-            window.MinWidth = Math.Min(window.MinWidth, targetWidthDip);
-            window.MinHeight = Math.Min(window.MinHeight, targetHeightDip);
-            window.MaxWidth = workWidthPx / dpiScale;
-            window.MaxHeight = workHeightPx / dpiScale;
+            if (enforcePhysicalMinimum)
+            {
+                // The main window uses a true physical-pixel minimum requested by the user.
+                // Keep MaxWidth/MaxHeight at least as large as that minimum so WPF never
+                // silently reduces it on a smaller work area or at high DPI.
+                window.MinWidth = targetWidthDip;
+                window.MinHeight = targetHeightDip;
+                window.MaxWidth = Math.Max(workWidthPx, targetWidthPx) / dpiScale;
+                window.MaxHeight = Math.Max(workHeightPx, targetHeightPx) / dpiScale;
+            }
+            else
+            {
+                // Other large windows still fit inside the available monitor work area.
+                window.MinWidth = Math.Min(window.MinWidth, targetWidthDip);
+                window.MinHeight = Math.Min(window.MinHeight, targetHeightDip);
+                window.MaxWidth = workWidthPx / dpiScale;
+                window.MaxHeight = workHeightPx / dpiScale;
+            }
+
             window.Width = targetWidthDip;
             window.Height = targetHeightDip;
 
@@ -135,8 +152,21 @@ public static class SgWindowSizing
                 topPx = ownerRect.Top + (((ownerRect.Bottom - ownerRect.Top) - targetHeightPx) / 2);
             }
 
-            leftPx = Math.Clamp(leftPx, info.Work.Left + EdgeMarginPx, info.Work.Right - EdgeMarginPx - targetWidthPx);
-            topPx = Math.Clamp(topPx, info.Work.Top + EdgeMarginPx, info.Work.Bottom - EdgeMarginPx - targetHeightPx);
+            var minLeftPx = info.Work.Left + EdgeMarginPx;
+            var maxLeftPx = info.Work.Right - EdgeMarginPx - targetWidthPx;
+            var minTopPx = info.Work.Top + EdgeMarginPx;
+            var maxTopPx = info.Work.Bottom - EdgeMarginPx - targetHeightPx;
+
+            // Math.Clamp requires min <= max. When the requested main-window minimum is
+            // larger than the work area, keep it centred instead of reducing its size.
+            if (minLeftPx <= maxLeftPx)
+            {
+                leftPx = Math.Clamp(leftPx, minLeftPx, maxLeftPx);
+            }
+            if (minTopPx <= maxTopPx)
+            {
+                topPx = Math.Clamp(topPx, minTopPx, maxTopPx);
+            }
 
             SetWindowPos(
                 hwnd,

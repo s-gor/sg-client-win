@@ -108,19 +108,50 @@
         </Style>
 
         <Style x:Key="ExpertTextBox" TargetType="TextBox">
-            <Setter Property="MinHeight" Value="36" />
-            <Setter Property="Padding" Value="10,7" />
+            <Setter Property="MinHeight" Value="40" />
+            <Setter Property="Padding" Value="11,7" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
             <Setter Property="Background" Value="{DynamicResource SgSurfaceRaisedBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CaretBrush" Value="{DynamicResource SgAccentBrush}" />
             <Setter Property="SelectionBrush" Value="{DynamicResource SgAccentSoftBrush}" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border
+                            x:Name="InputBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="10"
+                            SnapsToDevicePixels="True">
+                            <ScrollViewer
+                                x:Name="PART_ContentHost"
+                                Margin="{TemplateBinding Padding}"
+                                HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                                VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="InputBorder" Property="BorderBrush" Value="{DynamicResource SgAccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="InputBorder" Property="Opacity" Value="0.72" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style x:Key="CodeTextBox" BasedOn="{StaticResource ExpertTextBox}" TargetType="TextBox">
             <Setter Property="FontFamily" Value="Consolas" />
-            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="VerticalContentAlignment" Value="Top" />
             <Setter Property="AcceptsReturn" Value="True" />
             <Setter Property="AcceptsTab" Value="True" />
             <Setter Property="TextWrapping" Value="NoWrap" />
@@ -513,7 +544,7 @@
                                         GroupName="DnsRoute" />
                                 </StackPanel>
 
-                                <Grid Margin="0,16,0,0">
+                                <Grid Margin="0,16,0,0" VerticalAlignment="Center">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="12" />
@@ -523,16 +554,16 @@
                                     </Grid.ColumnDefinitions>
 
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="ПРЯМОЙ DNS" />
-                                        <TextBox x:Name="txtDirectDns" Style="{StaticResource ExpertTextBox}" />
+                                        <TextBlock Margin="0,0,0,6" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Прямой DNS" />
+                                        <TextBox x:Name="txtDirectDns" Height="44" Style="{StaticResource ExpertTextBox}" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="2">
-                                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="УДАЛЁННЫЙ DNS" />
-                                        <TextBox x:Name="txtRemoteDns" Style="{StaticResource ExpertTextBox}" />
+                                        <TextBlock Margin="0,0,0,6" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Удалённый DNS" />
+                                        <TextBox x:Name="txtRemoteDns" Height="44" Style="{StaticResource ExpertTextBox}" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="4">
-                                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="BOOTSTRAP DNS" />
-                                        <TextBox x:Name="txtBootstrapDns" Style="{StaticResource ExpertTextBox}" />
+                                        <TextBlock Margin="0,0,0,6" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Bootstrap DNS" />
+                                        <TextBox x:Name="txtBootstrapDns" Height="44" Style="{StaticResource ExpertTextBox}" />
                                     </StackPanel>
                                 </Grid>
 
@@ -576,11 +607,11 @@
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="ОБЫЧНЫЙ РЕЖИМ" />
+                                        <TextBlock Margin="0,0,0,6" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Обычный режим" />
                                         <TextBox x:Name="txtXrayNormalDns" Height="145" SpellCheck.IsEnabled="False" Style="{StaticResource CodeTextBox}" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="2">
-                                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="TUN" />
+                                        <TextBlock Margin="0,0,0,6" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="TUN" />
                                         <TextBox x:Name="txtXrayTunDns" Height="145" SpellCheck.IsEnabled="False" Style="{StaticResource CodeTextBox}" />
                                     </StackPanel>
                                 </Grid>
@@ -610,11 +641,11 @@
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="ОБЫЧНЫЙ РЕЖИМ" />
+                                        <TextBlock Margin="0,0,0,6" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Обычный режим" />
                                         <TextBox x:Name="txtSingNormalDns" Height="145" SpellCheck.IsEnabled="False" Style="{StaticResource CodeTextBox}" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="2">
-                                        <TextBlock Margin="0,0,0,5" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="TUN" />
+                                        <TextBlock Margin="0,0,0,6" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="TUN" />
                                         <TextBox x:Name="txtSingTunDns" Height="145" SpellCheck.IsEnabled="False" Style="{StaticResource CodeTextBox}" />
                                     </StackPanel>
                                 </Grid>
@@ -637,98 +668,175 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <ScrollViewer x:Name="connectionPanel" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
-                        <Border Margin="0,0,0,12" Style="{StaticResource ExpertCard}">
-                            <StackPanel>
-                                <TextBlock
-                                    FontSize="10"
-                                    FontWeight="Bold"
-                                    Foreground="{DynamicResource SgAccentBrush}"
-                                    Text="● ЛОКАЛЬНЫЙ ПРОКСИ" />
-                                <TextBlock
-                                    Margin="0,8,0,0"
-                                    FontSize="18"
-                                    FontWeight="SemiBold"
-                                    Foreground="{DynamicResource SgTextBrush}"
-                                    Text="Локальные HTTP/SOCKS-порты для отдельных программ" />
-                                <TextBlock
-                                    Margin="0,6,0,15"
-                                    FontSize="11"
-                                    LineHeight="17"
-                                    Foreground="{DynamicResource SgMutedBrush}"
-                                    TextWrapping="Wrap"
-                                    Text="TUN и системный прокси теперь переключаются двумя кнопками на главном экране. Здесь оставлен только специальный режим для ручной настройки отдельных приложений." />
+                <Grid x:Name="connectionPanel" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="12" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
 
+                    <!-- SG_LOCAL_PROXY_COMPACT_086: one working card, no duplicated explanations and no scrolling. -->
+                    <Border Grid.Row="0" Style="{StaticResource ExpertCard}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="14" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="12" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="10" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="12" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="42" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
                                 <Border
-                                    Padding="16"
-                                    Background="{DynamicResource SgSurfaceBrush}"
-                                    BorderBrush="{DynamicResource SgBorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="13">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="38" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <Border
-                                            Width="28"
-                                            Height="28"
-                                            HorizontalAlignment="Left"
-                                            VerticalAlignment="Top"
-                                            Background="{DynamicResource SgLocalProxySoftBrush}"
-                                            CornerRadius="9">
-                                            <materialDesign:PackIcon
-                                                Width="16"
-                                                Height="16"
-                                                HorizontalAlignment="Center"
-                                                VerticalAlignment="Center"
-                                                Foreground="{DynamicResource SgLocalProxyBrush}"
-                                                Kind="LanConnect" />
-                                        </Border>
-                                        <StackPanel Grid.Column="1">
-                                            <TextBlock FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Только локальный прокси" />
-                                            <TextBlock Margin="0,4,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="SG Client запускает смешанный HTTP/SOCKS-порт, но не меняет системный трафик Windows. Адрес и порт задаются вручную в нужной программе." />
-                                        </StackPanel>
-                                    </Grid>
+                                    Width="32"
+                                    Height="32"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Top"
+                                    Background="{DynamicResource SgLocalProxySoftBrush}"
+                                    CornerRadius="10">
+                                    <materialDesign:PackIcon
+                                        Width="18"
+                                        Height="18"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Foreground="{DynamicResource SgLocalProxyBrush}"
+                                        Kind="LanConnect" />
                                 </Border>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock FontSize="17" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Локальный прокси для отдельных программ" />
+                                    <TextBlock Margin="0,4,0,0" FontSize="10.5" LineHeight="16" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="Один смешанный HTTP/SOCKS5-порт. Системный трафик Windows не изменяется." />
+                                </StackPanel>
+                            </Grid>
 
+                            <Border Grid.Row="2" Padding="12,8" Background="{DynamicResource SgSurfaceSoftBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="10">
                                 <TextBlock
                                     x:Name="txtConnectionStatus"
-                                    Margin="0,14,0,0"
                                     FontSize="11"
+                                    FontWeight="SemiBold"
                                     Foreground="{DynamicResource SgMutedBrush}"
                                     Text="Состояние локального прокси загружается…"
                                     TextWrapping="Wrap" />
+                            </Border>
 
-                                <Button
-                                    x:Name="btnLocalProxyAction"
-                                    Margin="0,16,0,0"
-                                    HorizontalAlignment="Left"
-                                    Click="ToggleLocalProxy_Click"
-                                    Content="Запустить локальный прокси"
-                                    Style="{StaticResource PrimaryActionButton}" />
-                            </StackPanel>
-                        </Border>
+                            <!-- SG_LOCAL_PROXY_PORT_INLINE_086: compatibility marker retained for BUILD-095 package validation. -->
+                            <!-- SG_LOCAL_PROXY_PORT_ALIGNED_095: one centred baseline, unified 10 px rounding and larger readable text. -->
+                            <Grid Grid.Row="4" HorizontalAlignment="Stretch">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="14" />
+                                    <ColumnDefinition Width="170" />
+                                    <ColumnDefinition Width="24" />
+                                    <ColumnDefinition Width="140" />
+                                    <ColumnDefinition Width="14" />
+                                    <ColumnDefinition Width="220" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="8" />
+                                    <RowDefinition Height="44" />
+                                </Grid.RowDefinitions>
 
-                        <Border Style="{StaticResource ExpertCard}">
-                            <StackPanel>
+                                <StackPanel Grid.Row="0" Grid.Column="0">
+                                    <TextBlock FontSize="13.5" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Адрес для программ" />
+                                    <TextBlock Margin="0,3,0,0" FontSize="11.5" Foreground="{DynamicResource SgMutedBrush}" Text="Подходит для HTTP и SOCKS5." />
+                                </StackPanel>
                                 <TextBlock
-                                    FontSize="16"
+                                    Grid.Row="0"
+                                    Grid.Column="4"
+                                    VerticalAlignment="Top"
+                                    FontSize="13.5"
                                     FontWeight="SemiBold"
                                     Foreground="{DynamicResource SgTextBrush}"
-                                    Text="Что важно знать" />
+                                    Text="Порт" />
                                 <TextBlock
-                                    Margin="0,8,0,0"
-                                    FontSize="11"
-                                    LineHeight="18"
+                                    Grid.Row="0"
+                                    Grid.Column="6"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Bottom"
+                                    FontSize="11.5"
                                     Foreground="{DynamicResource SgMutedBrush}"
-                                    TextWrapping="Wrap"
-                                    Text="Локальный прокси не направляет Windows через VPN автоматически. Используйте его только там, где программа позволяет вручную указать HTTP или SOCKS5. Kill Switch действует только в режиме TUN." />
+                                    Text="По умолчанию 10808" />
+
+                                <TextBox
+                                    x:Name="txtLocalProxyAddress"
+                                    Grid.Row="2"
+                                    Grid.Column="0"
+                                    Height="44"
+                                    IsReadOnly="True"
+                                    FontFamily="Consolas"
+                                    FontSize="13"
+                                    Style="{StaticResource ExpertTextBox}" />
+                                <Button
+                                    Grid.Row="2"
+                                    Grid.Column="2"
+                                    Height="44"
+                                    Padding="14,6"
+                                    Click="CopyLocalProxyAddress_Click"
+                                    Content="Скопировать"
+                                    FontSize="12.5"
+                                    Style="{StaticResource SecondaryActionButton}" />
+                                <TextBox
+                                    x:Name="txtLocalProxyPort"
+                                    Grid.Row="2"
+                                    Grid.Column="4"
+                                    Height="44"
+                                    MaxLength="5"
+                                    FontSize="13"
+                                    Style="{StaticResource ExpertTextBox}" />
+                                <Button
+                                    x:Name="btnSaveLocalProxyPort"
+                                    Grid.Row="2"
+                                    Grid.Column="6"
+                                    Height="44"
+                                    Padding="14,6"
+                                    Click="SaveLocalProxyPort_Click"
+                                    Content="Сохранить порт"
+                                    FontSize="12.5"
+                                    Style="{StaticResource SecondaryActionButton}" />
+                            </Grid>
+
+                            <TextBlock
+                                x:Name="txtLocalProxyPortStatus"
+                                Grid.Row="6"
+                                VerticalAlignment="Center"
+                                FontSize="11.5"
+                                Foreground="{DynamicResource SgMutedBrush}"
+                                Text="Порт можно изменить, когда все режимы отключены."
+                                TextWrapping="Wrap" />
+
+                            <Button
+                                x:Name="btnLocalProxyAction"
+                                Grid.Row="8"
+                                HorizontalAlignment="Left"
+                                Click="ToggleLocalProxy_Click"
+                                Content="Запустить локальный прокси"
+                                Style="{StaticResource PrimaryActionButton}" />
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="2" Padding="16,13" Background="{DynamicResource SgSurfaceSoftBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="13">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="28" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <materialDesign:PackIcon Width="17" Height="17" Margin="0,1,0,0" Foreground="{DynamicResource SgAccentBrush}" Kind="InformationOutline" />
+                            <StackPanel Grid.Column="1">
+                                <TextBlock FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Что важно знать" />
+                                <TextBlock Margin="0,4,0,0" FontSize="10.5" LineHeight="16" Foreground="{DynamicResource SgMutedBrush}" TextWrapping="Wrap" Text="Через локальный прокси проходят только программы, где вручную указан показанный адрес. Правила VPN / Direct / Block продолжают действовать; Kill Switch работает только в режиме TUN." />
                             </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </ScrollViewer>
+                        </Grid>
+                    </Border>
+                </Grid>
             </Grid>
         </Grid>
     </Border>

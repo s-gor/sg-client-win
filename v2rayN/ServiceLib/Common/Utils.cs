@@ -106,33 +106,56 @@ public class Utils
     /// <returns></returns>
     public static string Base64Decode(string? plainText)
     {
+        if (TryBase64Decode(plainText, out var decodedText))
+        {
+            return decodedText;
+        }
+
+        return string.Empty;
+    }
+
+    // SG_FLEXIBLE_BASE64_086: subscriptions frequently omit '=' padding,
+    // use URL-safe characters or include BOM/line breaks. Normalize all of
+    // those forms before decoding instead of rejecting the whole subscription.
+    public static bool TryBase64Decode(string? plainText, out string decodedText)
+    {
+        decodedText = string.Empty;
         try
         {
             if (plainText.IsNullOrEmpty())
             {
-                return string.Empty;
+                return false;
             }
 
-            plainText = plainText.Trim()
+            var normalized = plainText
+                .Trim()
+                .TrimStart('\uFEFF', '\u200B')
                 .ReplaceLineBreaks("")
+                .Replace("\t", "")
+                .Replace(" ", "")
                 .Replace('_', '/')
-                .Replace('-', '+')
-                .Replace(" ", "");
+                .Replace('-', '+');
 
-            if (plainText.Length % 4 > 0)
+            if (normalized.IsNullOrEmpty())
             {
-                plainText = plainText.PadRight(plainText.Length + 4 - (plainText.Length % 4), '=');
+                return false;
             }
 
-            var data = Convert.FromBase64String(plainText);
-            return Encoding.UTF8.GetString(data);
-        }
-        catch (Exception ex)
-        {
-            Logging.SaveLog(_tag, ex);
-        }
+            if (normalized.Length % 4 > 0)
+            {
+                normalized = normalized.PadRight(
+                    normalized.Length + 4 - (normalized.Length % 4),
+                    '=');
+            }
 
-        return string.Empty;
+            var data = Convert.FromBase64String(normalized);
+            decodedText = Encoding.UTF8.GetString(data).TrimStart('\uFEFF', '\u200B');
+            return decodedText.IsNotEmpty();
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public static bool ToBool(object obj)
@@ -320,13 +343,7 @@ public class Utils
 
     public static bool IsBase64String(string? plainText)
     {
-        if (plainText.IsNullOrEmpty())
-        {
-            return false;
-        }
-
-        var buffer = new Span<byte>(new byte[plainText.Length]);
-        return Convert.TryFromBase64String(plainText, buffer, out var _);
+        return TryBase64Decode(plainText, out _);
     }
 
     public static string Convert2Comma(string text)

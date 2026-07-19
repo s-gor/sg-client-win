@@ -53,6 +53,7 @@
             <Setter Property="FontSize" Value="10.5" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
         </Style>
         <Style TargetType="DataGridRow">
             <Setter Property="MinHeight" Value="56" />
@@ -75,8 +76,22 @@
             <Setter Property="Padding" Value="13,7" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="TrafficCenteredCellText" TargetType="TextBlock">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextAlignment" Value="Center" />
         </Style>
     </Window.Resources>
 
@@ -210,19 +225,20 @@
                     ItemsSource="{Binding Rows}"
                     RowHeaderWidth="0"
                     SelectionMode="Single"
+                    SelectionUnit="FullRow"
                     Background="{DynamicResource SgSurfaceBrush}"
                     BorderBrush="{DynamicResource SgBorderBrush}"
                     BorderThickness="1"
                     ScrollViewer.CanContentScroll="True"
                     ScrollViewer.VerticalScrollBarVisibility="Auto">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Width="2.25*" Binding="{Binding ProfileName}" Header="Профиль / маршрут" />
-                        <DataGridTextColumn Width="1.1*" Binding="{Binding MonthDownloadDisplay}" Header="Скачано" />
-                        <DataGridTextColumn Width="1.1*" Binding="{Binding MonthUploadDisplay}" Header="Отправлено" />
-                        <DataGridTextColumn Width="1.1*" Binding="{Binding MonthTotalDisplay}" Header="Всего за месяц" />
-                        <DataGridTextColumn Width="0.75*" Binding="{Binding MonthShareDisplay}" Header="Доля" />
-                        <DataGridTextColumn Width="1.25*" Binding="{Binding TodayDisplay}" Header="Сегодня" />
-                        <DataGridTextColumn Width="1.25*" Binding="{Binding LastUsedDisplay}" Header="Последнее использование" />
+                        <DataGridTextColumn Width="2.25*" Binding="{Binding ProfileName}" ElementStyle="{StaticResource TrafficCenteredCellText}" Header="Профиль / маршрут" />
+                        <DataGridTextColumn Width="1.1*" Binding="{Binding MonthDownloadDisplay}" ElementStyle="{StaticResource TrafficCenteredCellText}" Header="Скачано" />
+                        <DataGridTextColumn Width="1.1*" Binding="{Binding MonthUploadDisplay}" ElementStyle="{StaticResource TrafficCenteredCellText}" Header="Отправлено" />
+                        <DataGridTextColumn Width="1.1*" Binding="{Binding MonthTotalDisplay}" ElementStyle="{StaticResource TrafficCenteredCellText}" Header="Всего за месяц" />
+                        <DataGridTextColumn Width="0.75*" Binding="{Binding MonthShareDisplay}" ElementStyle="{StaticResource TrafficCenteredCellText}" Header="Доля" />
+                        <DataGridTextColumn Width="1.25*" Binding="{Binding TodayDisplay}" ElementStyle="{StaticResource TrafficCenteredCellText}" Header="Сегодня" />
+                        <DataGridTextColumn Width="1.25*" Binding="{Binding LastUsedDisplay}" ElementStyle="{StaticResource TrafficCenteredCellText}" Header="Последнее использование" />
                     </DataGrid.Columns>
                 </DataGrid>
 

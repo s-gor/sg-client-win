@@ -218,7 +218,8 @@ public partial class CoreConfigSingboxService
             }
 
             var ipRules = new List<RulesItem>();
-            if (!context.IsTunEnabled && routing != null)
+            var sgRoutingAuthoritative = _config.SgQuickSettingsItem?.SmartRouting is not null;
+            if (!context.IsTunEnabled && routing != null && !sgRoutingAuthoritative)
             {
                 var rules = JsonUtils.Deserialize<List<RulesItem>>(routing.RuleSet);
                 foreach (var item1 in rules ?? [])
@@ -251,11 +252,15 @@ public partial class CoreConfigSingboxService
                 }
             }
 
+            // SG_ROUTING_AUTHORITATIVE_ALL_MODES_SINGBOX
             // SG_TUN_ROUTING_AUTHORITATIVE_SINGBOX
             // In TUN, only SG Smart Routing may decide Direct/Proxy. Legacy
             // routing sets are intentionally ignored so the Global preset is
             // truly global and QUIC/UDP 443 cannot be inherited as Block/Direct.
-            ApplySgSmartRouting4Sbox();
+            if (sgRoutingAuthoritative)
+            {
+                ApplySgSmartRouting4Sbox();
+            }
         }
         catch (Exception ex)
         {
@@ -265,7 +270,8 @@ public partial class CoreConfigSingboxService
 
     private void ApplySgSmartRouting4Sbox()
     {
-        if (!context.IsTunEnabled || _coreConfig.route?.rules == null)
+        if (_coreConfig.route?.rules == null
+            || _config.SgQuickSettingsItem?.SmartRouting is null)
         {
             return;
         }

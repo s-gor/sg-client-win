@@ -448,13 +448,12 @@ public class MainWindowViewModel : MyReactiveObject
             }
         }
 
-        // SG_IMPORT_LINK_ONLY: subscription URLs are managed only in the separate
-        // “Подписки” section. The Import command is reserved for one profile link
-        // or a local configuration, matching the original SG Client workflow.
-        if (TryResolveSingleSubscriptionUrl(clipboardData, out _, out _))
+        // SG_IMPORT_SUBSCRIPTION_URL_086: a single HTTP(S) URL pasted into Import
+        // is saved as a subscription and updated immediately. The dedicated
+        // “Подписки” section remains available for editing and manual refresh.
+        if (TryResolveSingleSubscriptionUrl(clipboardData, out var subscriptionUrl, out var subscriptionUri))
         {
-            NoticeManager.Instance.Enqueue(
-                "Это URL подписки. Добавьте его в отдельном разделе «Подписки».");
+            await ImportSubscriptionUrlAsync(subscriptionUrl, subscriptionUri);
             return;
         }
 
@@ -571,7 +570,8 @@ public class MainWindowViewModel : MyReactiveObject
                 Id = string.Empty,
                 Url = url,
                 Remarks = BuildImportedSubscriptionName(uri),
-                Enabled = true
+                Enabled = true,
+                UserAgent = "SG-Client/086"
             };
 
             if (await ConfigHandler.AddSubItem(_config, subscription) != 0)

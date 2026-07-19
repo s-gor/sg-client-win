@@ -76,7 +76,7 @@
                         <TextBlock FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Полный текст конфигурации" />
                         <TextBlock Margin="0,3,12,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="Приватный ключ сохраняется только в локальном профиле и не выводится в журнал." />
                     </StackPanel>
-                    <Button Grid.Column="1" Padding="14,7" Click="Paste_Click" Style="{StaticResource MaterialDesignOutlinedButton}">
+                    <Button Grid.Column="1" Padding="14,7" Click="Paste_Click" Style="{StaticResource SgMaterialOutlinedButton}">
                         <StackPanel Orientation="Horizontal">
                             <materialDesign:PackIcon Width="16" Height="16" Margin="0,0,7,0" Kind="ContentPaste" />
                             <TextBlock Text="Вставить из буфера" />
@@ -143,10 +143,10 @@
 
             <Border Grid.Row="2" Padding="20,14" Background="{DynamicResource SgHeaderBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="0,1,0,0" CornerRadius="0,0,15,15">
                 <Grid>
-                    <Button HorizontalAlignment="Left" Width="124" Height="38" Click="Validate_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Content="Проверить" />
+                    <Button HorizontalAlignment="Left" Width="124" Height="38" Click="Validate_Click" Style="{StaticResource SgMaterialOutlinedButton}" Content="Проверить" />
                     <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                        <Button Width="112" Height="38" Click="Cancel_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Content="Отмена" />
-                        <Button x:Name="btnAdd" Width="150" Height="38" Margin="10,0,0,0" Click="Add_Click" IsEnabled="False" Style="{StaticResource MaterialDesignRaisedButton}" Content="Добавить" />
+                        <Button Width="112" Height="38" Click="Cancel_Click" Style="{StaticResource SgMaterialOutlinedButton}" Content="Отмена" />
+                        <Button x:Name="btnAdd" Width="150" Height="38" Margin="10,0,0,0" Click="Add_Click" IsEnabled="False" Style="{StaticResource SgMaterialRaisedButton}" Content="Добавить" />
                     </StackPanel>
                 </Grid>
             </Border>

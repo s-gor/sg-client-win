@@ -13,6 +13,7 @@ public class ProfilesViewModel : MyReactiveObject
     private string _serverFilter = string.Empty;
     private readonly Dictionary<string, bool> _dicHeaderSort = new();
     private SpeedtestService? _speedtestService;
+    private SgLatencyTestService? _sgLatencyTestService;
     private string? _pendingSelectIndexId;
     private string? _pendingRevealProfileId;
     private readonly SemaphoreSlim _profileActivationGate = new(1, 1);
@@ -68,6 +69,30 @@ public class ProfilesViewModel : MyReactiveObject
 
     [Reactive]
     public string LatencyTestStatus { get; set; } = "URL-тест не запущен";
+
+    [Reactive]
+    public string LatencyTestProgressText { get; set; } = "0%";
+
+    [Reactive]
+    public bool LatencyTestIndeterminate { get; set; }
+
+    [Reactive]
+    public bool LatencyTestStopping { get; set; }
+
+    [Reactive]
+    public string LatencyTestStopText { get; set; } = "Остановить";
+
+    [Reactive]
+    public bool LatencyTestStopEnabled { get; set; }
+
+    [Reactive]
+    public bool LatencyTestProblemsVisible { get; set; }
+
+    [Reactive]
+    public int LatencyTestProblemCount { get; set; }
+
+    [Reactive]
+    public string LatencyTestProblemButtonText { get; set; } = "Показать проблемные";
 
     #endregion ObservableCollection
 
@@ -537,7 +562,7 @@ public class ProfilesViewModel : MyReactiveObject
                           Sort = t33?.Sort ?? 0,
                           Delay = t33?.Delay ?? 0,
                           Speed = t33?.Speed ?? 0,
-                          DelayVal = t33?.Delay != 0 ? $"{t33?.Delay} мс" : string.Empty,
+                          DelayVal = SgLatencyTestService.GetDelayDisplay(t33?.Delay ?? 0),
                           SpeedVal = t33?.Speed > 0 ? $"{t33?.Speed}" : t33?.Message ?? string.Empty,
                           IpInfo = t33?.IpInfo ?? string.Empty,
                           TodayDown = t22 == null ? "" : Utils.HumanFy(t22.TodayDown),
@@ -1211,7 +1236,9 @@ public class ProfilesViewModel : MyReactiveObject
 
         if (LatencyTestRunning)
         {
-            NoticeManager.Instance.Enqueue("URL-тест уже выполняется.");
+            NoticeManager.Instance.Enqueue(LatencyTestStopping
+                ? "Остановка теста уже выполняется."
+                : "URL-тест уже выполняется.");
             return;
         }
 
@@ -1220,11 +1247,36 @@ public class ProfilesViewModel : MyReactiveObject
         try
         {
             SelectedProfiles = candidates;
-            await ServerSpeedtest(ESpeedActionType.Realping);
+            _sgLatencyTestService = new SgLatencyTestService(_config, ApplyLatencyUpdateOnUiAsync);
+            var summary = await _sgLatencyTestService.RunAsync(candidates);
+            FinishLatencyTest(summary);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("SG profile latency test failed", ex);
+            FinishLatencyTest(new SgLatencyTestSummary(
+                candidates.Count,
+                0,
+                0,
+                candidates.Count,
+                0,
+                0));
         }
         finally
         {
+            _sgLatencyTestService = null;
             SelectedProfiles = previousSelection;
+            // Force an immediate model refresh so no row remains visually stuck
+            // in "Проверяется…" until the user changes subscriptions.
+            try
+            {
+                await RefreshServers();
+            }
+            catch (Exception ex)
+            {
+                Logging.SaveLog("SG latency result refresh failed", ex);
+            }
+            SpeedTestCompleted?.Invoke();
         }
     }
 
@@ -1264,16 +1316,16 @@ public class ProfilesViewModel : MyReactiveObject
 
     public void ServerSpeedtestStop()
     {
-        _speedtestService?.ExitLoop();
-        if (LatencyTestRunning)
+        if (LatencyTestRunning && _sgLatencyTestService?.Cancel() == true)
         {
-            // Cancellation must release the UI immediately. The remaining
-            // per-profile tasks observe the stop token in the background, but
-            // they must never keep the profile browser or connection controls
-            // trapped in a global busy-looking state.
-            FinishLatencyTest(ResUI.SpeedtestingStop);
-            SpeedTestCompleted?.Invoke();
+            LatencyTestStopping = true;
+            LatencyTestStopText = "Останавливаю…";
+            LatencyTestStopEnabled = false;
+            LatencyTestStatus = $"Останавливаю URL-тест: {LatencyTestCompleted} из {LatencyTestTotal}";
+            return;
         }
+
+        _speedtestService?.ExitLoop();
     }
 
     private void BeginLatencyTest(IReadOnlyCollection<ProfileItemModel> candidates)
@@ -1286,8 +1338,96 @@ public class ProfilesViewModel : MyReactiveObject
         LatencyTestTotal = candidates.Count;
         LatencyTestCompleted = 0;
         LatencyTestProgress = 0;
+        LatencyTestProgressText = "0%";
+        LatencyTestIndeterminate = true;
         LatencyTestRunning = true;
+        LatencyTestStopping = false;
+        LatencyTestStopText = "Остановить";
+        LatencyTestStopEnabled = true;
+        LatencyTestProblemsVisible = false;
+        LatencyTestProblemCount = 0;
+        LatencyTestProblemButtonText = "Показать проблемные";
         LatencyTestStatus = $"URL-тест: 0 из {LatencyTestTotal}";
+    }
+
+    private Task ApplyLatencyUpdateOnUiAsync(SgLatencyTestUpdate update)
+    {
+        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        RxSchedulers.MainThreadScheduler.Schedule(update, (scheduler, value) =>
+        {
+            try
+            {
+                ApplyLatencyUpdate(value);
+                completion.TrySetResult(true);
+            }
+            catch (Exception ex)
+            {
+                completion.TrySetException(ex);
+            }
+            return Disposable.Empty;
+        });
+        return completion.Task;
+    }
+
+    private void ApplyLatencyUpdate(SgLatencyTestUpdate update)
+    {
+        var item = ProfileItems.FirstOrDefault(profile => profile.IndexId == update.IndexId);
+        if (item is null)
+        {
+            return;
+        }
+
+        if (update.DelayDisplay.IsNotEmpty())
+        {
+            item.DelayVal = update.DelayDisplay;
+        }
+        if (update.DelayMilliseconds is > 0)
+        {
+            item.Delay = update.DelayMilliseconds.Value;
+        }
+        else if (update.IsTerminal)
+        {
+            item.Delay = update.Outcome switch
+            {
+                SgLatencyOutcome.Unavailable => SgLatencyTestService.UnavailableDelay,
+                SgLatencyOutcome.Error => SgLatencyTestService.ErrorDelay,
+                SgLatencyOutcome.Cancelled => SgLatencyTestService.CancelledDelay,
+                SgLatencyOutcome.NotTested => SgLatencyTestService.NotTestedDelay,
+                _ => 0,
+            };
+        }
+        if (update.IpInfo.IsNotEmpty())
+        {
+            item.IpInfo = update.IpInfo;
+        }
+
+        if (!update.IsTerminal)
+        {
+            return;
+        }
+
+        lock (_latencyProgressLock)
+        {
+            if (!_latencyCompletedIds.Add(update.IndexId))
+            {
+                return;
+            }
+            LatencyTestCompleted = Math.Min(_latencyCompletedIds.Count, LatencyTestTotal);
+        }
+
+        LatencyTestIndeterminate = false;
+        LatencyTestProgress = LatencyTestTotal <= 0
+            ? 0
+            : Math.Min(100d, LatencyTestCompleted * 100d / LatencyTestTotal);
+        LatencyTestProgressText = $"{LatencyTestProgress:0}%";
+        LatencyTestStatus = $"URL-тест: {LatencyTestCompleted} из {LatencyTestTotal}";
+
+        // Keep the list responsive on subscriptions with thousands of nodes:
+        // re-sort in small batches instead of rebuilding the view for every item.
+        if (LatencyTestCompleted == LatencyTestTotal || LatencyTestCompleted % 10 == 0)
+        {
+            SpeedTestCompleted?.Invoke();
+        }
     }
 
     private void TrackLatencyProgress(SpeedTestResult result)
@@ -1318,6 +1458,27 @@ public class ProfilesViewModel : MyReactiveObject
         LatencyTestStatus = $"URL-тест: {LatencyTestCompleted} из {LatencyTestTotal}";
     }
 
+    private void FinishLatencyTest(SgLatencyTestSummary summary)
+    {
+        LatencyTestCompleted = Math.Min(summary.Finalized, LatencyTestTotal);
+        LatencyTestProgress = summary.WasCancelled && LatencyTestTotal > 0
+            ? Math.Min(100d, summary.Tested * 100d / LatencyTestTotal)
+            : (LatencyTestTotal > 0 ? 100d : 0d);
+        LatencyTestProgressText = $"{LatencyTestProgress:0}%";
+        LatencyTestProblemCount = summary.Unavailable + summary.Errors + summary.Cancelled + summary.NotTested;
+        LatencyTestProblemsVisible = LatencyTestProblemCount > 0;
+        LatencyTestProblemButtonText = $"Проблемные: {LatencyTestProblemCount}";
+        LatencyTestStatus = summary.WasCancelled
+            ? $"Тест остановлен: успешно {summary.Available} · недоступно {summary.Unavailable} · ошибок {summary.Errors} · отменено {summary.Cancelled} · не проверено {summary.NotTested}"
+            : $"Тест завершён: успешно {summary.Available} · недоступно {summary.Unavailable} · ошибок {summary.Errors} · не проверено {summary.NotTested}";
+        LatencyTestRunning = false;
+        LatencyTestPanelVisible = false;
+        LatencyTestIndeterminate = false;
+        LatencyTestStopping = false;
+        LatencyTestStopText = "Остановить";
+        LatencyTestStopEnabled = false;
+    }
+
     private void FinishLatencyTest(string? message)
     {
         if (!LatencyTestRunning)
@@ -1335,7 +1496,16 @@ public class ProfilesViewModel : MyReactiveObject
         LatencyTestStatus = stopped
             ? $"URL-тест остановлен: {LatencyTestCompleted} из {LatencyTestTotal}"
             : $"URL-тест завершён: {LatencyTestCompleted} из {LatencyTestTotal}";
+        LatencyTestProgressText = $"{LatencyTestProgress:0}%";
         LatencyTestRunning = false;
+        LatencyTestPanelVisible = false;
+        LatencyTestIndeterminate = false;
+        LatencyTestStopping = false;
+        LatencyTestStopText = "Остановить";
+        LatencyTestStopEnabled = false;
+        LatencyTestProblemsVisible = false;
+        LatencyTestProblemCount = 0;
+        LatencyTestProblemButtonText = "Показать проблемные";
     }
 
     private async Task Export2ClientConfigAsync(bool blClipboard)

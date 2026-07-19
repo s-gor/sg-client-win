@@ -112,6 +112,15 @@
             </Setter>
         </Style>
 
+        <Style x:Key="ProfileComboFrame" TargetType="{x:Type Border}">
+            <Setter Property="Height" Value="38" />
+            <Setter Property="Background" Value="{DynamicResource SgInputBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+        </Style>
+
         <Style x:Key="ProfileComboBox" BasedOn="{StaticResource MaterialDesignOutlinedComboBox}" TargetType="{x:Type ComboBox}">
             <Setter Property="Height" Value="38" />
             <Setter Property="MinWidth" Value="150" />
@@ -119,9 +128,9 @@
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Padding" Value="11,0,34,0" />
             <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
-            <Setter Property="Background" Value="{DynamicResource SgInputBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
             <Setter Property="FontSize" Value="11" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="ItemContainerStyle" Value="{StaticResource ProfileComboBoxItem}" />
@@ -130,10 +139,11 @@
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="materialDesign:HintAssist.IsFloating" Value="False" />
+            <Setter Property="materialDesign:TextFieldAssist.TextFieldCornerRadius" Value="10" />
         </Style>
 
         <Style x:Key="SgProfileItem" TargetType="ListBoxItem">
-            <Setter Property="Margin" Value="0,0,0,7" />
+            <Setter Property="Margin" Value="0,0,10,7" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Background" Value="Transparent" />
@@ -145,8 +155,8 @@
                     <ControlTemplate TargetType="ListBoxItem">
                         <Border
                             x:Name="ItemBorder"
-                            MinHeight="94"
-                            Padding="12,10"
+                            MinHeight="88"
+                            Padding="12,8"
                             Background="{DynamicResource SgSurfaceSoftBrush}"
                             BorderBrush="{DynamicResource SgBorderBrush}"
                             BorderThickness="1"
@@ -185,9 +195,11 @@
         <Style x:Key="ProfileToolButton" TargetType="Button">
             <Setter Property="Height" Value="36" />
             <Setter Property="Padding" Value="10,0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Foreground" Value="{DynamicResource SgNeutralActionTextBrush}" />
             <Setter Property="Background" Value="{DynamicResource SgNeutralActionBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource SgNeutralActionBorderBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -199,19 +211,21 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="9">
+                            CornerRadius="10">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="ToolBorder" Property="Background" Value="{DynamicResource SgNeutralActionHoverBrush}" />
-                                <Setter TargetName="ToolBorder" Property="BorderBrush" Value="{DynamicResource SgAccentBorderBrush}" />
+                                <Setter TargetName="ToolBorder" Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="ToolBorder" Property="Background" Value="{DynamicResource SgNeutralActionPressedBrush}" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="ToolBorder" Property="Opacity" Value="0.55" />
+                                <Setter TargetName="ToolBorder" Property="Opacity" Value="1" />
+                                <Setter Property="Foreground" Value="{DynamicResource SgNeutralActionTextBrush}" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource SgButtonDisabledOutlineBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -295,28 +309,30 @@
                     <ColumnDefinition Width="8" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <ComboBox
-                    x:Name="cmbSubscriptionFilter"
-                    Grid.Column="0"
-                    Style="{StaticResource ProfileComboBox}"
-                    DisplayMemberPath="Label"
-                    TextSearch.TextPath="Label"
-                    PreviewMouseLeftButtonDown="ProfileCombo_PreviewMouseLeftButtonDown"
-                    PreviewKeyDown="ProfileCombo_PreviewKeyDown"
-                    SelectedValuePath="Key"
-                    SelectionChanged="ProfileFilter_SelectionChanged"
-                    ToolTip="Фильтр по подписке или источнику" />
-                <ComboBox
-                    x:Name="cmbProtocolFilter"
-                    Grid.Column="2"
-                    Style="{StaticResource ProfileComboBox}"
-                    DisplayMemberPath="Label"
-                    TextSearch.TextPath="Label"
-                    PreviewMouseLeftButtonDown="ProfileCombo_PreviewMouseLeftButtonDown"
-                    PreviewKeyDown="ProfileCombo_PreviewKeyDown"
-                    SelectedValuePath="Key"
-                    SelectionChanged="ProfileFilter_SelectionChanged"
-                    ToolTip="Фильтр по протоколу" />
+                <Border Grid.Column="0" Style="{StaticResource ProfileComboFrame}">
+                    <ComboBox
+                        x:Name="cmbSubscriptionFilter"
+                        Style="{StaticResource ProfileComboBox}"
+                        DisplayMemberPath="Label"
+                        TextSearch.TextPath="Label"
+                        PreviewMouseLeftButtonDown="ProfileCombo_PreviewMouseLeftButtonDown"
+                        PreviewKeyDown="ProfileCombo_PreviewKeyDown"
+                        SelectedValuePath="Key"
+                        SelectionChanged="ProfileFilter_SelectionChanged"
+                        ToolTip="Фильтр по подписке или источнику" />
+                </Border>
+                <Border Grid.Column="2" Style="{StaticResource ProfileComboFrame}">
+                    <ComboBox
+                        x:Name="cmbProtocolFilter"
+                        Style="{StaticResource ProfileComboBox}"
+                        DisplayMemberPath="Label"
+                        TextSearch.TextPath="Label"
+                        PreviewMouseLeftButtonDown="ProfileCombo_PreviewMouseLeftButtonDown"
+                        PreviewKeyDown="ProfileCombo_PreviewKeyDown"
+                        SelectedValuePath="Key"
+                        SelectionChanged="ProfileFilter_SelectionChanged"
+                        ToolTip="Фильтр по протоколу" />
+                </Border>
             </Grid>
 
             <Grid Margin="0,8,0,0">
@@ -325,41 +341,43 @@
                     <ColumnDefinition Width="8" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <ComboBox
-                    x:Name="cmbCountryFilter"
-                    Grid.Column="0"
-                    Style="{StaticResource ProfileComboBox}"
-                    TextSearch.TextPath="Label"
-                    PreviewMouseLeftButtonDown="ProfileCombo_PreviewMouseLeftButtonDown"
-                    PreviewKeyDown="ProfileCombo_PreviewKeyDown"
-                    SelectedValuePath="Key"
-                    SelectionChanged="ProfileFilter_SelectionChanged"
-                    ToolTip="Фильтр по стране">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <Border Width="24" Height="17" Margin="0,0,8,0" BorderBrush="{DynamicResource SgBorderStrongBrush}" BorderThickness="1" CornerRadius="3">
-                                    <Grid>
-                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource SgMutedBrush}" Text="{Binding CountryCode}" />
-                                        <Image Source="{Binding CountryFlagUri}" Stretch="Uniform" SnapsToDevicePixels="True" />
-                                    </Grid>
-                                </Border>
-                                <TextBlock VerticalAlignment="Center" Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-                <ComboBox
-                    x:Name="cmbProfileSort"
-                    Grid.Column="2"
-                    Style="{StaticResource ProfileComboBox}"
-                    DisplayMemberPath="Label"
-                    TextSearch.TextPath="Label"
-                    PreviewMouseLeftButtonDown="ProfileCombo_PreviewMouseLeftButtonDown"
-                    PreviewKeyDown="ProfileCombo_PreviewKeyDown"
-                    SelectedValuePath="Key"
-                    SelectionChanged="ProfileSort_Changed"
-                    ToolTip="Сортировка профилей" />
+                <Border Grid.Column="0" Style="{StaticResource ProfileComboFrame}">
+                    <ComboBox
+                        x:Name="cmbCountryFilter"
+                        Style="{StaticResource ProfileComboBox}"
+                        TextSearch.TextPath="Label"
+                        PreviewMouseLeftButtonDown="ProfileCombo_PreviewMouseLeftButtonDown"
+                        PreviewKeyDown="ProfileCombo_PreviewKeyDown"
+                        SelectedValuePath="Key"
+                        SelectionChanged="ProfileFilter_SelectionChanged"
+                        ToolTip="Фильтр по стране">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Border Width="24" Height="17" Margin="0,0,8,0" BorderBrush="{DynamicResource SgBorderStrongBrush}" BorderThickness="1" CornerRadius="3">
+                                        <Grid>
+                                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource SgMutedBrush}" Text="{Binding CountryCode}" />
+                                            <Image Source="{Binding CountryFlagUri}" Stretch="Uniform" SnapsToDevicePixels="True" />
+                                        </Grid>
+                                    </Border>
+                                    <TextBlock VerticalAlignment="Center" Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </Border>
+                <Border Grid.Column="2" Style="{StaticResource ProfileComboFrame}">
+                    <ComboBox
+                        x:Name="cmbProfileSort"
+                        Style="{StaticResource ProfileComboBox}"
+                        DisplayMemberPath="Label"
+                        TextSearch.TextPath="Label"
+                        PreviewMouseLeftButtonDown="ProfileCombo_PreviewMouseLeftButtonDown"
+                        PreviewKeyDown="ProfileCombo_PreviewKeyDown"
+                        SelectedValuePath="Key"
+                        SelectionChanged="ProfileSort_Changed"
+                        ToolTip="Сортировка профилей" />
+                </Border>
             </Grid>
             <CheckBox
                 x:Name="chkExcludeCountry"
@@ -493,13 +511,13 @@
                                 </TextBlock.Text>
                             </TextBlock>
                             <TextBlock
-                                Margin="0,3,0,0"
+                                Margin="0,2,0,0"
                                 TextTrimming="CharacterEllipsis"
                                 FontSize="10.8"
                                 Foreground="{DynamicResource SgMutedBrush}"
                                 Text="{Binding ProtocolDisplay}" />
                             <TextBlock
-                                Margin="0,3,0,0"
+                                Margin="0,2,0,0"
                                 TextTrimming="CharacterEllipsis"
                                 FontSize="9.5"
                                 Foreground="{DynamicResource SgMutedBrush}"
@@ -570,103 +588,93 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <StackPanel Grid.Row="2" Margin="0,10,0,0">
-            <Border
-                Margin="0,0,0,8"
-                Padding="10,8"
-                Background="{DynamicResource SgSurfaceSoftBrush}"
-                BorderBrush="{DynamicResource SgBorderBrush}"
-                BorderThickness="1"
-                CornerRadius="9"
-                Visibility="{Binding LatencyTestPanelVisible, Converter={StaticResource BoolToVisConverter}}">
+        <!-- SG_PROFILE_ACTIONS_INLINE_LATENCY_086: one permanent action row; the middle button becomes live progress/stop during testing. -->
+        <Grid Grid.Row="2" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.05*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="1.30*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="46" />
+            </Grid.ColumnDefinitions>
+
+            <Button
+                x:Name="btnActivateProfile"
+                Grid.Column="0"
+                Click="ActivateSelectedProfile_Click"
+                IsEnabled="False"
+                Style="{StaticResource ProfileToolButton}"
+                ToolTip="Подключить или переключить на выделенный профиль">
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Width="14" Height="14" Margin="0,0,6,0" Kind="SwapHorizontal" />
+                    <TextBlock x:Name="txtActivateProfileButton" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold" Text="Подключить" />
+                </StackPanel>
+            </Button>
+
+            <Button
+                x:Name="btnLatencyMenu"
+                Grid.Column="2"
+                Click="LatencyMenu_Click"
+                Style="{StaticResource ProfileToolButton}"
+                ToolTip="Проверить задержку показанных или всех профилей; во время теста — остановить проверку">
+                <Button.ContextMenu>
+                    <ContextMenu Placement="Top">
+                        <MenuItem Header="Показанные профили" Click="PingVisible_Click" />
+                        <MenuItem Header="Все профили" Click="PingAll_Click" />
+                    </ContextMenu>
+                </Button.ContextMenu>
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="84" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                        <TextBlock
-                            FontSize="10.5"
-                            FontWeight="SemiBold"
-                            Foreground="{DynamicResource SgTextBrush}"
-                            Text="{Binding LatencyTestStatus}" />
-                        <ProgressBar
-                            Height="7"
-                            Margin="0,6,0,0"
-                            Maximum="100"
-                            Value="{Binding LatencyTestProgress}" />
+                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding LatencyTestRunning}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+                        <materialDesign:PackIcon Width="14" Height="14" Margin="0,0,6,0" Kind="Speedometer" />
+                        <TextBlock VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold" Text="Проверить задержку" />
+                        <materialDesign:PackIcon Width="13" Height="13" Margin="7,0,0,0" Kind="ChevronDown" />
                     </StackPanel>
-                    <Button
-                        Grid.Column="1"
-                        Height="30"
-                        Click="CancelLatencyTest_Click"
-                        Content="Остановить"
-                        IsEnabled="{Binding LatencyTestRunning}"
-                        Style="{StaticResource ProfileToolButton}" />
+
+                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding LatencyTestRunning}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+                        <materialDesign:PackIcon Width="14" Height="14" Margin="0,0,6,0" Kind="StopCircleOutline" />
+                        <TextBlock VerticalAlignment="Center" FontSize="10.5" FontWeight="SemiBold">
+                            <Run Text="Проверено " />
+                            <Run Text="{Binding LatencyTestCompleted, Mode=OneWay}" />
+                            <Run Text=" из " />
+                            <Run Text="{Binding LatencyTestTotal, Mode=OneWay}" />
+                            <Run Text=" · " />
+                            <Run Text="{Binding LatencyTestProgressText, Mode=OneWay}" />
+                            <Run Text=" · Остановить" />
+                        </TextBlock>
+                    </StackPanel>
                 </Grid>
-            </Border>
+            </Button>
 
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1.25*" />
-                    <ColumnDefinition Width="7" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="7" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="7" />
-                    <ColumnDefinition Width="42" />
-                </Grid.ColumnDefinitions>
-
-                <Button
-                    x:Name="btnActivateProfile"
-                    Grid.Column="0"
-                    Click="ActivateSelectedProfile_Click"
-                    IsEnabled="False"
-                    Style="{StaticResource ProfileToolButton}"
-                    ToolTip="Подключить или переключить на выделенный профиль">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Width="14" Height="14" Margin="0,0,6,0" Kind="SwapHorizontal" />
-                        <TextBlock x:Name="txtActivateProfileButton" VerticalAlignment="Center" FontSize="10" Text="Переключить" />
-                    </StackPanel>
-                </Button>
-
-                <Button
-                    x:Name="btnPingVisible"
-                    Grid.Column="2"
-                    Click="PingVisible_Click"
-                    IsEnabled="{Binding LatencyTestRunning, Converter={StaticResource InverseBooleanConverter}}"
-                    Style="{StaticResource ProfileToolButton}"
-                    ToolTip="Проверить задержку только показанных поиском и фильтрами профилей">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Width="14" Height="14" Margin="0,0,6,0" Kind="FilterOutline" />
-                        <TextBlock VerticalAlignment="Center" FontSize="10" Text="Тест списка" />
-                    </StackPanel>
-                </Button>
-
-                <Button
-                    x:Name="btnPingAll"
-                    Grid.Column="4"
-                    Click="PingAll_Click"
-                    IsEnabled="{Binding LatencyTestRunning, Converter={StaticResource InverseBooleanConverter}}"
-                    Style="{StaticResource ProfileToolButton}"
-                    ToolTip="Проверить задержку всех профилей. Большие списки обрабатываются ограниченными пакетами">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Width="14" Height="14" Margin="0,0,6,0" Kind="LightningBolt" />
-                        <TextBlock VerticalAlignment="Center" FontSize="10" Text="Тест всех" />
-                    </StackPanel>
-                </Button>
-
-                <Button
-                    x:Name="btnRemoveServer"
-                    Grid.Column="6"
-                    Foreground="{DynamicResource SgErrorBrush}"
-                    IsEnabled="{Binding TunBusy, Converter={StaticResource InverseBooleanConverter}}"
-                    Style="{StaticResource ProfileToolButton}"
-                    ToolTip="Удалить выбранный профиль">
-                    <materialDesign:PackIcon Width="17" Height="17" Kind="Delete" />
-                </Button>
-            </Grid>
-        </StackPanel>
+            <Button
+                x:Name="btnRemoveServer"
+                Grid.Column="4"
+                Foreground="{DynamicResource SgTextBrush}"
+                IsEnabled="{Binding TunBusy, Converter={StaticResource InverseBooleanConverter}}"
+                Style="{StaticResource ProfileToolButton}"
+                ToolTip="Удалить выбранный профиль">
+                <materialDesign:PackIcon Width="17" Height="17" Kind="Delete" />
+            </Button>
+        </Grid>
 
         <!-- Hidden compatibility controls keep the mature v2rayN view-model wiring intact. -->
         <Grid Visibility="Collapsed">

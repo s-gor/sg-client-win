@@ -20,6 +20,7 @@ public partial class ProfilesView
     private HashSet<string> _knownProfileIds = new(StringComparer.OrdinalIgnoreCase);
     private bool _profileSnapshotInitialized;
     private bool _browserPreferencesReady;
+    private bool _showProblemProfilesOnly;
 
     public ProfilesView()
     {
@@ -41,6 +42,7 @@ public partial class ProfilesView
             this.OneWayBind(ViewModel, vm => vm.SubItems, v => v.lstGroup.ItemsSource).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.SelectedSub, v => v.lstGroup.SelectedItem).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.ServerFilter, v => v.txtServerFilter.Text).DisposeWith(disposables);
+            // SG_PROFILE_ACTIONS_INLINE_LATENCY_086: latency progress and Stop reuse the permanent middle action button.
             this.BindCommand(ViewModel, vm => vm.AddSubCmd, v => v.btnAddSub).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.EditSubCmd, v => v.btnEditSub).DisposeWith(disposables);
 
@@ -277,6 +279,11 @@ public partial class ProfilesView
             return false;
         }
 
+        if (_showProblemProfilesOnly && item.Delay >= 0)
+        {
+            return false;
+        }
+
         var query = txtProfileSearch.Text?.Trim();
         if (query.IsNotEmpty()
             && !(item.Remarks?.Contains(query, StringComparison.CurrentCultureIgnoreCase) == true
@@ -489,15 +496,50 @@ public partial class ProfilesView
         }));
     }
 
+    private void LatencyMenu_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.LatencyTestRunning)
+        {
+            if (!ViewModel.LatencyTestStopping)
+            {
+                ViewModel.ServerSpeedtestStop();
+            }
+            return;
+        }
+
+        if (btnLatencyMenu.ContextMenu == null)
+        {
+            return;
+        }
+
+        btnLatencyMenu.ContextMenu.PlacementTarget = btnLatencyMenu;
+        btnLatencyMenu.ContextMenu.IsOpen = true;
+    }
+
     private async void PingVisible_Click(object sender, RoutedEventArgs e)
     {
+        _showProblemProfilesOnly = false;
+        ViewModel.LatencyTestProblemButtonText = "Показать проблемные";
+        RefreshBrowserView();
         var visible = _profilesView?.Cast<ProfileItemModel>().ToList() ?? [];
         await ViewModel.TestLatencyAsync(visible);
     }
 
     private async void PingAll_Click(object sender, RoutedEventArgs e)
     {
+        _showProblemProfilesOnly = false;
+        ViewModel.LatencyTestProblemButtonText = "Показать проблемные";
+        RefreshBrowserView();
         await ViewModel.TestLatencyAsync(ViewModel.ProfileItems.ToList());
+    }
+
+    private void ShowProblemProfiles_Click(object sender, RoutedEventArgs e)
+    {
+        _showProblemProfilesOnly = !_showProblemProfilesOnly;
+        ViewModel.LatencyTestProblemButtonText = _showProblemProfilesOnly
+            ? "Показать все"
+            : $"Проблемные: {ViewModel.LatencyTestProblemCount}";
+        RefreshBrowserView();
     }
 
     private void CancelLatencyTest_Click(object sender, RoutedEventArgs e)
@@ -696,7 +738,7 @@ public partial class ProfilesView
             || StatusBarViewModel.Instance.TunBusy)
         {
             btnActivateProfile.IsEnabled = false;
-            txtActivateProfileButton.Text = "Выберите профиль";
+            txtActivateProfileButton.Text = "Подключить";
             return;
         }
 
@@ -710,7 +752,7 @@ public partial class ProfilesView
         }
 
         btnActivateProfile.IsEnabled = true;
-        txtActivateProfileButton.Text = running ? "Переключить" : "Выбрать";
+        txtActivateProfileButton.Text = running ? "Переключить" : "Подключить";
     }
 
     private async Task ActivateProfileFromUserAsync(ProfileItemModel selected)

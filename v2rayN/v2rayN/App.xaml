@@ -25,6 +25,9 @@
             <SolidColorBrush x:Key="SgSurfaceRaisedBrush" Color="#162438" />
             <SolidColorBrush x:Key="SgBorderBrush" Color="#24364B" />
             <SolidColorBrush x:Key="SgBorderStrongBrush" Color="#34506B" />
+            <!-- One calm button outline role shared by every SG Client theme. -->
+            <SolidColorBrush x:Key="SgButtonOutlineBrush" Color="#34506B" />
+            <SolidColorBrush x:Key="SgButtonDisabledOutlineBrush" Color="#34506B" />
             <SolidColorBrush x:Key="SgTextBrush" Color="#F4F7FA" />
             <SolidColorBrush x:Key="SgMutedBrush" Color="#8A9AAF" />
             <SolidColorBrush x:Key="SgAccentBrush" Color="#35D69A" />
@@ -53,6 +56,15 @@
             <SolidColorBrush x:Key="SgWarningSoftBrush" Color="#3A321A" />
             <SolidColorBrush x:Key="SgErrorBrush" Color="#F08BA4" />
             <SolidColorBrush x:Key="SgErrorSoftBrush" Color="#3B1E2A" />
+            <SolidColorBrush x:Key="SgSuccessBorderBrush" Color="#2A7A5C" />
+            <SolidColorBrush x:Key="SgSuccessTextBrush" Color="#35D69A" />
+            <SolidColorBrush x:Key="SgSuccessDotBrush" Color="#35D69A" />
+            <SolidColorBrush x:Key="SgSuccessHoverSoftBrush" Color="#1B4B43" />
+            <SolidColorBrush x:Key="SgWarningButtonBrush" Color="#A97924" />
+            <SolidColorBrush x:Key="SgWarningButtonBorderBrush" Color="#8E641D" />
+            <SolidColorBrush x:Key="SgDangerButtonBrush" Color="#C65670" />
+            <SolidColorBrush x:Key="SgDangerButtonBorderBrush" Color="#A9445C" />
+            <SolidColorBrush x:Key="SgDangerButtonTextBrush" Color="#FFFFFF" />
             <SolidColorBrush x:Key="SgOffBrush" Color="#65758A" />
             <SolidColorBrush x:Key="SgHoverBrush" Color="#17263A" />
             <SolidColorBrush x:Key="SgPressedBrush" Color="#20324A" />
@@ -92,12 +104,12 @@
             <SolidColorBrush x:Key="SgPrimaryActionBorderBrush" Color="#2A7A5C" />
             <SolidColorBrush x:Key="SgPrimaryActionTextBrush" Color="#EDF8F4" />
             <LinearGradientBrush x:Key="SgPrimaryActionBrush" StartPoint="0.5,0" EndPoint="0.5,1">
-                <GradientStop Offset="0" Color="#163B36" />
-                <GradientStop Offset="1" Color="#102E2A" />
+                <GradientStop Offset="0" Color="#1A493F" />
+                <GradientStop Offset="1" Color="#143A33" />
             </LinearGradientBrush>
             <LinearGradientBrush x:Key="SgPrimaryActionHoverBrush" StartPoint="0.5,0" EndPoint="0.5,1">
-                <GradientStop Offset="0" Color="#1B4B43" />
-                <GradientStop Offset="1" Color="#143C36" />
+                <GradientStop Offset="0" Color="#20564A" />
+                <GradientStop Offset="1" Color="#19453D" />
             </LinearGradientBrush>
             <LinearGradientBrush x:Key="SgPrimaryActionPressedBrush" StartPoint="0.5,0" EndPoint="0.5,1">
                 <GradientStop Offset="0" Color="#102E2A" />
@@ -120,7 +132,7 @@
                                 x:Name="SgButtonBorder"
                                 Padding="{TemplateBinding Padding}"
                                 Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderBrush="{DynamicResource SgButtonOutlineBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="10"
                                 SnapsToDevicePixels="True">
@@ -141,12 +153,12 @@
                                     <Setter TargetName="SgButtonBorder" Property="Opacity" Value="0.88" />
                                 </Trigger>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
-                                    <Setter TargetName="SgButtonBorder" Property="BorderBrush" Value="{DynamicResource SgAccentBorderBrush}" />
+                                    <Setter TargetName="SgButtonBorder" Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter Property="Background" Value="{DynamicResource SgDisabledBrush}" />
                                     <Setter Property="Foreground" Value="{DynamicResource SgDisabledTextBrush}" />
-                                    <Setter Property="BorderBrush" Value="{DynamicResource SgDisabledBorderBrush}" />
+                                    <Setter TargetName="SgButtonBorder" Property="BorderBrush" Value="{DynamicResource SgButtonDisabledOutlineBrush}" />
                                     <Setter TargetName="SgButtonBorder" Property="Opacity" Value="1" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
@@ -171,6 +183,18 @@
                         <Setter Property="Background" Value="{DynamicResource SgSecondaryActionPressedBrush}" />
                     </Trigger>
                 </Style.Triggers>
+            </Style>
+
+            <!-- Ordinary MaterialDesign buttons use the same SG Client corner radius as all custom action buttons. -->
+            <Style x:Key="SgMaterialOutlinedButton" BasedOn="{StaticResource MaterialDesignOutlinedButton}" TargetType="{x:Type Button}">
+                <Setter Property="materialDesign:ButtonAssist.CornerRadius" Value="10" />
+                <Setter Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+            </Style>
+            <Style x:Key="SgMaterialRaisedButton" BasedOn="{StaticResource MaterialDesignRaisedButton}" TargetType="{x:Type Button}">
+                <Setter Property="materialDesign:ButtonAssist.CornerRadius" Value="10" />
+                <Setter Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
             </Style>
 
             <!-- Unified dark SG tooltips: no white system popups over the main window. -->
@@ -313,6 +337,9 @@
                 BasedOn="{StaticResource MaterialDesignRaisedButton}"
                 TargetType="{x:Type ButtonBase}">
                 <Setter Property="FontSize" Value="{DynamicResource StdFontSize}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="materialDesign:ButtonAssist.CornerRadius" Value="10" />
             </Style>
             <Style
                 x:Key="DefContextMenu"

@@ -9,7 +9,7 @@
     UseLayoutRounding="True">
     <UserControl.Resources>
         <Style x:Key="GeoCard" TargetType="Border">
-            <Setter Property="Background" Value="{DynamicResource SgSurfaceBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceRaisedBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="14" />

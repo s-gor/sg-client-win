@@ -62,7 +62,7 @@
                         Margin="{StaticResource MarginLeftRight8}"
                         AutomationProperties.Name="{x:Static resx:ResUI.menuProfileAutofitColumnWidth}"
                         Style="{StaticResource MaterialDesignFloatingActionMiniLightButton}"
-                        ToolTip="{x:Static resx:ResUI.menuProfileAutofitColumnWidth}">
+                        ToolTip="{x:Static resx:ResUI.menuProfileAutofitColumnWidth}" BorderBrush="{DynamicResource SgButtonOutlineBrush}" BorderThickness="1">
                         <materialDesign:PackIcon VerticalAlignment="Center" Kind="ArrowSplitVertical" />
                     </Button>
                     <TextBox

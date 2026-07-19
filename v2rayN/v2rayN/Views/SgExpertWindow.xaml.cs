@@ -34,6 +34,7 @@ public partial class SgExpertWindow
         {
             await LoadProfileAsync();
             await LoadDnsAsync();
+            LoadLocalProxySettings();
             LoadConnectionMode();
         };
 
@@ -93,6 +94,7 @@ public partial class SgExpertWindow
         profilePanel.Visibility = Visibility.Collapsed;
         dnsPanel.Visibility = Visibility.Collapsed;
         connectionPanel.Visibility = Visibility.Visible;
+        LoadLocalProxySettings();
         LoadConnectionMode();
     }
 
@@ -827,6 +829,88 @@ public partial class SgExpertWindow
             JsonUtils.Serialize(snapshot, true));
     }
 
+    private void LoadLocalProxySettings()
+    {
+        var port = _config.Inbound.FirstOrDefault()?.LocalPort ?? 10808;
+        txtLocalProxyPort.Text = port.ToString();
+        txtLocalProxyAddress.Text = $"{Global.Loopback}:{port}";
+    }
+
+    private void CopyLocalProxyAddress_Click(object sender, RoutedEventArgs e)
+    {
+        var address = txtLocalProxyAddress.Text.Trim();
+        if (address.IsNullOrEmpty())
+        {
+            return;
+        }
+
+        WindowsUtils.SetClipboardData(address);
+        NoticeManager.Instance.Enqueue($"Скопировано: {address}");
+    }
+
+    private async void SaveLocalProxyPort_Click(object sender, RoutedEventArgs e)
+    {
+        if (!int.TryParse(txtLocalProxyPort.Text.Trim(), out var port)
+            || port <= 0
+            || port >= Global.MaxPort)
+        {
+            SetStatus(txtLocalProxyPortStatus, "Введите порт от 1 до 65535.", "SgErrorBrush");
+            return;
+        }
+
+        var mode = StatusBarViewModel.Instance.GetConnectionModeKey();
+        if (!string.Equals(mode, "off", StringComparison.OrdinalIgnoreCase))
+        {
+            SetStatus(
+                txtLocalProxyPortStatus,
+                "Сначала нажмите «Отключить всё» на главном экране, затем измените порт.",
+                "SgWarningBrush");
+            return;
+        }
+
+        var inbound = _config.Inbound.FirstOrDefault();
+        if (inbound == null)
+        {
+            SetStatus(txtLocalProxyPortStatus, "Внутренние настройки порта не найдены.", "SgErrorBrush");
+            return;
+        }
+
+        if (inbound.LocalPort == port)
+        {
+            LoadLocalProxySettings();
+            SetStatus(txtLocalProxyPortStatus, "Этот порт уже используется.", "SgMutedBrush");
+            return;
+        }
+
+        btnSaveLocalProxyPort.IsEnabled = false;
+        try
+        {
+            inbound.LocalPort = port;
+            if (await ConfigHandler.SaveConfig(_config) != 0)
+            {
+                SetStatus(txtLocalProxyPortStatus, "Не удалось сохранить порт.", "SgErrorBrush");
+                return;
+            }
+
+            AppManager.Instance.Reset();
+            LoadLocalProxySettings();
+            SetStatus(
+                txtLocalProxyPortStatus,
+                $"Порт сохранён: {Global.Loopback}:{port}",
+                "SgSuccessBrush");
+            NoticeManager.Instance.Enqueue("Порт локального прокси сохранён.");
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("SgExpertWindow.SaveLocalProxyPort", ex);
+            SetStatus(txtLocalProxyPortStatus, ex.Message, "SgErrorBrush");
+        }
+        finally
+        {
+            btnSaveLocalProxyPort.IsEnabled = true;
+        }
+    }
+
     private void LoadConnectionMode()
     {
         var mode = StatusBarViewModel.Instance.GetConnectionModeKey();
@@ -842,6 +926,24 @@ public partial class SgExpertWindow
             localActive ? "SgLocalProxyBrush" : "SgOnButtonTextBrush");
         btnLocalProxyAction.BorderBrush = (Brush)FindResource(
             localActive ? "SgLocalProxyBorderBrush" : "SgAccentBrush");
+
+        var canEditPort = string.Equals(mode, "off", StringComparison.OrdinalIgnoreCase);
+        txtLocalProxyPort.IsEnabled = canEditPort;
+        btnSaveLocalProxyPort.IsEnabled = canEditPort;
+        if (!canEditPort)
+        {
+            SetStatus(
+                txtLocalProxyPortStatus,
+                "Чтобы изменить порт, сначала нажмите «Отключить всё» на главном экране.",
+                "SgWarningBrush");
+        }
+        else if (txtLocalProxyPortStatus.Text.Contains("Отключить всё", StringComparison.Ordinal))
+        {
+            SetStatus(
+                txtLocalProxyPortStatus,
+                "Порт можно изменить, когда все режимы отключены.",
+                "SgMutedBrush");
+        }
 
         SetStatus(
             txtConnectionStatus,
@@ -873,6 +975,7 @@ public partial class SgExpertWindow
                 "SgMutedBrush");
             await StatusBarViewModel.Instance.ApplyConnectionModeAsync(
                 localActive ? "off" : "local-proxy");
+            LoadLocalProxySettings();
             LoadConnectionMode();
         }
         catch (Exception ex)

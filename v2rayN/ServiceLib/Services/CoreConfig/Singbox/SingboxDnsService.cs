@@ -277,7 +277,7 @@ public partial class CoreConfigSingboxService
         }
 
         var routing = context.RoutingItem;
-        if (routing == null)
+        if (routing == null || _config.SgQuickSettingsItem?.SmartRouting is not null)
         {
             return;
         }

@@ -13,7 +13,7 @@ namespace v2rayN.Views;
 
 public partial class SgMaintenanceWindow : Window
 {
-    private const string CurrentVersion = "0.0.74";
+    private const string CurrentVersion = "0.0.91";
     private readonly ObservableCollection<SgBackupEntry> _backups = [];
     private readonly BackupAndRestoreViewModel _backupViewModel;
     private Func<Task>? _confirmAction;
@@ -58,32 +58,18 @@ public partial class SgMaintenanceWindow : Window
     {
         tabBackups.IsChecked = true;
         tabUpdates.IsChecked = false;
-        tabGeoFiles.IsChecked = false;
         backupsPanel.Visibility = Visibility.Visible;
         updatesPanel.Visibility = Visibility.Collapsed;
-        geoFilesPanel.Visibility = Visibility.Collapsed;
     }
 
     private void UpdatesTab_Click(object sender, RoutedEventArgs e)
     {
         tabBackups.IsChecked = false;
         tabUpdates.IsChecked = true;
-        tabGeoFiles.IsChecked = false;
         backupsPanel.Visibility = Visibility.Collapsed;
         updatesPanel.Visibility = Visibility.Visible;
-        geoFilesPanel.Visibility = Visibility.Collapsed;
     }
 
-    private async void GeoFilesTab_Click(object sender, RoutedEventArgs e)
-    {
-        tabBackups.IsChecked = false;
-        tabUpdates.IsChecked = false;
-        tabGeoFiles.IsChecked = true;
-        backupsPanel.Visibility = Visibility.Collapsed;
-        updatesPanel.Visibility = Visibility.Collapsed;
-        geoFilesPanel.Visibility = Visibility.Visible;
-        await geoFilesPanel.RefreshAsync();
-    }
 
     private async void CreateBackup_Click(object sender, RoutedEventArgs e)
     {
@@ -92,7 +78,7 @@ public partial class SgMaintenanceWindow : Window
 
         try
         {
-            var fileName = $"SG-CLIENT-074-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
+            var fileName = $"SG-CLIENT-095-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
             var filePath = Utils.GetBackupPath(fileName);
             var created = await _backupViewModel.LocalBackup(filePath);
 
@@ -197,7 +183,7 @@ public partial class SgMaintenanceWindow : Window
 
     private async void CreateBackupFile_Click(object sender, RoutedEventArgs e)
     {
-        var fileName = $"SG-CLIENT-074-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
+        var fileName = $"SG-CLIENT-095-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
         var dialog = new SaveFileDialog
         {
             Title = "Сохранить резервную копию SG Client",
@@ -1611,9 +1597,7 @@ public partial class SgMaintenanceWindow : Window
 
     private void Help_Click(object sender, RoutedEventArgs e)
     {
-        var section = tabGeoFiles.IsChecked == true ? "geofiles"
-            : tabUpdates.IsChecked == true ? "updates"
-            : "backups";
+        var section = tabUpdates.IsChecked == true ? "updates" : "backups";
         new SgHelpWindow(section) { Owner = this }.ShowDialog();
     }
 

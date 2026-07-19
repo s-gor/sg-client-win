@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using ServiceLib.Common;
 using ServiceLib.Enums;
+using ServiceLib.Helper;
 using ServiceLib.Models;
 using ServiceLib.Services.CoreConfig;
 using Xunit;
@@ -559,4 +560,58 @@ public class CoreConfigV2rayServiceTests
         tunInbound!.settings.autoSystemRoutingTable.Should().Contain("10.0.0.0/32");
         tunInbound!.settings.autoSystemRoutingTable.Should().Contain("10.0.0.2/31");
     }
+    [Fact]
+    public void GenerateClientConfigContent_LocalProxyCustomRouting_ShouldUseDirectFinalAndProxyOnlyListedDomains()
+    {
+        var config = CoreConfigTestFactory.CreateConfig(ECoreType.Xray);
+        config.SgQuickSettingsItem = new SgQuickSettingsItem
+        {
+            ConnectionMode = "local-proxy",
+            SmartRouting = new SgSmartRoutingItem
+            {
+                Preset = SgSmartRoutingHelper.PresetCustom,
+                DefaultAction = SgSmartRoutingHelper.ActionDirect,
+                LocalNetworkAction = SgSmartRoutingHelper.ActionDirect,
+                CustomProxyDomains = ["domain:only-vpn.example"],
+            },
+        };
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+        var node = CoreConfigTestFactory.CreateVmessNode(ECoreType.Xray);
+        var context = CoreConfigTestFactory.CreateContext(config, node, ECoreType.Xray) with
+        {
+            IsTunEnabled = false,
+            RoutingItem = new RoutingItem
+            {
+                Id = "legacy-proxy",
+                Remarks = "legacy-proxy",
+                RuleSet = JsonUtils.Serialize(new List<RulesItem>
+                {
+                    new()
+                    {
+                        Enabled = true,
+                        RuleType = ERuleType.Routing,
+                        OutboundTag = Global.ProxyTag,
+                        Domain = ["domain:legacy-should-not-win.example"],
+                    }
+                }),
+                DomainStrategy = Global.AsIs,
+                DomainStrategy4Singbox = string.Empty,
+            }
+        };
+
+        var result = new CoreConfigV2rayService(context).GenerateClientConfigContent();
+
+        result.Success.Should().BeTrue($"ret msg: {result.Msg}");
+        var cfg = JsonUtils.Deserialize<V2rayConfig>(result.Data!.ToString())!;
+        cfg.routing.rules.Should().Contain(rule =>
+            rule.domain?.Contains("domain:only-vpn.example") == true
+            && rule.outboundTag == Global.ProxyTag);
+        cfg.routing.rules.Should().NotContain(rule =>
+            rule.domain?.Contains("domain:legacy-should-not-win.example") == true);
+        cfg.routing.rules.Should().Contain(rule =>
+            rule.outboundTag == Global.DirectTag
+            && rule.network == "tcp,udp"
+            && rule.inboundTag?.Contains(nameof(EInboundProtocol.socks)) == true);
+    }
+
 }

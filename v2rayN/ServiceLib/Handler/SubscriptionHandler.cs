@@ -193,6 +193,7 @@ public static class SubscriptionHandler
             return false;
         }
 
+        result = NormalizeSubscriptionContent(result);
         await updateFunc?.Invoke(false, $"{hashCode}{ResUI.MsgGetSubscriptionSuccessfully}");
 
         // If result is too short, display content directly
@@ -218,4 +219,61 @@ public static class SubscriptionHandler
 
         return ret > 0;
     }
+    // SG_SUBSCRIPTION_NORMALIZATION_086: accept raw URI lists and flexible
+    // Base64 subscriptions (missing padding, URL-safe alphabet, BOM/whitespace).
+    // Decode only when the decoded value looks like an actual subscription so
+    // ordinary JSON/YAML/custom payloads are never damaged by a blind decode.
+    private static string NormalizeSubscriptionContent(string result)
+    {
+        var candidate = result
+            .Trim()
+            .TrimStart('\uFEFF', '\u200B');
+
+        if (LooksLikeSubscriptionPayload(candidate))
+        {
+            return candidate;
+        }
+
+        if (Utils.TryBase64Decode(candidate, out var decoded)
+            && LooksLikeSubscriptionPayload(decoded))
+        {
+            return decoded.Trim();
+        }
+
+        return candidate;
+    }
+
+    private static bool LooksLikeSubscriptionPayload(string? value)
+    {
+        if (value.IsNullOrEmpty())
+        {
+            return false;
+        }
+
+        var text = value.Trim().TrimStart('\uFEFF', '\u200B');
+        if (text.StartsWith('{') || text.StartsWith('['))
+        {
+            return true;
+        }
+
+        if (text.Contains("proxies:", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("outbounds", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return text.Contains("vmess://", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("vless://", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("ss://", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("socks://", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("trojan://", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("hysteria2://", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("hy2://", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("tuic://", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("wireguard://", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("anytls://", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("naive+https://", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("naive+quic://", StringComparison.OrdinalIgnoreCase);
+    }
+
 }

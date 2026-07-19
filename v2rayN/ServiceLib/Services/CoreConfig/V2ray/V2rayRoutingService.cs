@@ -37,7 +37,8 @@ public partial class CoreConfigV2rayService
                 _coreConfig.routing.domainStrategy = _config.RoutingBasicItem.DomainStrategy;
 
                 var routing = context.RoutingItem;
-                if (routing != null && !context.IsTunEnabled)
+                var sgRoutingAuthoritative = _config.SgQuickSettingsItem?.SmartRouting is not null;
+                if (routing != null && !context.IsTunEnabled && !sgRoutingAuthoritative)
                 {
                     if (routing.DomainStrategy.IsNotEmpty())
                     {
@@ -61,12 +62,16 @@ public partial class CoreConfigV2rayService
                     }
                 }
 
+                // SG_ROUTING_AUTHORITATIVE_ALL_MODES_XRAY
                 // SG_TUN_ROUTING_AUTHORITATIVE_XRAY
                 // In TUN, the SG routing screen is the sole source of user
                 // routing. This prevents an old v2rayN routing set (for example
                 // UDP/443 block or geoip direct rules) from silently overriding
                 // "Весь интернет через VPN" before the SG final proxy rule.
-                ApplySgSmartRouting4Ray();
+                if (sgRoutingAuthoritative)
+                {
+                    ApplySgSmartRouting4Ray();
+                }
 
                 var balancerTagList = _coreConfig.routing.balancers
                     ?.Select(p => p.tag)
@@ -242,7 +247,8 @@ public partial class CoreConfigV2rayService
 
     private void ApplySgSmartRouting4Ray()
     {
-        if (!context.IsTunEnabled || _coreConfig.routing?.rules == null)
+        if (_coreConfig.routing?.rules == null
+            || _config.SgQuickSettingsItem?.SmartRouting is null)
         {
             return;
         }
@@ -295,14 +301,30 @@ public partial class CoreConfigV2rayService
             AddSgRayIpRule(SgSmartRoutingHelper.GetRussiaIpRules(item), item.RussiaAction);
         }
 
-        // Make the default action explicit for TUN instead of relying on outbound ordering.
-        _coreConfig.routing.rules.Add(new RulesItem4Ray
+        // Make the default action explicit in every SG Client mode. In TUN the
+        // rule is scoped to the TUN inbound; in Local/System Proxy it applies
+        // to the mixed inbound. This keeps the Routing screen authoritative
+        // and prevents a legacy routing set from silently changing Direct to VPN.
+        var finalRule = new RulesItem4Ray
         {
             type = "field",
-            inboundTag = ["tun"],
             network = "tcp,udp",
             outboundTag = SgSmartRoutingHelper.ToOutboundTag(item.DefaultAction),
-        });
+        };
+        if (context.IsTunEnabled)
+        {
+            finalRule.inboundTag = ["tun"];
+        }
+        else
+        {
+            finalRule.inboundTag = _coreConfig.inbounds?
+                .Where(inbound => inbound.tag.IsNotEmpty()
+                    && !string.Equals(inbound.tag, "tun", StringComparison.OrdinalIgnoreCase))
+                .Select(inbound => inbound.tag)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        _coreConfig.routing.rules.Add(finalRule);
     }
 
     private void AddSgRayDomainRule(IEnumerable<string>? domains, string action)

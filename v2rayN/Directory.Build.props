@@ -1,8 +1,8 @@
 <Project>
 
     <PropertyGroup>
-        <Version>0.0.74</Version>
-        <InformationalVersion>074-complete-backup-live-routes+v2rayN.7.22.7</InformationalVersion>
+        <Version>0.0.90</Version>
+        <InformationalVersion>095-settings-geofiles-routing-classic-surfaces+v2rayN.7.22.7</InformationalVersion>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -31,4 +31,5 @@
         <PublishSingleFile>true</PublishSingleFile>
         <PublishReadyToRun>false</PublishReadyToRun>
     </PropertyGroup>
+  <!-- 095-visual-restore-060-080 -->
 </Project>

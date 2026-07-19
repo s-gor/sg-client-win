@@ -144,14 +144,22 @@ public class OptionSettingViewModel : MyReactiveObject
         var inbound = _config.Inbound.First();
         LocalPort = inbound.LocalPort;
         SecondLocalPortEnabled = inbound.SecondLocalPortEnabled;
-        UdpEnabled = inbound.UdpEnabled;
-        SniffingEnabled = inbound.SniffingEnabled;
+        // SG Client 095: UDP and traffic sniffing are required platform capabilities.
+        // They are always enabled and no longer exposed as decorative toggles.
+        UdpEnabled = true;
+        SniffingEnabled = true;
+        DestOverride = (inbound.DestOverride ?? [])
+            .Concat(new[] { "http", "tls", "quic" })
+            .Where(value => value.IsNotEmpty())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
         RouteOnly = inbound.RouteOnly;
         AllowLANConn = inbound.AllowLANConn;
         NewPort4LAN = inbound.NewPort4LAN;
         User = inbound.User;
         Pass = inbound.Pass;
-        LogEnabled = _config.CoreBasicItem.LogEnabled;
+        // SG Client 095: the local Xray access log is required by Connections.
+        LogEnabled = true;
         Loglevel = _config.CoreBasicItem.Loglevel;
         DefFingerprint = _config.CoreBasicItem.DefFingerprint;
         DefUserAgent = _config.CoreBasicItem.DefUserAgent;
@@ -327,9 +335,13 @@ public class OptionSettingViewModel : MyReactiveObject
         //Core
         _config.Inbound.First().LocalPort = LocalPort;
         _config.Inbound.First().SecondLocalPortEnabled = SecondLocalPortEnabled;
-        _config.Inbound.First().UdpEnabled = UdpEnabled;
-        _config.Inbound.First().SniffingEnabled = SniffingEnabled;
-        _config.Inbound.First().DestOverride = DestOverride?.ToList();
+        _config.Inbound.First().UdpEnabled = true;
+        _config.Inbound.First().SniffingEnabled = true;
+        _config.Inbound.First().DestOverride = (DestOverride ?? [])
+            .Concat(new[] { "http", "tls", "quic" })
+            .Where(value => value.IsNotEmpty())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
         _config.Inbound.First().RouteOnly = RouteOnly;
         _config.Inbound.First().AllowLANConn = AllowLANConn;
         _config.Inbound.First().NewPort4LAN = NewPort4LAN;
@@ -339,8 +351,11 @@ public class OptionSettingViewModel : MyReactiveObject
         {
             _config.Inbound.RemoveAt(1);
         }
-        _config.CoreBasicItem.LogEnabled = LogEnabled;
-        _config.CoreBasicItem.Loglevel = Loglevel;
+        _config.CoreBasicItem.LogEnabled = true;
+        _config.CoreBasicItem.Loglevel = Loglevel.IsNullOrEmpty()
+            || string.Equals(Loglevel, "none", StringComparison.OrdinalIgnoreCase)
+                ? "info"
+                : Loglevel;
         _config.CoreBasicItem.DefFingerprint = DefFingerprint;
         _config.CoreBasicItem.DefUserAgent = DefUserAgent;
         _config.CoreBasicItem.SendThrough = SendThrough.TrimEx();

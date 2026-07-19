@@ -77,7 +77,7 @@ public partial class SgSubscriptionsWindow : Window
         item.Remarks = name;
         item.Url = url;
         item.Enabled = chkSubscriptionEnabled.IsChecked == true;
-        item.UserAgent = item.UserAgent.IsNullOrEmpty() ? "SG-Client/055" : item.UserAgent;
+        item.UserAgent = item.UserAgent.IsNullOrEmpty() ? "SG-Client/086" : item.UserAgent;
 
         var result = await ConfigHandler.AddSubItem(_config, item);
         if (result != 0)

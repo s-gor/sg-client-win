@@ -49,6 +49,7 @@ public partial class SgConnectionsWindow
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
     private readonly CancellationTokenSource _lifetimeCts = new();
     private readonly Dictionary<string, (DateTimeOffset CachedAt, SgRouteTestResult Result)> _routeDecisionCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, SingBoxHistoryEntry> _singBoxHistory = new(StringComparer.OrdinalIgnoreCase);
     private static readonly TimeSpan RouteDecisionCacheLifetime = TimeSpan.FromMinutes(5);
 
     private DateTimeOffset _xrayIgnoreBefore = DateTimeOffset.MinValue;
@@ -109,6 +110,7 @@ public partial class SgConnectionsWindow
         btnExportJson.Click += (_, _) => ExportJson();
         btnCloseSelected.Click += (_, _) => QueueCloseSelected();
         btnCloseAll.Click += (_, _) => QueueCloseAll();
+        btnCloseWindow.Click += (_, _) => Close();
         btnRouteTest.Click += (_, _) => QueueRouteTest();
         btnQuickVpnCheck.Click += (_, _) =>
         {
@@ -316,8 +318,8 @@ public partial class SgConnectionsWindow
     {
         _isSingBoxMode = true;
         _isXrayMode = false;
-        chkIncludeHistory.Visibility = Visibility.Collapsed;
-        btnClear.Content = "Очистить";
+        chkIncludeHistory.Visibility = Visibility.Visible;
+        btnClear.Content = "Очистить список";
         SetSupportedMode(
             "sing-box · активные соединения",
             "Точное правило, payload, процесс, трафик и цепочка берутся напрямую из Clash API.",
@@ -408,8 +410,91 @@ public partial class SgConnectionsWindow
             .ToList();
         }, cancellationToken);
 
-        ReplaceRows(rows);
-        await EnrichCountriesAsync(rows, cancellationToken);
+        var displayRows = MergeSingBoxHistory(rows, now, chkIncludeHistory.IsChecked != true);
+        ReplaceRows(displayRows);
+        await EnrichCountriesAsync(displayRows, cancellationToken);
+    }
+
+    private List<SgConnectionRow> MergeSingBoxHistory(
+        IReadOnlyCollection<SgConnectionRow> liveRows,
+        DateTimeOffset now,
+        bool includeHistory)
+    {
+        var cutoff = now - TimeSpan.FromMinutes(15);
+        foreach (var expired in _singBoxHistory
+                     .Where(pair => pair.Value.LastSeen < cutoff)
+                     .Select(pair => pair.Key)
+                     .ToList())
+        {
+            _singBoxHistory.Remove(expired);
+        }
+
+        var liveKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var row in liveRows)
+        {
+            var key = GetSingBoxHistoryKey(row);
+            liveKeys.Add(key);
+            _singBoxHistory[key] = new SingBoxHistoryEntry(row, now);
+        }
+
+        if (!includeHistory)
+        {
+            return liveRows.ToList();
+        }
+
+        var result = liveRows.ToList();
+        result.AddRange(_singBoxHistory
+            .Where(pair => !liveKeys.Contains(pair.Key) && pair.Value.LastSeen >= cutoff)
+            .OrderByDescending(pair => pair.Value.LastSeen)
+            .Select(pair => CloneAsHistorical(pair.Value.Row, pair.Value.LastSeen)));
+        return result
+            .OrderByDescending(row => row.IsLive)
+            .ThenByDescending(row => row.StartedAt)
+            .Take(MaxDisplayedRows)
+            .ToList();
+    }
+
+    private static string GetSingBoxHistoryKey(SgConnectionRow row)
+    {
+        return row.Id.IsNotEmpty()
+            ? row.Id
+            : string.Join('|', row.DestinationAddressDisplay, row.ProtocolDisplay, row.ProcessDisplay, row.OutboundTag, row.StartedAt.ToUnixTimeMilliseconds());
+    }
+
+    private static SgConnectionRow CloneAsHistorical(SgConnectionRow row, DateTimeOffset lastSeen)
+    {
+        var clone = new SgConnectionRow
+        {
+            Id = row.Id,
+            Host = row.Host,
+            DestinationDisplay = row.DestinationDisplay,
+            DestinationIp = row.DestinationIp,
+            DomainName = row.DomainName,
+            DomainSource = row.DomainSource,
+            PortDisplay = row.PortDisplay,
+            Source = row.Source,
+            RuleDisplay = row.RuleDisplay,
+            RuleName = row.RuleName,
+            RulePayload = row.RulePayload,
+            OutboundDisplay = row.OutboundDisplay,
+            OutboundTag = row.OutboundTag,
+            TunnelDisplay = row.TunnelDisplay,
+            ProtocolDisplay = row.ProtocolDisplay,
+            ProcessDisplay = row.ProcessDisplay,
+            DownloadBytes = row.DownloadBytes,
+            UploadBytes = row.UploadBytes,
+            DownloadDisplay = row.DownloadDisplay,
+            UploadDisplay = row.UploadDisplay,
+            ElapsedDisplay = $"завершено · {FormatLastSeen(lastSeen)}",
+            StartedAt = row.StartedAt,
+            FirstSeenAt = row.FirstSeenAt,
+            HitCount = row.HitCount,
+            RouteKind = row.RouteKind,
+            CanClose = false,
+            IsLive = false,
+        };
+        clone.CountryCode = row.CountryCode;
+        return clone;
     }
 
     private async Task RefreshXrayAsync(CancellationToken cancellationToken)
@@ -432,7 +517,7 @@ public partial class SgConnectionsWindow
             return;
         }
 
-        var historyEnabled = chkIncludeHistory.IsChecked == true;
+        var historyEnabled = chkIncludeHistory.IsChecked != true;
         SetSupportedMode(
             "Xray · диагностика активна",
             historyEnabled
@@ -460,7 +545,7 @@ public partial class SgConnectionsWindow
             return;
         }
 
-        var includeHistory = chkIncludeHistory.IsChecked == true;
+        var includeHistory = chkIncludeHistory.IsChecked != true;
         List<SgConnectionRow> rows;
         using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
         {
@@ -1024,8 +1109,17 @@ public partial class SgConnectionsWindow
 
     private void ReplaceRows(IEnumerable<SgConnectionRow> rows)
     {
+        var normalizedRows = rows.ToList();
+        foreach (var row in normalizedRows)
+        {
+            if (row.RouteKind == "Direct" && IsLoopbackDestination(row))
+            {
+                row.RuleDisplay = "Локальный адрес · Direct (нормально)";
+            }
+        }
+
         _allRows.Clear();
-        _allRows.AddRange(rows);
+        _allRows.AddRange(normalizedRows);
 
         var hasOther = _allRows.Any(row => row.RouteKind == "Other");
         routeOther.Visibility = hasOther ? Visibility.Visible : Visibility.Collapsed;
@@ -1103,13 +1197,14 @@ public partial class SgConnectionsWindow
         _xrayIgnoreBefore = now;
         _xraySessionStartedAt = now;
         chkIncludeHistory.IsChecked = false;
+        _singBoxHistory.Clear();
         _allRows.Clear();
         _visibleRows.Clear();
         gridConnections.ItemsSource = null;
         gridConnections.ItemsSource = _visibleRows;
         txtCount.Text = _isXrayMode ? "0 назначений · 0 обращений" : "0 соединений";
         txtHint.Text = _isXrayMode
-            ? "Новый тест начат. Откройте один сайт и дождитесь автообновления."
+            ? "Новый тест начат. Откройте нужный сайт и нажмите кнопку обновления."
             : "Список очищен. Новые соединения появятся при следующем обновлении.";
         UpdateEmptyState();
         UpdateSelectionState();
@@ -1230,9 +1325,9 @@ public partial class SgConnectionsWindow
         unsupportedPanel.Visibility = Visibility.Collapsed;
         awgDiagnosticsPanel.Visibility = Visibility.Collapsed;
         chkAutoRefresh.Visibility = Visibility.Visible;
-        chkIncludeHistory.Visibility = canClose ? Visibility.Collapsed : Visibility.Visible;
+        chkIncludeHistory.Visibility = Visibility.Visible;
         closeButtonsPanel.Visibility = canClose ? Visibility.Visible : Visibility.Collapsed;
-        btnClear.Content = canClose ? "Очистить" : "Новый тест";
+        btnClear.Content = canClose ? "Очистить список" : "Новый тест";
         SetColumnsForMode(canClose);
         UpdateTimerState();
         UpdateEmptyState();
@@ -1476,6 +1571,30 @@ public partial class SgConnectionsWindow
         txtSummaryRoutesHint.Text = AmneziaWgManager.Instance.ActiveProfileId.IsNotEmpty()
             ? "AmneziaWG показывает общий трафик туннеля без сайтов"
             : "Подключите режим и откройте сайт";
+    }
+
+    private static bool IsLoopbackDestination(SgConnectionRow row)
+    {
+        if (string.Equals(row.DomainName, "localhost", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(row.DestinationDisplay, "localhost", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var candidates = new[] { row.DestinationIp, ExtractHost(row.Host), ExtractHost(row.DestinationDisplay) };
+        foreach (var candidate in candidates)
+        {
+            if (candidate.IsNullOrEmpty())
+            {
+                continue;
+            }
+            var normalized = candidate.Trim().Trim('[', ']');
+            if (IPAddress.TryParse(normalized, out var address) && IPAddress.IsLoopback(address))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static bool IsPublicDestination(SgConnectionRow row)
@@ -1985,7 +2104,7 @@ public partial class SgConnectionsWindow
         btnExportCsv.IsEnabled = _supportsConnectionList && hasRows;
         btnExportJson.IsEnabled = _supportsConnectionList && hasRows;
         btnClear.IsEnabled = _supportsConnectionList && _allRows.Count > 0;
-        btnCloseAll.IsEnabled = _isSingBoxMode && _allRows.Count > 0;
+        btnCloseAll.IsEnabled = _isSingBoxMode && _allRows.Any(row => row.IsLive && row.CanClose);
     }
 
     private void ExportCsv()
@@ -2589,6 +2708,8 @@ public partial class SgConnectionsWindow
         var lastColon = value.LastIndexOf(':');
         return lastColon > 0 && int.TryParse(value[(lastColon + 1)..], out _) ? value[..lastColon] : value;
     }
+
+    private sealed record SingBoxHistoryEntry(SgConnectionRow Row, DateTimeOffset LastSeen);
 
     public sealed class SgConnectionRow : INotifyPropertyChanged
     {

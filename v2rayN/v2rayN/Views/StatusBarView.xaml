@@ -13,15 +13,18 @@
     d:DesignWidth="720"
     x:TypeArguments="vms:StatusBarViewModel"
     Background="Transparent"
+    SnapsToDevicePixels="True"
+    UseLayoutRounding="True"
     mc:Ignorable="d">
 
     <UserControl.Resources>
+        <!-- BUILD-095 compatibility marker: SgPrimaryActionBrush -->
         <Style x:Key="SgModeButton" TargetType="Button">
-            <Setter Property="Width" Value="268" />
             <Setter Property="Height" Value="54" />
-            <Setter Property="Foreground" Value="{DynamicResource SgPrimaryActionTextBrush}" />
-            <Setter Property="Background" Value="{DynamicResource SgPrimaryActionBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource SgPrimaryActionBorderBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgDisabledBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgButtonDisabledOutlineBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
@@ -33,26 +36,63 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="14">
-                            <Border.Effect>
-                                <DropShadowEffect BlurRadius="12" Direction="270" Opacity="0.14" ShadowDepth="2" Color="#203E66" />
-                            </Border.Effect>
+                            CornerRadius="10">
                             <ContentPresenter
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource SgPrimaryActionHoverBrush}" />
-                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource SgPrimaryActionBorderBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.96" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource SgPrimaryActionPressedBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.86" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Background" Value="{DynamicResource SgDisabledBrush}" />
-                                <Setter Property="Foreground" Value="{DynamicResource SgDisabledTextBrush}" />
-                                <Setter Property="BorderBrush" Value="{DynamicResource SgDisabledBorderBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource SgButtonDisabledOutlineBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="1" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SgStopAllButton" TargetType="Button">
+            <Setter Property="Height" Value="54" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgDisabledBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgButtonDisabledOutlineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            x:Name="ButtonBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.96" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.76" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="{DynamicResource SgDisabledBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource SgButtonDisabledOutlineBrush}" />
                                 <Setter TargetName="ButtonBorder" Property="Opacity" Value="1" />
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -78,19 +118,19 @@
             <Setter Property="HorizontalAlignment" Value="Center" />
             <Setter Property="Foreground" Value="{DynamicResource SgErrorBrush}" />
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="{DynamicResource SgErrorBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Visibility" Value="Collapsed" />
             <Setter Property="Template">
-                <Setter.Value><ControlTemplate TargetType="Button"><Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="9"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" /></Border></ControlTemplate></Setter.Value>
+                <Setter.Value><ControlTemplate TargetType="Button"><Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" /></Border></ControlTemplate></Setter.Value>
             </Setter>
             <Style.Triggers><DataTrigger Binding="{Binding TunUiState}" Value="{x:Static enums:ETunUiState.Error}"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
         </Style>
 
         <Style x:Key="ModeSceneCard" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource SgTrafficCardBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
 
@@ -108,7 +148,7 @@
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Background" Value="{DynamicResource SgTileBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
             <Setter Property="Cursor" Value="Hand" />
@@ -124,11 +164,11 @@
                                 <Setter TargetName="TileBorder" Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" />
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="TileBorder" Property="Background" Value="{DynamicResource SgTileActiveBrush}" />
-                                <Setter TargetName="TileBorder" Property="BorderBrush" Value="{DynamicResource SgAccentBorderBrush}" />
+                                <Setter TargetName="TileBorder" Property="Background" Value="{DynamicResource SgNeutralActionHoverBrush}" />
+                                <Setter TargetName="TileBorder" Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True"><Setter TargetName="TileBorder" Property="Background" Value="{DynamicResource SgPressedBrush}" /></Trigger>
-                            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="TileBorder" Property="Background" Value="{DynamicResource SgDisabledBrush}" /><Setter TargetName="TileBorder" Property="BorderBrush" Value="{DynamicResource SgDisabledBorderBrush}" /><Setter Property="Foreground" Value="{DynamicResource SgDisabledTextBrush}" /></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="TileBorder" Property="Background" Value="{DynamicResource SgDisabledBrush}" /><Setter TargetName="TileBorder" Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" /><Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" /></Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -141,24 +181,33 @@
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Background" Value="{DynamicResource SgTileBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="TileBorder" Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12">
+                        <Border x:Name="TileBorder" Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="TileBorder" Property="Background" Value="{DynamicResource SgTileHoverBrush}" /><Setter TargetName="TileBorder" Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" /></Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="TileBorder" Property="Background" Value="{DynamicResource SgTileHoverBrush}" /><Setter TargetName="TileBorder" Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}" /></Trigger>
                             <Trigger Property="IsPressed" Value="True"><Setter TargetName="TileBorder" Property="Background" Value="{DynamicResource SgPressedBrush}" /></Trigger>
-                            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="TileBorder" Property="Background" Value="{DynamicResource SgDisabledBrush}" /><Setter TargetName="TileBorder" Property="BorderBrush" Value="{DynamicResource SgDisabledBorderBrush}" /><Setter Property="Foreground" Value="{DynamicResource SgDisabledTextBrush}" /></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="TileBorder" Property="Background" Value="{DynamicResource SgDisabledBrush}" /><Setter TargetName="TileBorder" Property="BorderBrush" Value="{DynamicResource SgButtonDisabledOutlineBrush}" /><Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" /></Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+
+        <Style x:Key="QuickDpiActionTile" TargetType="Button" BasedOn="{StaticResource QuickActionTile}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding QuickDpiActive}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource SgNeutralActionHoverBrush}" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
         </Style>
 
         <Style x:Key="QuickStateText" TargetType="TextBlock">
@@ -177,7 +226,7 @@
             <Setter Property="Height" Value="30" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Background" Value="{DynamicResource SgIconButtonBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="ToolTipService.InitialShowDelay" Value="180" />
@@ -190,7 +239,7 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="9">
+                            CornerRadius="10">
                             <ContentPresenter
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center" />
@@ -204,7 +253,7 @@
                                 <Setter
                                     TargetName="ResetButtonBorder"
                                     Property="BorderBrush"
-                                    Value="{DynamicResource SgAccentBorderBrush}" />
+                                    Value="{DynamicResource SgButtonOutlineBrush}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter
@@ -224,7 +273,7 @@
             <Border.Style>
                 <Style TargetType="Border">
                     <Setter Property="Background" Value="{DynamicResource SgHeroBrush}" />
-                    <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" />
                     <Setter Property="BorderThickness" Value="1" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding TunUiState}" Value="{x:Static enums:ETunUiState.On}"><Setter Property="Background" Value="{DynamicResource SgTunHeroBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource SgSuccessBrush}" /></DataTrigger>
@@ -267,9 +316,24 @@
                     </StackPanel>
                 </Border>
 
-                <StackPanel Grid.Row="1" Margin="24,-14,24,5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <!-- SG_CONNECTION_SCENE_086: classic emblem/profile composition with compact empty state. -->
+                <!-- SG_BOTTOM_ANCHORED_MODE_SCENE_086: profile stays above; the complete mode grid is anchored near traffic. -->
+                <Grid
+                    Grid.Row="1"
+                    Margin="24,8,24,8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel
+                        Grid.Row="0"
+                        Margin="0,-6,0,0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Top">
                     <Grid Width="66" Height="66" Margin="0,0,0,9">
-                        <Ellipse x:Name="stateHalo" Margin="1" Opacity="0.28" StrokeThickness="1.5">
+                        <Ellipse x:Name="stateHalo" Margin="1" Opacity="1" StrokeThickness="1">
                             <Ellipse.Style>
                                 <Style TargetType="Ellipse">
                                     <Setter Property="Stroke" Value="{DynamicResource SgBorderStrongBrush}" />
@@ -301,27 +365,74 @@
                             </materialDesign:PackIcon.RenderTransform>
                             <materialDesign:PackIcon.Style>
                                 <Style TargetType="materialDesign:PackIcon">
-                                    <Setter Property="Kind" Value="LanConnect" />
-                                    <Setter Property="Foreground" Value="{DynamicResource SgOffBrush}" />
+                                    <Setter Property="Kind" Value="PowerPlugOffOutline" />
+                                    <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding TunUiState}" Value="{x:Static enums:ETunUiState.On}"><Setter Property="Kind" Value="ShieldLockOutline" /><Setter Property="Foreground" Value="{DynamicResource SgSuccessBrush}" /></DataTrigger>
                                         <DataTrigger Binding="{Binding ConnectionModeKey}" Value="system-proxy"><Setter Property="Kind" Value="Web" /><Setter Property="Foreground" Value="{DynamicResource SgSystemProxyBrush}" /></DataTrigger>
                                         <DataTrigger Binding="{Binding ConnectionModeKey}" Value="local-proxy"><Setter Property="Kind" Value="LanConnect" /><Setter Property="Foreground" Value="{DynamicResource SgLocalProxyBrush}" /></DataTrigger>
-                                        <DataTrigger Binding="{Binding TunBusy}" Value="True">
-                                            <Setter Property="Kind" Value="Reload" />
-                                            <Setter Property="Foreground" Value="{DynamicResource SgWarningBrush}" />
-                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding TunBusy}" Value="True"><Setter Property="Kind" Value="Reload" /><Setter Property="Foreground" Value="{DynamicResource SgWarningBrush}" /></DataTrigger>
                                         <DataTrigger Binding="{Binding TunUiState}" Value="{x:Static enums:ETunUiState.Error}"><Setter Property="Kind" Value="InformationOutline" /><Setter Property="Foreground" Value="{DynamicResource SgErrorBrush}" /></DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </materialDesign:PackIcon.Style>
                         </materialDesign:PackIcon>
                     </Grid>
-                    <TextBlock x:Name="txtRunningServerDisplay" MaxWidth="550" MaxHeight="52" TextAlignment="Center" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" FontSize="21" LineHeight="25" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="{Binding ProfileNameDisplay}" ToolTip="{Binding ProfileNameDisplay}" />
-                    <Border Padding="10,3" Margin="0,7,0,0" HorizontalAlignment="Center" CornerRadius="9" Style="{StaticResource ModeSceneIconCard}">
+
+                    <TextBlock
+                        x:Name="txtRunningServerDisplay"
+                        MaxWidth="550"
+                        MaxHeight="52"
+                        TextAlignment="Center"
+                        TextWrapping="Wrap"
+                        TextTrimming="CharacterEllipsis"
+                        LineHeight="25"
+                        Text="{Binding ProfileNameDisplay}"
+                        ToolTip="{Binding ProfileNameDisplay}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="FontSize" Value="21" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                                <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ProfileNameDisplay}" Value="Профиль не выбран">
+                                        <Setter Property="FontSize" Value="11.5" />
+                                        <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <Border Padding="10,3" Margin="0,7,0,0" HorizontalAlignment="Center" CornerRadius="9">
+                        <Border.Style>
+                            <Style TargetType="Border" BasedOn="{StaticResource ModeSceneIconCard}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ProfileNameDisplay}" Value="Профиль не выбран"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <TextBlock x:Name="txtProtocolDisplay" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource SgMutedBrush}" Text="{Binding ProfileProtocolDisplay}" />
                     </Border>
-                    <TextBlock x:Name="txtRunningInfoDisplay" MaxWidth="570" Margin="0,7,0,0" TextAlignment="Center" TextWrapping="Wrap" FontSize="10.5" LineHeight="15" Foreground="{DynamicResource SgMutedBrush}" Text="{Binding TunDetailText}" />
+                    <TextBlock
+                        x:Name="txtRunningInfoDisplay"
+                        MaxWidth="570"
+                        Margin="0,7,0,0"
+                        TextAlignment="Center"
+                        TextWrapping="Wrap"
+                        FontSize="10.5"
+                        LineHeight="15"
+                        Foreground="{DynamicResource SgMutedBrush}"
+                        Text="{Binding TunDetailText}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed" /></Trigger>
+                                    <DataTrigger Binding="{Binding ProfileNameDisplay}" Value="Профиль не выбран"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                     <TextBlock x:Name="txtTunSessionDisplay" Margin="0,7,0,0" TextAlignment="Center" FontSize="10.5" FontWeight="SemiBold" Visibility="Collapsed">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -334,69 +445,96 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <Grid Margin="0,14,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="268" />
-                            <ColumnDefinition Width="12" />
-                            <ColumnDefinition Width="268" />
-                        </Grid.ColumnDefinitions>
 
-                        <Button
-                            x:Name="btnToggleTunMode"
-                            Grid.Column="0"
-                            Tag="SG_TUN_ESCAPE_ALWAYS"
-                            Style="{StaticResource SgModeButton}"
-                            ToolTip="Включить TUN или немедленно отключить активный/зависший переход">
+                    </StackPanel>
+
+                    <!-- SG_MAIN_MODE_GRID_086: original button rhythm extended by Local Proxy and the safe stop action. -->
+                    <Grid
+                        Grid.Row="2"
+                        Margin="-6,0,-6,4"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Bottom">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="54" />
+                            <RowDefinition Height="10" />
+                            <RowDefinition Height="54" />
+                        </Grid.RowDefinitions>
+
+                        <Button x:Name="btnToggleTunMode" Grid.Row="0" Grid.Column="0" IsEnabled="{Binding CanUseTunMode}" Tag="SG_TUN_ESCAPE_ALWAYS" ToolTip="Включить TUN или немедленно отключить активный/зависший переход">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource SgModeButton}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsTunModeActive}" Value="True">
+                                            <Setter Property="Background" Value="{DynamicResource SgSuccessSoftBrush}" />
+                                            <Setter Property="Foreground" Value="{DynamicResource SgSuccessTextBrush}" />
+                                            <Setter Property="BorderBrush" Value="{DynamicResource SgSuccessBorderBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon
-                                    Width="20"
-                                    Height="20"
-                                    Margin="0,0,11,0"
-                                    VerticalAlignment="Center"
-                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                    Kind="ShieldLockOutline" />
-                                <TextBlock
-                                    VerticalAlignment="Center"
-                                    FontSize="12"
-                                    FontWeight="Bold"
-                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                    Text="{Binding TunModeButtonText}" />
+                                <materialDesign:PackIcon Width="20" Height="20" Margin="0,0,11,0" VerticalAlignment="Center" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Kind="ShieldLockOutline" />
+                                <TextBlock VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Text="{Binding TunModeButtonText}" />
                             </StackPanel>
                         </Button>
 
-                        <Button
-                            x:Name="btnToggleSystemProxyMode"
-                            Grid.Column="2"
-                            IsEnabled="{Binding CanUseSystemProxyMode}"
-                            ToolTip="{Binding SystemProxyModeToolTip}"
-                            Style="{StaticResource SgModeButton}">
+                        <Button x:Name="btnToggleSystemProxyMode" Grid.Row="0" Grid.Column="2" IsEnabled="{Binding CanUseSystemProxyMode}" ToolTip="{Binding SystemProxyModeToolTip}">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource SgModeButton}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSystemProxyModeActive}" Value="True">
+                                            <Setter Property="Background" Value="{DynamicResource SgSystemProxySoftBrush}" />
+                                            <Setter Property="Foreground" Value="{DynamicResource SgSystemProxyBrush}" />
+                                            <Setter Property="BorderBrush" Value="{DynamicResource SgSystemProxyBorderBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon
-                                    Width="20"
-                                    Height="20"
-                                    Margin="0,0,11,0"
-                                    VerticalAlignment="Center"
-                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                    Kind="Web" />
-                                <TextBlock
-                                    VerticalAlignment="Center"
-                                    FontSize="12"
-                                    FontWeight="Bold"
-                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                    Text="{Binding SystemProxyModeButtonText}" />
+                                <materialDesign:PackIcon Width="20" Height="20" Margin="0,0,11,0" VerticalAlignment="Center" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Kind="Web" />
+                                <TextBlock VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Text="{Binding SystemProxyModeButtonText}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="btnToggleLocalProxyMode" Grid.Row="2" Grid.Column="0" IsEnabled="{Binding CanUseSystemProxyMode}" ToolTip="Включить локальный HTTP/SOCKS-прокси без изменения системных настроек Windows">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource SgModeButton}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsLocalProxyModeActive}" Value="True">
+                                            <Setter Property="Background" Value="{DynamicResource SgLocalProxySoftBrush}" />
+                                            <Setter Property="Foreground" Value="{DynamicResource SgLocalProxyBrush}" />
+                                            <Setter Property="BorderBrush" Value="{DynamicResource SgLocalProxyBorderBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Width="20" Height="20" Margin="0,0,11,0" VerticalAlignment="Center" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Kind="LanConnect" />
+                                <TextBlock VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Text="{Binding LocalProxyModeButtonText}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="btnDisconnectAll" Grid.Row="2" Grid.Column="2" IsEnabled="{Binding CanDisconnectAll}" Tag="SG_DISCONNECT_ALL_095" Style="{StaticResource SgStopAllButton}" ToolTip="Остановить TUN, System Proxy, Local Proxy и снять аварийную блокировку">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Width="20" Height="20" Margin="0,0,11,0" VerticalAlignment="Center" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Kind="Power" />
+                                <TextBlock x:Name="txtDisconnectAllButtonText" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Text="Отключить всё" />
                             </StackPanel>
                         </Button>
                     </Grid>
-                </StackPanel>
-
+                </Grid>
 
                 <Border
                     Grid.Row="2"
                     Margin="18,0,18,12"
-                    Padding="12,9"
+                    Padding="12,10"
                     CornerRadius="13"
                     Style="{StaticResource ModeSceneCard}">
-                    <Grid Height="94">
+                    <Grid Height="104">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="48" />
                             <ColumnDefinition Width="*" />
@@ -449,13 +587,17 @@
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="24" />
-                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="1" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="1" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="1" />
+                                    <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel
                                     Grid.Column="0"
+                                    Grid.ColumnSpan="4"
                                     Orientation="Horizontal"
                                     VerticalAlignment="Center">
                                     <materialDesign:PackIcon
@@ -463,7 +605,7 @@
                                         Height="18"
                                         Margin="0,0,7,0"
                                         Foreground="{DynamicResource SgAccentBrush}"
-                                        Kind="ChartLine" />
+                                        Kind="SwapVertical" />
                                     <StackPanel>
                                         <TextBlock
                                             FontSize="12.5"
@@ -473,7 +615,7 @@
                                         <TextBlock
                                             Margin="0,2,0,0"
                                             MaxWidth="250"
-                                            FontSize="8.8"
+                                            FontSize="9.5"
                                             Foreground="{DynamicResource SgMutedBrush}"
                                             Text="{Binding TrafficProfileNameDisplay}"
                                             TextTrimming="CharacterEllipsis"
@@ -496,35 +638,45 @@
                                     </Button>
                                 </StackPanel>
 
-                                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                <StackPanel Grid.Column="4" HorizontalAlignment="Stretch">
                                     <TextBlock
-                                        HorizontalAlignment="Right"
-                                        FontSize="8.5"
+                                        HorizontalAlignment="Center"
+                                        TextAlignment="Center"
+                                        FontSize="9.5"
                                         Foreground="{DynamicResource SgMutedBrush}"
                                         Text="СКАЧИВАНИЕ" />
                                     <TextBlock
                                         Margin="0,2,0,0"
-                                        HorizontalAlignment="Right"
-                                        FontSize="16"
+                                        HorizontalAlignment="Center"
+                                        TextAlignment="Center"
+                                        MinWidth="140"
+                                        FontSize="19"
                                         FontWeight="Bold"
                                         Foreground="{DynamicResource SgTrafficDownloadBrush}"
                                         Text="{Binding TrafficCurrentDownloadDisplay}" />
                                 </StackPanel>
 
                                 <Border
-                                    Grid.Column="2"
+                                    Grid.Column="5"
                                     Width="1"
-                                    Margin="11,2"
+                                    Height="46"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
                                     Background="{DynamicResource SgBorderBrush}" />
 
-                                <StackPanel Grid.Column="3" HorizontalAlignment="Left">
+                                <StackPanel Grid.Column="6" HorizontalAlignment="Stretch">
                                     <TextBlock
-                                        FontSize="8.5"
+                                        HorizontalAlignment="Center"
+                                        TextAlignment="Center"
+                                        FontSize="9.5"
                                         Foreground="{DynamicResource SgMutedBrush}"
                                         Text="ОТДАЧА" />
                                     <TextBlock
                                         Margin="0,2,0,0"
-                                        FontSize="16"
+                                        HorizontalAlignment="Center"
+                                        TextAlignment="Center"
+                                        MinWidth="140"
+                                        FontSize="19"
                                         FontWeight="Bold"
                                         Foreground="{DynamicResource SgTrafficUploadBrush}"
                                         Text="{Binding TrafficCurrentUploadDisplay}" />
@@ -545,18 +697,18 @@
                                 <StackPanel Grid.Column="0" HorizontalAlignment="Center">
                                     <TextBlock
                                         HorizontalAlignment="Center"
-                                        FontSize="9"
+                                        FontSize="9.5"
                                         Foreground="{DynamicResource SgMutedBrush}"
                                         Text="За сеанс" />
                                     <StackPanel Margin="0,4,0,0" Orientation="Horizontal">
                                         <TextBlock
-                                            FontSize="10.5"
+                                            FontSize="13"
                                             FontWeight="SemiBold"
                                             Foreground="{DynamicResource SgTrafficDownloadBrush}"
                                             Text="{Binding TrafficSessionDownloadDisplay}" />
                                         <TextBlock
                                             Margin="11,0,0,0"
-                                            FontSize="10.5"
+                                            FontSize="13"
                                             FontWeight="SemiBold"
                                             Foreground="{DynamicResource SgTrafficUploadBrush}"
                                             Text="{Binding TrafficSessionUploadDisplay}" />
@@ -565,24 +717,27 @@
 
                                 <Border
                                     Grid.Column="1"
-                                    Margin="0,1"
+                                    Width="1"
+                                    Height="46"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
                                     Background="{DynamicResource SgBorderBrush}" />
 
                                 <StackPanel Grid.Column="2" HorizontalAlignment="Center">
                                     <TextBlock
                                         HorizontalAlignment="Center"
-                                        FontSize="9"
+                                        FontSize="9.5"
                                         Foreground="{DynamicResource SgMutedBrush}"
                                         Text="Сегодня" />
                                     <StackPanel Margin="0,4,0,0" Orientation="Horizontal">
                                         <TextBlock
-                                            FontSize="10.5"
+                                            FontSize="13"
                                             FontWeight="SemiBold"
                                             Foreground="{DynamicResource SgTrafficDownloadBrush}"
                                             Text="{Binding TrafficTodayDownloadDisplay}" />
                                         <TextBlock
                                             Margin="11,0,0,0"
-                                            FontSize="10.5"
+                                            FontSize="13"
                                             FontWeight="SemiBold"
                                             Foreground="{DynamicResource SgTrafficUploadBrush}"
                                             Text="{Binding TrafficTodayUploadDisplay}" />
@@ -591,24 +746,27 @@
 
                                 <Border
                                     Grid.Column="3"
-                                    Margin="0,1"
+                                    Width="1"
+                                    Height="46"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
                                     Background="{DynamicResource SgBorderBrush}" />
 
                                 <StackPanel Grid.Column="4" HorizontalAlignment="Center">
                                     <TextBlock
                                         HorizontalAlignment="Center"
-                                        FontSize="9"
+                                        FontSize="9.5"
                                         Foreground="{DynamicResource SgMutedBrush}"
                                         Text="Этот месяц" />
                                     <StackPanel Margin="0,4,0,0" Orientation="Horizontal">
                                         <TextBlock
-                                            FontSize="10"
+                                            FontSize="13"
                                             FontWeight="SemiBold"
                                             Foreground="{DynamicResource SgTrafficDownloadBrush}"
                                             Text="{Binding TrafficMonthDownloadDisplay}" />
                                         <TextBlock
                                             Margin="8,0,0,0"
-                                            FontSize="10"
+                                            FontSize="13"
                                             FontWeight="SemiBold"
                                             Foreground="{DynamicResource SgTrafficUploadBrush}"
                                             Text="{Binding TrafficMonthUploadDisplay}" />
@@ -617,24 +775,27 @@
 
                                 <Border
                                     Grid.Column="5"
-                                    Margin="0,1"
+                                    Width="1"
+                                    Height="46"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
                                     Background="{DynamicResource SgBorderBrush}" />
 
                                 <StackPanel Grid.Column="6" HorizontalAlignment="Center">
                                     <TextBlock
                                         HorizontalAlignment="Center"
-                                        FontSize="9"
+                                        FontSize="9.5"
                                         Foreground="{DynamicResource SgMutedBrush}"
                                         Text="Всего" />
                                     <StackPanel Margin="0,4,0,0" Orientation="Horizontal">
                                         <TextBlock
-                                            FontSize="10"
+                                            FontSize="13"
                                             FontWeight="SemiBold"
                                             Foreground="{DynamicResource SgTrafficDownloadBrush}"
                                             Text="{Binding TrafficTotalDownloadDisplay}" />
                                         <TextBlock
                                             Margin="8,0,0,0"
-                                            FontSize="10"
+                                            FontSize="13"
                                             FontWeight="SemiBold"
                                             Foreground="{DynamicResource SgTrafficUploadBrush}"
                                             Text="{Binding TrafficTotalUploadDisplay}" />
@@ -658,7 +819,7 @@
                                 <materialDesign:PackIcon
                                     Width="16"
                                     Height="16"
-                                    Foreground="{DynamicResource SgTrafficUploadBrush}"
+                                    Foreground="{DynamicResource SgTextBrush}"
                                     Kind="Delete" />
                             </Button>
 
@@ -692,7 +853,7 @@
                         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><Border Width="34" Height="34" Margin="0,0,9,0" CornerRadius="9" Style="{StaticResource ModeSceneIconCard}"><materialDesign:PackIcon Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource ModeSceneAccentIcon}" Kind="Routes" /></Border><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock FontSize="11" FontWeight="SemiBold" Text="Маршрутизация" /><TextBlock Margin="0,3,0,0" FontSize="9.5" Foreground="{DynamicResource SgMutedBrush}" Text="{Binding QuickRoutingSummary}" TextTrimming="CharacterEllipsis" /></StackPanel><materialDesign:PackIcon Grid.Column="2" Width="16" Height="16" VerticalAlignment="Center" Foreground="{DynamicResource SgMutedBrush}" Kind="ChevronRight" /></Grid>
                     </Button>
 
-                    <Button x:Name="btnQuickDpi" Grid.Row="0" Grid.Column="2" IsEnabled="{Binding TunBusy, Converter={StaticResource InverseBooleanConverter}}" Style="{StaticResource QuickActionTile}">
+                    <Button x:Name="btnQuickDpi" Grid.Row="0" Grid.Column="2" IsEnabled="{Binding TunBusy, Converter={StaticResource InverseBooleanConverter}}" Style="{StaticResource QuickDpiActionTile}">
                         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><Border Width="34" Height="34" Margin="0,0,9,0" CornerRadius="9" Style="{StaticResource ModeSceneIconCard}"><materialDesign:PackIcon Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource ModeSceneAccentIcon}" Kind="ShieldHalfFull" /></Border><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock FontSize="11" FontWeight="SemiBold" Text="Маскировка DPI" /><TextBlock Margin="0,3,0,0" FontSize="9.5" Foreground="{DynamicResource SgMutedBrush}" Text="{Binding QuickDpiSummary}" TextTrimming="CharacterEllipsis" /></StackPanel><materialDesign:PackIcon Grid.Column="2" Width="16" Height="16" VerticalAlignment="Center" Foreground="{DynamicResource SgMutedBrush}" Kind="ChevronRight" /></Grid>
                     </Button>
 
@@ -717,20 +878,28 @@
 
         <Grid Visibility="Collapsed"><TextBlock x:Name="txtSpeedProxyDisplay" /><TextBlock x:Name="txtSpeedDirectDisplay" /></Grid>
 
-        <tb:TaskbarIcon x:Name="tbNotify" IconSource="/Resources/v2rayN.ico" NoLeftClickDelay="True" ToolTipText="SG Client 074">
+        <!-- SG_TRAY_CONTROL_CENTER_086: connection modes, quick profile switch and daily actions without opening the window. -->
+        <tb:TaskbarIcon x:Name="tbNotify" IconSource="/Resources/v2rayN.ico" NoLeftClickDelay="True" ToolTipText="SG-Client 086">
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu Style="{StaticResource DefContextMenu}">
-                    <MenuItem x:Name="menuTrayStatus" Header="SG Client — TUN выключен" IsEnabled="False" />
+                    <MenuItem x:Name="menuTrayStatus" Header="SG-Client — отключён" IsEnabled="False" FontWeight="SemiBold" />
                     <MenuItem x:Name="menuTrayProfile" Header="Профиль: не выбран" IsEnabled="False" />
                     <Separator />
-                    <MenuItem x:Name="menuShow" Header="Открыть SG Client" />
                     <MenuItem x:Name="menuTun" Header="Включить TUN" IsCheckable="True" />
-                    <MenuItem x:Name="menuProfiles" Header="Профили" />
-                    <MenuItem x:Name="menuLogs" Header="Журнал" />
+                    <MenuItem x:Name="menuSystemProxy" Header="Включить системный прокси" IsCheckable="True" />
+                    <MenuItem x:Name="menuLocalProxy" Header="Включить локальный прокси" IsCheckable="True" />
+                    <MenuItem x:Name="menuDisconnectAll" Header="Отключить всё" />
+                    <Separator />
+                    <MenuItem x:Name="menuProfiles" Header="Быстрый выбор профиля" />
+                    <MenuItem x:Name="menuTestCurrent" Header="Проверить задержку текущего профиля" />
+                    <MenuItem x:Name="menuCopyLocalProxy" Header="Скопировать адрес Local Proxy" />
+                    <MenuItem x:Name="menuRouting" Header="Открыть маршруты" />
+                    <MenuItem x:Name="menuLogs" Header="Открыть журнал" />
                     <Separator />
                     <MenuItem x:Name="menuAddServerViaClipboard2" Header="Импортировать ссылку из буфера" />
+                    <MenuItem x:Name="menuShow" Header="Открыть SG-Client" />
                     <Separator />
-                    <MenuItem x:Name="menuExit" Header="Выйти" />
+                    <MenuItem x:Name="menuExit" Header="Выход" />
                 </ContextMenu>
             </tb:TaskbarIcon.ContextMenu>
         </tb:TaskbarIcon>

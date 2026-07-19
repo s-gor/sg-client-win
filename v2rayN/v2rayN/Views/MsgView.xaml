@@ -36,7 +36,7 @@
                 Margin="{StaticResource MarginLeftRight8}"
                 AutomationProperties.Name="{x:Static resx:ResUI.menuMsgViewCopyAll}"
                 Style="{StaticResource MaterialDesignFloatingActionMiniLightButton}"
-                ToolTip="{x:Static resx:ResUI.menuMsgViewCopyAll}">
+                ToolTip="{x:Static resx:ResUI.menuMsgViewCopyAll}" BorderBrush="{DynamicResource SgButtonOutlineBrush}" BorderThickness="1">
                 <materialDesign:PackIcon VerticalAlignment="Center" Kind="ContentCopy" />
             </Button>
             <Button
@@ -46,7 +46,7 @@
                 Margin="{StaticResource MarginLeftRight8}"
                 AutomationProperties.Name="{x:Static resx:ResUI.menuMsgViewClear}"
                 Style="{StaticResource MaterialDesignFloatingActionMiniLightButton}"
-                ToolTip="{x:Static resx:ResUI.menuMsgViewClear}">
+                ToolTip="{x:Static resx:ResUI.menuMsgViewClear}" BorderBrush="{DynamicResource SgButtonOutlineBrush}" BorderThickness="1">
                 <materialDesign:PackIcon VerticalAlignment="Center" Kind="Delete" />
             </Button>
             <TextBlock

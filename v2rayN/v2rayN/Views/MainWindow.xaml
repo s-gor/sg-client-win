@@ -1,60 +1,36 @@
-<base:WindowBase
-    x:Class="v2rayN.Views.MainWindow"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:base="clr-namespace:v2rayN.Base"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2009"
-    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
-    xmlns:view="clr-namespace:v2rayN.Views"
-    xmlns:vms="clr-namespace:ServiceLib.ViewModels;assembly=ServiceLib"
-    Title="SG Client — 069"
-    Width="1100"
-    Height="791"
-    MinWidth="1000"
-    MinHeight="680"
-    x:TypeArguments="vms:MainWindowViewModel"
-    Background="{DynamicResource SgBackgroundBrush}"
-    Icon="/Resources/v2rayN.ico"
-    ResizeMode="CanResize"
-    ShowInTaskbar="True"
-    WindowStartupLocation="CenterScreen"
-    WindowStyle="None"
-    TextOptions.TextFormattingMode="Display"
-    mc:Ignorable="d">
+<base:WindowBase xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:base="clr-namespace:v2rayN.Base" xmlns:d="http://schemas.microsoft.com/expression/blend/2009" xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework" xmlns:view="clr-namespace:v2rayN.Views" xmlns:vms="clr-namespace:ServiceLib.ViewModels;assembly=ServiceLib" x:Class="v2rayN.Views.MainWindow" Title="SG Client — 095" Width="1730" Height="1182" MinWidth="1730" MinHeight="1182" x:TypeArguments="vms:MainWindowViewModel" Background="{DynamicResource SgBackgroundBrush}" Icon="/Resources/v2rayN.ico" ResizeMode="CanResize" ShowInTaskbar="True" WindowStartupLocation="CenterScreen" WindowStyle="None" TextOptions.TextFormattingMode="Display" mc:Ignorable="d">
 
     <shell:WindowChrome.WindowChrome>
-        <shell:WindowChrome CaptionHeight="58" CornerRadius="0" GlassFrameThickness="0" ResizeBorderThickness="7" UseAeroCaptionButtons="False" />
+        <shell:WindowChrome CaptionHeight="58" CornerRadius="0" GlassFrameThickness="0" ResizeBorderThickness="7" UseAeroCaptionButtons="False"/>
     </shell:WindowChrome.WindowChrome>
 
     <Window.Resources>
         <Style x:Key="SgSidebarCard" TargetType="Border">
-            <Setter Property="Background" Value="{DynamicResource SgSidebarBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="17" />
+            <Setter Property="Background" Value="{DynamicResource SgSidebarBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="17"/>
         </Style>
 
         <Style x:Key="SgToolbarButton" TargetType="Button">
-            <Setter Property="Height" Value="38" />
-            <Setter Property="Padding" Value="12,0" />
-            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True" />
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="ToolbarBorder" Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="9">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Border x:Name="ToolbarBorder" Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ToolbarBorder" Property="Background" Value="{DynamicResource SgHoverBrush}" /><Setter TargetName="ToolbarBorder" Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" /></Trigger>
-                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="ToolbarBorder" Property="Background" Value="{DynamicResource SgPressedBrush}" /></Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ToolbarBorder" Property="Background" Value="{DynamicResource SgHoverBrush}"/><Setter TargetName="ToolbarBorder" Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}"/></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="ToolbarBorder" Property="Background" Value="{DynamicResource SgPressedBrush}"/></Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -62,26 +38,27 @@
         </Style>
 
         <Style x:Key="SgIconButton" TargetType="Button">
-            <Setter Property="Width" Value="40" />
-            <Setter Property="Height" Value="40" />
-            <Setter Property="Foreground" Value="{DynamicResource SgMutedBrush}" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True" />
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Foreground" Value="{DynamicResource SgMutedBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" CornerRadius="9">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" CornerRadius="10" BorderBrush="{DynamicResource SgButtonOutlineBrush}" BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource SgIconButtonHoverBrush}" />
-                                <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource SgIconButtonHoverBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource SgIconButtonPressedBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource SgIconButtonPressedBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -90,24 +67,24 @@
         </Style>
 
         <Style x:Key="PopupMenuButton" TargetType="Button">
-            <Setter Property="HorizontalContentAlignment" Value="Left" />
-            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}" />
-            <Setter Property="Background" Value="{DynamicResource SgSurfaceSoftBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Height" Value="42" />
-            <Setter Property="Padding" Value="12,0" />
-            <Setter Property="Margin" Value="0,2" />
-            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Foreground" Value="{DynamicResource SgTextBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceSoftBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Height" Value="42"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="PopupButtonBorder" Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
-                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
+                        <Border x:Name="PopupButtonBorder" Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="PopupButtonBorder" Property="Background" Value="{DynamicResource SgHoverBrush}" /><Setter TargetName="PopupButtonBorder" Property="BorderBrush" Value="{DynamicResource SgBorderStrongBrush}" /></Trigger>
-                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="PopupButtonBorder" Property="Background" Value="{DynamicResource SgPressedBrush}" /></Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="PopupButtonBorder" Property="Background" Value="{DynamicResource SgHoverBrush}"/><Setter TargetName="PopupButtonBorder" Property="BorderBrush" Value="{DynamicResource SgButtonOutlineBrush}"/></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="PopupButtonBorder" Property="Background" Value="{DynamicResource SgPressedBrush}"/></Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -115,21 +92,17 @@
         </Style>
     </Window.Resources>
 
-    <materialDesign:DialogHost
-        materialDesign:TransitionAssist.DisableTransitions="True"
-        CloseOnClickAway="True"
-        Identifier="RootDialog"
-        SnackbarMessageQueue="{Binding ElementName=MainSnackbar, Path=MessageQueue}"
-        Style="{StaticResource MaterialDesignEmbeddedDialogHost}">
+    <materialDesign:DialogHost materialDesign:TransitionAssist.DisableTransitions="True" CloseOnClickAway="True" Identifier="RootDialog" SnackbarMessageQueue="{Binding ElementName=MainSnackbar, Path=MessageQueue}" Style="{StaticResource MaterialDesignEmbeddedDialogHost}">
         <Border Background="{DynamicResource SgBackgroundBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="58" />
-                    <RowDefinition Height="*" />
+                    <RowDefinition Height="58"/>
+                    <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
                 <Border Grid.Row="0" Padding="18,0,10,0" Background="{DynamicResource SgHeaderBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="0,0,0,1">
                     <Grid>
+                        <!-- SG_HEADER_CLASSIC_060_095: original SG Client brand, version pill and continuous toolbar without separator. -->
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
@@ -142,7 +115,7 @@
                             </Grid>
                             <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" FontSize="19" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="SG Client" />
                             <Border Margin="10,1,0,0" Padding="7,2" VerticalAlignment="Center" Background="{DynamicResource SgAccentSoftBrush}" BorderBrush="{DynamicResource SgAccentBorderBrush}" BorderThickness="1" CornerRadius="8">
-                                <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource SgAccentBrush}" Text="073" />
+                                <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource SgAccentBrush}" Text="095" />
                             </Border>
                         </StackPanel>
 
@@ -165,10 +138,10 @@
                                     <TextBlock VerticalAlignment="Center" Text="Эксперт" />
                                 </StackPanel>
                             </Button>
-                            <Button x:Name="btnConnections" Margin="0,0,2,0" Style="{StaticResource SgToolbarButton}" ToolTip="Реальные соединения VPN / Direct / Block">
+                            <Button x:Name="btnConnections" Margin="0,0,2,0" Style="{StaticResource SgToolbarButton}" ToolTip="Мониторинг соединений VPN / Direct / Block">
                                 <StackPanel Orientation="Horizontal">
-                                    <materialDesign:PackIcon Width="18" Height="18" Margin="0,0,7,0" Kind="LanConnect" />
-                                    <TextBlock VerticalAlignment="Center" Text="Маршруты" />
+                                    <materialDesign:PackIcon Width="18" Height="18" Margin="0,0,7,0" Kind="ChartLine" />
+                                    <TextBlock VerticalAlignment="Center" Text="Мониторинг" />
                                 </StackPanel>
                             </Button>
                             <Button x:Name="menuOptionSetting" Margin="0,0,2,0" Style="{StaticResource SgToolbarButton}">
@@ -206,21 +179,21 @@
                         <Popup x:Name="importPopup" AllowsTransparency="True" Placement="Bottom" PlacementTarget="{Binding ElementName=btnImport}" PopupAnimation="Fade" StaysOpen="False">
                             <Border Width="276" Margin="0,8,0,0" Padding="8" Background="{DynamicResource SgSurfaceBrush}" BorderBrush="{DynamicResource SgBorderStrongBrush}" BorderThickness="1" CornerRadius="12">
                                 <StackPanel>
-                                    <TextBlock Margin="10,7,10,6" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource SgMutedBrush}" Text="ИМПОРТ ПРОФИЛЯ" />
+                                    <TextBlock Margin="10,7,10,6" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource SgMutedBrush}" Text="ИМПОРТ ПРОФИЛЯ"/>
                                     <Button x:Name="menuAddServerViaClipboard" Click="ImportAction_Click" Style="{StaticResource PopupMenuButton}" Tag="SG_PROFILE_LINK_IMPORT">
-                                        <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Margin="0,0,10,0" Foreground="{DynamicResource SgAccentBrush}" Kind="Link" /><TextBlock VerticalAlignment="Center" Text="Вставить ссылку из буфера" /></StackPanel>
+                                        <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Margin="0,0,10,0" Foreground="{DynamicResource SgAccentBrush}" Kind="Link"/><TextBlock VerticalAlignment="Center" Text="Вставить ссылку из буфера"/></StackPanel>
                                     </Button>
                                     <Button x:Name="menuImportAwgText" Click="ImportAwgText_Click" Style="{StaticResource PopupMenuButton}">
-                                        <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Margin="0,0,10,0" Foreground="{DynamicResource SgAccentBrush}" Kind="TextBoxOutline" /><TextBlock VerticalAlignment="Center" Text="Вставить конфигурацию AWG" /></StackPanel>
+                                        <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Margin="0,0,10,0" Foreground="{DynamicResource SgAccentBrush}" Kind="TextBoxOutline"/><TextBlock VerticalAlignment="Center" Text="Вставить конфигурацию AWG"/></StackPanel>
                                     </Button>
                                     <Button x:Name="menuAddServerViaScan" Click="ImportAction_Click" Style="{StaticResource PopupMenuButton}">
-                                        <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Margin="0,0,10,0" Foreground="{DynamicResource SgAccentBrush}" Kind="QrcodePlus" /><TextBlock VerticalAlignment="Center" Text="Сканировать QR на экране" /></StackPanel>
+                                        <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Margin="0,0,10,0" Foreground="{DynamicResource SgAccentBrush}" Kind="QrcodePlus"/><TextBlock VerticalAlignment="Center" Text="Сканировать QR на экране"/></StackPanel>
                                     </Button>
                                     <Button x:Name="menuAddServerViaImage" Click="ImportAction_Click" Style="{StaticResource PopupMenuButton}">
-                                        <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Margin="0,0,10,0" Foreground="{DynamicResource SgAccentBrush}" Kind="ImageOutline" /><TextBlock VerticalAlignment="Center" Text="Выбрать изображение с QR" /></StackPanel>
+                                        <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Margin="0,0,10,0" Foreground="{DynamicResource SgAccentBrush}" Kind="ImageOutline"/><TextBlock VerticalAlignment="Center" Text="Выбрать изображение с QR"/></StackPanel>
                                     </Button>
                                     <Button x:Name="menuImportFromFile" Click="ImportFromFile_Click" Style="{StaticResource PopupMenuButton}">
-                                        <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Margin="0,0,10,0" Foreground="{DynamicResource SgAccentBrush}" Kind="FileImportOutline" /><TextBlock VerticalAlignment="Center" Text="Импортировать файл" /></StackPanel>
+                                        <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Margin="0,0,10,0" Foreground="{DynamicResource SgAccentBrush}" Kind="FileImportOutline"/><TextBlock VerticalAlignment="Center" Text="Импортировать файл"/></StackPanel>
                                     </Button>
                                 </StackPanel>
                             </Border>
@@ -229,10 +202,10 @@
                         <Popup x:Name="themePopup" AllowsTransparency="True" Placement="Bottom" PlacementTarget="{Binding ElementName=btnTheme}" PopupAnimation="Fade" StaysOpen="False">
                             <Border Width="210" Margin="0,8,0,0" Padding="8" Background="{DynamicResource SgSurfaceBrush}" BorderBrush="{DynamicResource SgBorderStrongBrush}" BorderThickness="1" CornerRadius="12">
                                 <StackPanel>
-                                    <TextBlock Margin="10,7,10,6" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource SgMutedBrush}" Text="ТЕМА ОФОРМЛЕНИЯ" />
-                                    <Button x:Name="btnThemeGraphite" Tag="SgGraphite" Style="{StaticResource PopupMenuButton}"><StackPanel Orientation="Horizontal"><Ellipse Width="12" Height="12" Margin="0,0,10,0" Fill="#35D69A" /><TextBlock Text="Графит" /></StackPanel></Button>
-                                    <Button x:Name="btnThemeLight" Tag="SgLight" Style="{StaticResource PopupMenuButton}"><StackPanel Orientation="Horizontal"><Ellipse Width="12" Height="12" Margin="0,0,10,0" Fill="#D2C4B4" Stroke="#31566F" /><TextBlock Text="Латте" /></StackPanel></Button>
-                                    <Button x:Name="btnThemeNorthern" Tag="SgNorthern" Style="{StaticResource PopupMenuButton}"><StackPanel Orientation="Horizontal"><Ellipse Width="12" Height="12" Margin="0,0,10,0" Fill="#4BA3FF" /><TextBlock Text="Северная" /></StackPanel></Button>
+                                    <TextBlock Margin="10,7,10,6" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource SgMutedBrush}" Text="ТЕМА ОФОРМЛЕНИЯ"/>
+                                    <Button x:Name="btnThemeGraphite" Tag="SgGraphite" Style="{StaticResource PopupMenuButton}"><StackPanel Orientation="Horizontal"><Ellipse Width="12" Height="12" Margin="0,0,10,0" Fill="#35D69A"/><TextBlock Text="Графит"/></StackPanel></Button>
+                                    <Button x:Name="btnThemeLight" Tag="SgLight" Style="{StaticResource PopupMenuButton}"><StackPanel Orientation="Horizontal"><Ellipse Width="12" Height="12" Margin="0,0,10,0" Fill="#D9E2E8" Stroke="#31536F"/><TextBlock Text="Латте"/></StackPanel></Button>
+                                    <Button x:Name="btnThemeNorthern" Tag="SgNorthern" Style="{StaticResource PopupMenuButton}"><StackPanel Orientation="Horizontal"><Ellipse Width="12" Height="12" Margin="0,0,10,0" Fill="#4BA3FF"/><TextBlock Text="Север"/></StackPanel></Button>
                                 </StackPanel>
                             </Border>
                         </Popup>
@@ -241,79 +214,69 @@
 
                 <Grid Grid.Row="1" Margin="14">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition x:Name="profilesColumn" Width="430" MinWidth="340" MaxWidth="620" />
-                        <ColumnDefinition Width="8" />
-                        <ColumnDefinition Width="*" MinWidth="560" />
+                        <ColumnDefinition x:Name="profilesColumn" Width="430" MinWidth="340" MaxWidth="620"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="*" MinWidth="560"/>
                     </Grid.ColumnDefinitions>
 
                     <Border Grid.Column="0" Padding="15" Style="{StaticResource SgSidebarCard}">
                         <Grid>
-                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                             <Grid Margin="2,0,2,11">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <TextBlock VerticalAlignment="Center" FontSize="19" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Профили" />
-                                <Button x:Name="menuReload" Grid.Column="1" Width="36" Height="36" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource SgMutedBrush}" Style="{StaticResource MaterialDesignIconButton}" ToolTip="Обновить список">
-                                    <materialDesign:PackIcon Width="18" Height="18" Kind="Reload" />
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <TextBlock VerticalAlignment="Center" FontSize="19" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Профили"/>
+                                <Button x:Name="menuReload" Grid.Column="1" Width="36" Height="36" Background="Transparent" BorderThickness="1" Foreground="{DynamicResource SgMutedBrush}" Style="{StaticResource MaterialDesignIconButton}" ToolTip="Обновить список" BorderBrush="{DynamicResource SgButtonOutlineBrush}">
+                                    <materialDesign:PackIcon Width="18" Height="18" Kind="Reload"/>
                                 </Button>
                             </Grid>
-                            <ContentControl x:Name="profilesHost" Grid.Row="1" />
+                            <ContentControl x:Name="profilesHost" Grid.Row="1"/>
                         </Grid>
                     </Border>
 
-                    <GridSplitter
-                        Grid.Column="1"
-                        Width="8"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        Background="Transparent"
-                        Cursor="SizeWE"
-                        ResizeBehavior="PreviousAndNext"
-                        ResizeDirection="Columns"
-                        ShowsPreview="True"
-                        ToolTip="Изменить ширину списка профилей" />
+                    <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" Cursor="SizeWE" ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" ShowsPreview="True" ToolTip="Изменить ширину списка профилей"/>
 
                     <Grid Grid.Column="2">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="10" />
-                            <RowDefinition Height="38" />
-                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="38"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <view:StatusBarView Grid.Row="0" />
+                        <view:StatusBarView Grid.Row="0"/>
 
                         <Grid Grid.Row="2">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="8" />
-                                <ColumnDefinition Width="42" />
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="42"/>
                             </Grid.ColumnDefinitions>
-                            <Button x:Name="btnLogs" Grid.Column="0" HorizontalContentAlignment="Stretch" Background="{DynamicResource SgSidebarBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" Foreground="{DynamicResource SgTextBrush}" Style="{StaticResource MaterialDesignOutlinedButton}" ToolTip="Открыть журнал в отдельном большом окне">
+                            <Button x:Name="btnLogs" Grid.Column="0" HorizontalContentAlignment="Stretch" Background="{DynamicResource SgSidebarBrush}" BorderBrush="{DynamicResource SgButtonOutlineBrush}" BorderThickness="1" Foreground="{DynamicResource SgTextBrush}" Style="{StaticResource SgMaterialOutlinedButton}" ToolTip="Открыть журнал в отдельном большом окне">
                                 <Grid>
                                     <StackPanel Orientation="Horizontal">
-                                        <materialDesign:PackIcon Width="16" Height="16" Margin="0,0,8,0" Foreground="{DynamicResource SgMutedBrush}" Kind="MessageTextOutline" />
-                                        <TextBlock x:Name="txtLogsButton" VerticalAlignment="Center" FontSize="11.5" FontWeight="SemiBold" Text="Журнал работы" />
+                                        <materialDesign:PackIcon Width="16" Height="16" Margin="0,0,8,0" Foreground="{DynamicResource SgMutedBrush}" Kind="MessageTextOutline"/>
+                                        <TextBlock x:Name="txtLogsButton" VerticalAlignment="Center" FontSize="11.5" FontWeight="SemiBold" Text="Журнал работы"/>
                                     </StackPanel>
-                                    <TextBlock x:Name="txtLogsAction" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Открыть в окне" />
+                                    <TextBlock x:Name="txtLogsAction" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Открыть в окне"/>
                                 </Grid>
                             </Button>
-                            <Button x:Name="btnLogsCompact" Grid.Column="2" Width="42" Height="38" Padding="0" Background="{DynamicResource SgSidebarBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" Foreground="{DynamicResource SgMutedBrush}" Style="{StaticResource MaterialDesignOutlinedButton}" ToolTip="Показать краткий журнал в главном окне">
-                                <materialDesign:PackIcon x:Name="icoLogsCompact" Width="18" Height="18" Kind="ChevronDown" />
+                            <Button x:Name="btnLogsCompact" Grid.Column="2" Width="42" Height="38" Padding="0" Background="{DynamicResource SgSidebarBrush}" BorderBrush="{DynamicResource SgButtonOutlineBrush}" BorderThickness="1" Foreground="{DynamicResource SgMutedBrush}" Style="{StaticResource SgMaterialOutlinedButton}" ToolTip="Показать краткий журнал в главном окне">
+                                <materialDesign:PackIcon x:Name="icoLogsCompact" Width="18" Height="18" Kind="ChevronDown"/>
                             </Button>
                         </Grid>
 
                         <Expander x:Name="expLogs" Grid.Row="3" Margin="0,8,0,0" Foreground="{DynamicResource SgTextBrush}" IsExpanded="False">
                             <Expander.Style>
-                                <Style TargetType="Expander"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><Trigger Property="IsExpanded" Value="True"><Setter Property="Visibility" Value="Visible" /></Trigger></Style.Triggers></Style>
+                                <Style TargetType="Expander"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><Trigger Property="IsExpanded" Value="True"><Setter Property="Visibility" Value="Visible"/></Trigger></Style.Triggers></Style>
                             </Expander.Style>
                             <Border Height="170" Padding="10" Background="{DynamicResource SgSidebarBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="13">
-                                <ContentControl x:Name="logHost" />
+                                <ContentControl x:Name="logHost"/>
                             </Border>
                         </Expander>
                     </Grid>
                 </Grid>
 
-                <materialDesign:Snackbar x:Name="MainSnackbar" Grid.Row="1" Margin="24" VerticalAlignment="Bottom" Style="{StaticResource SgSnackbar}" MessageQueue="{materialDesign:MessageQueue}" />
+                <materialDesign:Snackbar x:Name="MainSnackbar" Grid.Row="1" Margin="24" VerticalAlignment="Bottom" Style="{StaticResource SgSnackbar}" MessageQueue="{materialDesign:MessageQueue}"/>
             </Grid>
         </Border>
     </materialDesign:DialogHost>

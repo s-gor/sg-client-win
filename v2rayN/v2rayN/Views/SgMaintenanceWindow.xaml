@@ -23,7 +23,7 @@
 
     <Window.Resources>
         <Style x:Key="MaintenanceCard" TargetType="Border">
-            <Setter Property="Background" Value="{DynamicResource SgSurfaceBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SgSurfaceRaisedBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource SgBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="14" />
@@ -227,7 +227,7 @@
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock FontSize="19" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Обслуживание" />
-                        <TextBlock Margin="0,3,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="Резервные копии, обновления и источники GeoFiles" />
+                        <TextBlock Margin="0,3,0,0" FontSize="10.5" Foreground="{DynamicResource SgMutedBrush}" Text="Резервные копии и обновления" />
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button Style="{StaticResource HeaderActionButton}" Click="Help_Click" Content="Справка" ToolTip="Открыть справку для текущей вкладки" />
@@ -248,12 +248,6 @@
                         <StackPanel Orientation="Horizontal">
                             <materialDesign:PackIcon Width="17" Height="17" Margin="0,0,8,0" Kind="Reload" />
                             <TextBlock Text="Обновления" />
-                        </StackPanel>
-                    </ToggleButton>
-                    <ToggleButton x:Name="tabGeoFiles" Click="GeoFilesTab_Click" Style="{StaticResource TabButton}" ToolTip="Источники, SHA-256, замена и возврат комплектных GeoFiles">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Width="17" Height="17" Margin="0,0,8,0" Kind="MapSearchOutline" />
-                            <TextBlock Text="GeoFiles" />
                         </StackPanel>
                     </ToggleButton>
                 </StackPanel>
@@ -379,8 +373,21 @@
                                         <TextBlock FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Ручное обновление Xray" />
                                         <TextBlock x:Name="txtXrayInstalled" Margin="0,6,0,0" FontSize="11" Foreground="{DynamicResource SgMutedBrush}" Text="Установлена: определение версии…" />
                                     </StackPanel>
-                                    <Border Grid.Column="1" Padding="10,4" Background="{DynamicResource SgErrorSoftBrush}" BorderBrush="{DynamicResource SgErrorBrush}" BorderThickness="1" CornerRadius="9">
-                                        <TextBlock FontSize="10" FontWeight="Bold" Foreground="{DynamicResource SgErrorBrush}" Text="ЭКСПЕРТНАЯ ОПЕРАЦИЯ" />
+                                    <Border
+                                        Grid.Column="1"
+                                        Width="152"
+                                        Height="46"
+                                        Background="{DynamicResource SgWarningSoftBrush}"
+                                        BorderBrush="{DynamicResource SgWarningBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="10">
+                                        <TextBlock
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            FontSize="11.5"
+                                            FontWeight="SemiBold"
+                                            Foreground="{DynamicResource SgWarningBrush}"
+                                            Text="Экспертный режим" />
                                     </Border>
                                 </Grid>
 
@@ -469,8 +476,21 @@
                                         <TextBlock FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="Ручное обновление sing-box" />
                                         <TextBlock x:Name="txtSingManualInstalled" Margin="0,6,0,0" FontSize="11" Foreground="{DynamicResource SgMutedBrush}" Text="Установлена: определение версии…" />
                                     </StackPanel>
-                                    <Border Grid.Column="1" Padding="10,4" Background="{DynamicResource SgErrorSoftBrush}" BorderBrush="{DynamicResource SgErrorBrush}" BorderThickness="1" CornerRadius="9">
-                                        <TextBlock FontSize="10" FontWeight="Bold" Foreground="{DynamicResource SgErrorBrush}" Text="ЭКСПЕРТНАЯ ОПЕРАЦИЯ" />
+                                    <Border
+                                        Grid.Column="1"
+                                        Width="152"
+                                        Height="46"
+                                        Background="{DynamicResource SgWarningSoftBrush}"
+                                        BorderBrush="{DynamicResource SgWarningBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="10">
+                                        <TextBlock
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            FontSize="11.5"
+                                            FontWeight="SemiBold"
+                                            Foreground="{DynamicResource SgWarningBrush}"
+                                            Text="Экспертный режим" />
                                     </Border>
                                 </Grid>
 
@@ -599,7 +619,6 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <views:SgGeoFilesPanel x:Name="geoFilesPanel" Visibility="Collapsed" />
             </Grid>
 
             <Grid x:Name="confirmOverlay" Grid.RowSpan="3" Visibility="Collapsed" Background="#99000000">

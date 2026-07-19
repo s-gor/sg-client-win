@@ -63,7 +63,7 @@
                 Height="24"
                 Margin="{StaticResource MarginLeftRight8}"
                 Style="{StaticResource MaterialDesignFloatingActionMiniLightButton}"
-                ToolTip="{x:Static resx:ResUI.menuProxiesReload}">
+                ToolTip="{x:Static resx:ResUI.menuProxiesReload}" BorderBrush="{DynamicResource SgButtonOutlineBrush}" BorderThickness="1">
                 <materialDesign:PackIcon VerticalAlignment="Center" Kind="Reload" />
             </Button>
 
@@ -73,7 +73,7 @@
                 Height="24"
                 Margin="{StaticResource MarginLeftRight8}"
                 Style="{StaticResource MaterialDesignFloatingActionMiniLightButton}"
-                ToolTip="{x:Static resx:ResUI.menuProxiesDelaytest}">
+                ToolTip="{x:Static resx:ResUI.menuProxiesDelaytest}" BorderBrush="{DynamicResource SgButtonOutlineBrush}" BorderThickness="1">
                 <materialDesign:PackIcon VerticalAlignment="Center" Kind="LightningBolt" />
             </Button>
 

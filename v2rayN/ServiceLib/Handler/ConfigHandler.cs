@@ -44,7 +44,7 @@ public static class ConfigHandler
             Loglevel = "info",
         };
 
-        if (config.Inbound == null)
+        if (config.Inbound == null || config.Inbound.Count == 0)
         {
             config.Inbound = [];
             InItem inItem = new()
@@ -65,6 +65,26 @@ public static class ConfigHandler
             {
                 config.Inbound.First().Protocol = nameof(EInboundProtocol.socks);
             }
+        }
+
+        // SG Client 095: these capabilities are mandatory for supported protocols
+        // and for accurate VPN / Direct / Block diagnostics. They are intentionally
+        // always enabled and are no longer user-facing switches.
+        config.CoreBasicItem.LogEnabled = true;
+        if (config.CoreBasicItem.Loglevel.IsNullOrEmpty()
+            || string.Equals(config.CoreBasicItem.Loglevel, "none", StringComparison.OrdinalIgnoreCase))
+        {
+            config.CoreBasicItem.Loglevel = "info";
+        }
+        foreach (var inbound in config.Inbound)
+        {
+            inbound.UdpEnabled = true;
+            inbound.SniffingEnabled = true;
+            inbound.DestOverride = (inbound.DestOverride ?? [])
+                .Concat(new[] { "http", "tls", "quic" })
+                .Where(value => value.IsNotEmpty())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
 
         config.RoutingBasicItem ??= new();

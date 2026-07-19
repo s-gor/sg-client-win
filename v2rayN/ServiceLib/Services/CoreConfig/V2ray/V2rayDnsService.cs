@@ -175,8 +175,10 @@ public partial class CoreConfigV2rayService
         }
 
         var routing = context.RoutingItem;
-        List<RulesItem>? rules = null;
-        rules = JsonUtils.Deserialize<List<RulesItem>>(routing?.RuleSet) ?? [];
+        var sgRoutingAuthoritative = context.AppConfig.SgQuickSettingsItem?.SmartRouting is not null;
+        List<RulesItem>? rules = sgRoutingAuthoritative
+            ? []
+            : JsonUtils.Deserialize<List<RulesItem>>(routing?.RuleSet) ?? [];
         foreach (var item in rules)
         {
             if (!item.Enabled || item.Domain is null || item.Domain.Count == 0)
@@ -247,9 +249,10 @@ public partial class CoreConfigV2rayService
             AddDnsServers(bootstrapDNSAddress, dnsServerDomains);
         }
 
-        var useDirectDns = false;
+        var useDirectDns = context.AppConfig.SgQuickSettingsItem?.DnsThroughTun == false;
 
-        if (rules?.LastOrDefault() is { OutboundTag: Global.DirectTag } lastRule)
+        if (!sgRoutingAuthoritative
+            && rules?.LastOrDefault() is { OutboundTag: Global.DirectTag } lastRule)
         {
             var noDomain = lastRule.Domain == null || lastRule.Domain.Count == 0;
             var noProcess = lastRule.Process == null || lastRule.Process.Count == 0;

@@ -1,3 +1,4 @@
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
@@ -9,6 +10,8 @@ public partial class StatusBarView
 {
     private static Config _config;
     private readonly DispatcherTimer _sessionTimer;
+    private readonly DispatcherTimer _disconnectConfirmTimer;
+    private bool _disconnectConfirmationPending;
     private DateTime? _tunConnectedAt;
     private ETunUiState _lastTunState = ETunUiState.Off;
 
@@ -34,14 +37,24 @@ public partial class StatusBarView
             }
         };
 
+        _disconnectConfirmTimer = new DispatcherTimer(DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromSeconds(4),
+        };
+        _disconnectConfirmTimer.Tick += (_, _) => ResetDisconnectConfirmation();
+
         Loaded += StatusBarView_Loaded;
         Unloaded += StatusBarView_Unloaded;
         menuExit.Click += MenuExit_Click;
-        menuProfiles.Click += MenuProfiles_Click;
+        menuProfiles.SubmenuOpened += MenuProfiles_SubmenuOpened;
+        menuTestCurrent.Click += MenuTestCurrent_Click;
+        menuCopyLocalProxy.Click += MenuCopyLocalProxy_Click;
+        menuRouting.Click += MenuRouting_Click;
         menuLogs.Click += MenuLogs_Click;
         btnTrafficResetSession.Click += TrafficResetSession_Click;
         btnTrafficResetAll.Click += TrafficResetAll_Click;
         btnTrafficProfiles.Click += TrafficProfiles_Click;
+        btnDisconnectAll.Click += DisconnectAll_Click;
         btnQuickDns.Click += QuickDns_Click;
         txtRunningServerDisplay.PreviewMouseDown += RunningInfo_PreviewMouseDown;
         txtRunningInfoDisplay.PreviewMouseDown += RunningInfo_PreviewMouseDown;
@@ -52,13 +65,25 @@ public partial class StatusBarView
             this.OneWayBind(ViewModel, vm => vm.ProfileProtocolDisplay, v => v.txtProtocolDisplay.Text).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.TunDetailText, v => v.txtRunningInfoDisplay.Text).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.TunStatusText, v => v.txtTunStatusDisplay.Text).DisposeWith(disposables);
-            this.OneWayBind(ViewModel, vm => vm.TunStatusText, v => v.menuTrayStatus.Header, text => $"SG Client — {text}").DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.TunStatusText, v => v.menuTrayStatus.Header, text => $"SG-Client — {text}").DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.ProfileNameDisplay, v => v.menuTrayProfile.Header, text => $"Профиль: {text}").DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.TunTrayActionText, v => v.menuTun.Header).DisposeWith(disposables);
-            this.OneWayBind(ViewModel, vm => vm.EnableTun, v => v.menuTun.IsChecked).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.IsTunModeActive, v => v.menuTun.IsChecked).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.CanUseTunMode, v => v.menuTun.IsEnabled).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.SystemProxyTrayActionText, v => v.menuSystemProxy.Header).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.IsSystemProxyModeActive, v => v.menuSystemProxy.IsChecked).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.CanUseSystemProxyMode, v => v.menuSystemProxy.IsEnabled).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.LocalProxyTrayActionText, v => v.menuLocalProxy.Header).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.IsLocalProxyModeActive, v => v.menuLocalProxy.IsChecked).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.CanUseSystemProxyMode, v => v.menuLocalProxy.IsEnabled).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.CanDisconnectAll, v => v.menuDisconnectAll.IsEnabled).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.ToggleTunModeCmd, v => v.btnToggleTunMode).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.ToggleSystemProxyModeCmd, v => v.btnToggleSystemProxyMode).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.ToggleTunCmd, v => v.menuTun).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.ToggleLocalProxyModeCmd, v => v.btnToggleLocalProxyMode).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.ToggleTunModeCmd, v => v.menuTun).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.ToggleSystemProxyModeCmd, v => v.menuSystemProxy).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.ToggleLocalProxyModeCmd, v => v.menuLocalProxy).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.DisconnectAllCmd, v => v.menuDisconnectAll).DisposeWith(disposables);
 
             this.OneWayBind(ViewModel, vm => vm.QuickKillSwitch, v => v.btnQuickKillSwitch.IsChecked).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.QuickAllowLocalNetwork, v => v.btnQuickLocalNetwork.IsChecked).DisposeWith(disposables);
@@ -96,6 +121,41 @@ public partial class StatusBarView
     private void StatusBarView_Unloaded(object sender, RoutedEventArgs e)
     {
         _sessionTimer.Stop();
+        ResetDisconnectConfirmation();
+    }
+
+    private void DisconnectAll_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_disconnectConfirmationPending)
+        {
+            _disconnectConfirmationPending = true;
+            txtDisconnectAllButtonText.Text = "Нажмите ещё раз";
+            btnDisconnectAll.SetResourceReference(Control.BackgroundProperty, "SgWarningSoftBrush");
+            btnDisconnectAll.SetResourceReference(Control.BorderBrushProperty, "SgWarningBrush");
+            btnDisconnectAll.SetResourceReference(Control.ForegroundProperty, "SgTextBrush");
+            _disconnectConfirmTimer.Stop();
+            _disconnectConfirmTimer.Start();
+            return;
+        }
+
+        ResetDisconnectConfirmation();
+        ViewModel?.DisconnectAllCmd.Execute().Subscribe();
+    }
+
+    private void ResetDisconnectConfirmation()
+    {
+        _disconnectConfirmTimer.Stop();
+        _disconnectConfirmationPending = false;
+        if (txtDisconnectAllButtonText is not null)
+        {
+            txtDisconnectAllButtonText.Text = "Отключить всё";
+        }
+        if (btnDisconnectAll is not null)
+        {
+            btnDisconnectAll.ClearValue(Control.BackgroundProperty);
+            btnDisconnectAll.ClearValue(Control.BorderBrushProperty);
+            btnDisconnectAll.ClearValue(Control.ForegroundProperty);
+        }
     }
 
     private void TrafficResetSession_Click(object sender, RoutedEventArgs e)
@@ -277,13 +337,23 @@ public partial class StatusBarView
     {
         menuExit.IsEnabled = false;
         menuTun.IsEnabled = false;
+        menuSystemProxy.IsEnabled = false;
+        menuLocalProxy.IsEnabled = false;
+        menuDisconnectAll.IsEnabled = false;
         if (ViewModel != null)
         {
-            await ViewModel.DisableTunAsync();
-            if (ViewModel.TunUiState == ETunUiState.Error)
+            try
             {
+                await ViewModel.ApplyConnectionModeAsync("off");
+            }
+            catch (Exception ex)
+            {
+                Logging.SaveLog("Tray exit: disconnect active mode", ex);
                 menuExit.IsEnabled = true;
                 menuTun.IsEnabled = true;
+                menuSystemProxy.IsEnabled = true;
+                menuLocalProxy.IsEnabled = true;
+                menuDisconnectAll.IsEnabled = true;
                 AppEvents.ShowHideWindowRequested.Publish(true);
                 AppEvents.ShowLogsRequested.Publish();
                 return;
@@ -293,9 +363,117 @@ public partial class StatusBarView
         await AppManager.Instance.AppExitAsync(true);
     }
 
-    private void MenuProfiles_Click(object sender, RoutedEventArgs e)
+    private async void MenuProfiles_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        menuProfiles.Items.Clear();
+        menuProfiles.Items.Add(new MenuItem
+        {
+            Header = "Загрузка профилей…",
+            IsEnabled = false,
+        });
+
+        var selectedId = AmneziaWgManager.Instance.SelectedProfileId;
+        if (selectedId.IsNullOrEmpty())
+        {
+            selectedId = _config.IndexId;
+        }
+
+        try
+        {
+            // Do not rely on StatusBarViewModel.Servers here: that collection is
+            // intentionally hidden when a subscription contains hundreds of nodes.
+            // The tray still needs a small useful list in that common scenario.
+            var servers = (await AppManager.Instance.ProfileModels(_config.SubIndexId, ""))
+                .Select(item => new ComboItem
+                {
+                    ID = item.IndexId,
+                    Text = item.GetSummary(),
+                })
+                .Concat(AmneziaWgManager.Instance.GetProfiles().Select(item => new ComboItem
+                {
+                    ID = item.Id,
+                    Text = $"AmneziaWG · {item.Name}",
+                }))
+                .Where(item => item.ID.IsNotEmpty())
+                .OrderByDescending(item => string.Equals(item.ID, selectedId, StringComparison.OrdinalIgnoreCase))
+                .ThenBy(item => item.Text, StringComparer.CurrentCultureIgnoreCase)
+                .Take(10)
+                .ToList();
+
+            menuProfiles.Items.Clear();
+            if (servers.Count == 0)
+            {
+                menuProfiles.Items.Add(new MenuItem
+                {
+                    Header = "Профили не загружены",
+                    IsEnabled = false,
+                });
+            }
+            else
+            {
+                foreach (var server in servers)
+                {
+                    var item = new MenuItem
+                    {
+                        Header = server.Text,
+                        Tag = server.ID,
+                        IsCheckable = true,
+                        IsChecked = string.Equals(server.ID, selectedId, StringComparison.OrdinalIgnoreCase),
+                    };
+                    item.Click += TrayProfile_Click;
+                    menuProfiles.Items.Add(item);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("Load tray profiles", ex);
+            menuProfiles.Items.Clear();
+            menuProfiles.Items.Add(new MenuItem
+            {
+                Header = "Не удалось загрузить профили",
+                IsEnabled = false,
+            });
+        }
+
+        menuProfiles.Items.Add(new Separator());
+        var openAll = new MenuItem { Header = "Открыть все профили" };
+        openAll.Click += (_, _) => AppEvents.ShowHideWindowRequested.Publish(true);
+        menuProfiles.Items.Add(openAll);
+    }
+
+    private void TrayProfile_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: string indexId } && indexId.IsNotEmpty())
+        {
+            AppEvents.SetDefaultServerRequested.Publish(indexId);
+        }
+    }
+
+    private async void MenuTestCurrent_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel != null)
+        {
+            await ViewModel.TestServerAvailability();
+        }
+    }
+
+    private void MenuCopyLocalProxy_Click(object sender, RoutedEventArgs e)
+    {
+        var port = AppManager.Instance.GetLocalPort(EInboundProtocol.socks);
+        var address = $"{Global.Loopback}:{port}";
+        WindowsUtils.SetClipboardData(address);
+        NoticeManager.Instance.Enqueue($"Адрес Local Proxy скопирован: {address}");
+    }
+
+    private void MenuRouting_Click(object sender, RoutedEventArgs e)
     {
         AppEvents.ShowHideWindowRequested.Publish(true);
+        var window = new SgRoutingWindow
+        {
+            Owner = Application.Current.MainWindow,
+        };
+        window.ShowDialog();
     }
 
     private void MenuLogs_Click(object sender, RoutedEventArgs e)

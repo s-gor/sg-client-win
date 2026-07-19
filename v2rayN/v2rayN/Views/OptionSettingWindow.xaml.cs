@@ -5,7 +5,6 @@ public partial class OptionSettingWindow
     private sealed record SgOption<T>(T Id, string Name);
 
     private static Config _config;
-    private bool _themeReady;
     private bool _hasApplied;
 
     public OptionSettingWindow()
@@ -29,7 +28,9 @@ public partial class OptionSettingWindow
         _config.TunModeItem.Mtu = mtu;
         ViewModel = new OptionSettingViewModel(UpdateViewHandler);
 
-        cmbLogLevel.ItemsSource = Global.LogLevels;
+        cmbLogLevel.ItemsSource = Global.LogLevels
+            .Where(level => !string.Equals(level, "none", StringComparison.OrdinalIgnoreCase))
+            .ToList();
         cmbStack.ItemsSource = new SgOption<string>[]
         {
             new("auto", "Автоматически — mixed"),
@@ -69,11 +70,6 @@ public partial class OptionSettingWindow
                 ViewModel.TunMtu = value;
             }
         };
-        cmbTheme.ItemsSource = SgThemeManager.Options;
-        cmbTheme.SelectedValue = SgThemeManager.Current;
-        cmbTheme.SelectionChanged += CmbTheme_SelectionChanged;
-        _themeReady = true;
-
         _config.SgQuickSettingsItem ??= new SgQuickSettingsItem();
         togAutoRecoverTun.IsChecked = _config.SgQuickSettingsItem.AutoRecoverTun;
         togAutoRecoverTun.Checked += AutoRecoverTun_Changed;
@@ -89,19 +85,12 @@ public partial class OptionSettingWindow
         {
             this.Bind(ViewModel, vm => vm.AutoRun, v => v.togAutoRun.IsChecked).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.AutoHideStartup, v => v.togAutoHideStartup.IsChecked).DisposeWith(disposables);
-            this.Bind(ViewModel, vm => vm.EnableStatistics, v => v.togEnableStatistics.IsChecked).DisposeWith(disposables);
-            this.Bind(ViewModel, vm => vm.DisplayRealTimeSpeed, v => v.togDisplayRealTimeSpeed.IsChecked).DisposeWith(disposables);
-            this.Bind(ViewModel, vm => vm.EnableHWA, v => v.togEnableHWA.IsChecked).DisposeWith(disposables);
 
             this.Bind(ViewModel, vm => vm.TunAutoRoute, v => v.togAutoRoute.IsChecked).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.TunStrictRoute, v => v.togStrictRoute.IsChecked).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.TunEnableIPv6Address, v => v.togEnableIPv6Address.IsChecked).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.TunRouteExcludeAddress, v => v.txtRouteExcludeAddress.Text).DisposeWith(disposables);
 
-            this.Bind(ViewModel, vm => vm.UdpEnabled, v => v.togUdpEnabled.IsChecked).DisposeWith(disposables);
-            this.Bind(ViewModel, vm => vm.SniffingEnabled, v => v.togSniffingEnabled.IsChecked).DisposeWith(disposables);
-            this.Bind(ViewModel, vm => vm.LocalPort, v => v.txtLocalPort.Text).DisposeWith(disposables);
-            this.Bind(ViewModel, vm => vm.LogEnabled, v => v.togLogEnabled.IsChecked).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.Loglevel, v => v.cmbLogLevel.Text).DisposeWith(disposables);
 
             this.BindCommand(ViewModel, vm => vm.SaveCmd, v => v.btnSave).DisposeWith(disposables);
@@ -194,15 +183,6 @@ public partial class OptionSettingWindow
         new SgHelpWindow("mtu") { Owner = this }.ShowDialog();
     }
 
-    private async void CmbTheme_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-    {
-        if (!_themeReady || cmbTheme.SelectedValue is not string theme)
-        {
-            return;
-        }
-
-        await SgThemeManager.ApplyAndSaveAsync(theme);
-    }
 
     private Task<bool> UpdateViewHandler(EViewAction action, object? obj)
     {

@@ -44,6 +44,7 @@ public class StatusBarViewModel : MyReactiveObject
     public ReactiveCommand<Unit, Unit> ToggleTunModeCmd { get; }
     public ReactiveCommand<Unit, Unit> ToggleSystemProxyModeCmd { get; }
     public ReactiveCommand<Unit, Unit> ToggleLocalProxyModeCmd { get; }
+    public ReactiveCommand<Unit, Unit> DisconnectAllCmd { get; }
     public ReactiveCommand<Unit, Unit> EnableTunCmd { get; }
     public ReactiveCommand<Unit, Unit> DisableTunCmd { get; }
     public ReactiveCommand<Unit, Unit> ToggleQuickKillSwitchCmd { get; }
@@ -179,13 +180,25 @@ public class StatusBarViewModel : MyReactiveObject
     public string SystemProxyModeButtonText { get; set; }
 
     [Reactive]
+    public string SystemProxyTrayActionText { get; set; }
+
+    [Reactive]
+    public bool CanUseTunMode { get; set; }
+
+    [Reactive]
     public bool CanUseSystemProxyMode { get; set; }
+
+    [Reactive]
+    public bool CanDisconnectAll { get; set; }
 
     [Reactive]
     public string SystemProxyModeToolTip { get; set; }
 
     [Reactive]
     public string LocalProxyModeButtonText { get; set; }
+
+    [Reactive]
+    public string LocalProxyTrayActionText { get; set; }
 
     [Reactive]
     public bool IsTunModeActive { get; set; }
@@ -240,6 +253,9 @@ public class StatusBarViewModel : MyReactiveObject
 
     [Reactive]
     public string QuickDpiSummary { get; set; }
+
+    [Reactive]
+    public bool QuickDpiActive { get; set; }
 
     [Reactive]
     public bool BlIsNonWindows { get; set; }
@@ -375,6 +391,7 @@ public class StatusBarViewModel : MyReactiveObject
                     : "Не удалось переключить локальный прокси.");
             }
         });
+        DisconnectAllCmd = ReactiveCommand.CreateFromTask(DisconnectAllAsync);
         EnableTunCmd = ReactiveCommand.CreateFromTask(async () =>
         {
             await SetTunEnabledAsync(true);
@@ -600,7 +617,7 @@ public class StatusBarViewModel : MyReactiveObject
                 }
                 else
                 {
-                    ProfileNameDisplay = "Выберите профиль";
+                    ProfileNameDisplay = "Профиль не выбран";
                     ProfileProtocolDisplay = "—";
                     RunningServerDisplay = ProfileNameDisplay;
                     UpdateTrafficDisplays(_trafficStatistics.SetIdle());
@@ -847,6 +864,89 @@ public class StatusBarViewModel : MyReactiveObject
                     : "Не удалось переключить режим подключения.");
             throw;
         }
+    }
+
+    // SG_DISCONNECT_ALL_086: an explicit escape hatch that does not depend
+    // on the currently selected mode or on a possibly stale Busy flag.
+    private async Task DisconnectAllAsync()
+    {
+        var errors = new List<Exception>();
+
+        ProfilesViewModel.Instance?.ServerSpeedtestStop();
+        TunUiState = ETunUiState.Stopping;
+        TunBusy = true;
+        TunStatusText = "Отключаю всё…";
+        TunDetailText = "Останавливаются TUN, прокси-режимы, ядра и Kill Switch.";
+        RefreshModeButtons();
+
+        _config.SgQuickSettingsItem.ConnectionMode = "off";
+        _config.SgQuickSettingsItem.KillSwitchEnabled = false;
+        _config.TunModeItem.EnableTun = false;
+        _config.SystemProxyItem.SysProxyType = ESysProxyType.ForcedClear;
+        ConnectionModeKey = "off";
+        EnableTun = false;
+        QuickKillSwitch = false;
+        SetSystemProxySelectedSilently(ESysProxyType.ForcedClear);
+
+        try
+        {
+            await ChangeSystemProxyAsync(ESysProxyType.ForcedClear, true);
+        }
+        catch (Exception ex)
+        {
+            errors.Add(ex);
+            Logging.SaveLog("Disconnect all: clear Windows proxy", ex);
+        }
+
+        try
+        {
+            if (await ConfigHandler.SaveConfig(_config) != 0)
+            {
+                throw new InvalidOperationException("Не удалось сохранить безопасное состояние SG Client.");
+            }
+        }
+        catch (Exception ex)
+        {
+            errors.Add(ex);
+            Logging.SaveLog("Disconnect all: save safe state", ex);
+        }
+
+        try
+        {
+            await StopAllTunEnginesAsync();
+        }
+        catch (Exception ex)
+        {
+            errors.Add(ex);
+            Logging.SaveLog("Disconnect all: stop engines", ex);
+        }
+
+        try
+        {
+            if (SgKillSwitchManager.Instance.IsEmergencyBlockActive)
+            {
+                await SgKillSwitchManager.Instance.DeactivateEmergencyBlockAsync();
+            }
+            QuickKillSwitchStatus = "Выключен";
+        }
+        catch (Exception ex)
+        {
+            errors.Add(ex);
+            Logging.SaveLog("Disconnect all: disable Kill Switch", ex);
+        }
+
+        _tunSwitching = false;
+        if (errors.Count == 0)
+        {
+            ReportConnectionOff();
+            NoticeManager.Instance.Enqueue("Все режимы SG Client отключены.");
+        }
+        else
+        {
+            ReportTunError("Не удалось полностью отключить всё. Нажмите кнопку ещё раз или откройте журнал.");
+        }
+
+        AppEvents.ProfilesRefreshRequested.Publish();
     }
 
     public async Task StopConnectionForMaintenanceAsync()
@@ -1475,6 +1575,7 @@ public class StatusBarViewModel : MyReactiveObject
             };
         }
 
+        QuickDpiActive = !string.Equals(QuickDpiSummary, "Выключена", StringComparison.OrdinalIgnoreCase);
         RefreshModeAwareQuickStatus();
     }
 
@@ -1797,7 +1898,7 @@ public class StatusBarViewModel : MyReactiveObject
             ETunUiState.Stopping => ("TUN отключается…", "TUN ОТКЛЮЧАЕТСЯ…", "TUN отключается…", "Останавливается ядро и очищаются системные маршруты."),
             ETunUiState.Switching => ("Переключение профиля…", "ПЕРЕКЛЮЧЕНИЕ ПРОФИЛЯ…", "Переключение профиля…", "TUN остаётся включённым, ядро запускается с новым профилем."),
             ETunUiState.Error => ("Не удалось подключиться", "TUN On", "Повторить подключение", detail ?? "Не удалось запустить выбранный профиль."),
-            _ => ("TUN выключен", "ВКЛЮЧИТЬ TUN", "Включить TUN", "Выберите профиль и включите системный туннель.")
+            _ => ("TUN выключен", "ВКЛЮЧИТЬ TUN", "Включить TUN", string.Empty)
         };
         RefreshModeButtons();
         UpdateTrayText();
@@ -1832,10 +1933,19 @@ public class StatusBarViewModel : MyReactiveObject
                 ? "System Proxy Off"
                 : "System Proxy On";
         }
+        SystemProxyTrayActionText = IsSystemProxyModeActive
+            ? "Отключить системный прокси"
+            : "Включить системный прокси";
 
         var awgSelected = AmneziaWgManager.Instance.GetSelectedProfile() != null;
-        CanUseSystemProxyMode = !TunBusy
-            && (IsSystemProxyModeActive || !awgSelected);
+        var hasSelectedProfile = ProfileNameDisplay.IsNotEmpty()
+            && !string.Equals(ProfileNameDisplay, "Профиль не выбран", StringComparison.Ordinal);
+        CanUseTunMode = IsTunModeActive || (!TunBusy && hasSelectedProfile);
+        CanUseSystemProxyMode = IsSystemProxyModeActive
+            || (!TunBusy && hasSelectedProfile && !awgSelected);
+        CanDisconnectAll = TunBusy
+            || !string.Equals(ConnectionModeKey, "off", StringComparison.OrdinalIgnoreCase)
+            || SgKillSwitchManager.Instance.IsEmergencyBlockActive;
         SystemProxyModeToolTip = awgSelected && !IsSystemProxyModeActive
             ? "Недоступно для AmneziaWG: этот протокол работает только через TUN."
             : IsSystemProxyModeActive
@@ -1844,20 +1954,17 @@ public class StatusBarViewModel : MyReactiveObject
 
         if (TunBusy && mode == "local-proxy")
         {
-            LocalProxyModeButtonText = "LOCAL ВКЛЮЧАЕТСЯ…";
-        }
-        else if (IsLocalProxyModeActive)
-        {
-            LocalProxyModeButtonText = "ОТКЛЮЧИТЬ LOCAL";
-        }
-        else if (running)
-        {
-            LocalProxyModeButtonText = "НА LOCAL PROXY";
+            LocalProxyModeButtonText = "Local Proxy On…";
         }
         else
         {
-            LocalProxyModeButtonText = "LOCAL PROXY";
+            LocalProxyModeButtonText = IsLocalProxyModeActive
+                ? "Local Proxy Off"
+                : "Local Proxy On";
         }
+        LocalProxyTrayActionText = IsLocalProxyModeActive
+            ? "Отключить локальный прокси"
+            : "Включить локальный прокси";
 
         RefreshModeAwareQuickStatus();
     }
@@ -2091,10 +2198,10 @@ public class StatusBarViewModel : MyReactiveObject
             : "Профиль не выбран";
 
         TrafficCurrentDownloadDisplay =
-            $"↓ {FormatTraffic(snapshot.CurrentDownloadBytesPerSecond)}/с";
+            $"↓ {FormatTrafficRate(snapshot.CurrentDownloadBytesPerSecond)}";
 
         TrafficCurrentUploadDisplay =
-            $"↑ {FormatTraffic(snapshot.CurrentUploadBytesPerSecond)}/с";
+            $"↑ {FormatTrafficRate(snapshot.CurrentUploadBytesPerSecond)}";
 
         TrafficDownloadLevel = CalculateTrafficLevel(
             snapshot.CurrentDownloadBytesPerSecond);
@@ -2138,6 +2245,29 @@ public class StatusBarViewModel : MyReactiveObject
         var kilobytes = bytesPerSecond / 1024d;
         var normalized = Math.Log10(1 + kilobytes) / Math.Log10(1 + 102400d);
         return Math.Clamp(6 + normalized * 42, 6, 48);
+    }
+
+    private static string FormatTrafficRate(long bytesPerSecond)
+    {
+        var safeBytes = Math.Max(0, bytesPerSecond);
+        string[] units = ["bps", "kbps", "Mbps", "Gbps", "Tbps"];
+
+        double value = safeBytes * 8d;
+        var unitIndex = 0;
+        while (value >= 1000 && unitIndex < units.Length - 1)
+        {
+            value /= 1000;
+            unitIndex++;
+        }
+
+        if (unitIndex == 0)
+        {
+            return $"{value:0} {units[unitIndex]}";
+        }
+
+        return value >= 100
+            ? $"{value:0} {units[unitIndex]}"
+            : $"{value:0.0} {units[unitIndex]}";
     }
 
     private static string FormatTraffic(long bytes)

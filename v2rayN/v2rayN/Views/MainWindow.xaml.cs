@@ -92,7 +92,7 @@ public partial class MainWindow
                 .DisposeWith(disposables);
         });
 
-        Title = "SG Client — 073";
+        Title = "SG-Client — 086";
 
         if (_config.UiItem.AutoHideStartup)
         {

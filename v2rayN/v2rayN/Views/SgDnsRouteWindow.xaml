@@ -88,7 +88,7 @@
                             <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Выберите явно — скрытого переключателя больше нет" />
                         </StackPanel>
                     </StackPanel>
-                    <Button x:Name="btnClose" Grid.Column="1" shell:WindowChrome.IsHitTestVisibleInChrome="True" Width="38" Height="38" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource SgMutedBrush}" Style="{StaticResource MaterialDesignIconButton}" ToolTip="Закрыть">
+                    <Button x:Name="btnClose" Grid.Column="1" shell:WindowChrome.IsHitTestVisibleInChrome="True" Width="38" Height="38" Background="Transparent" BorderThickness="1" Foreground="{DynamicResource SgMutedBrush}" Style="{StaticResource MaterialDesignIconButton}" ToolTip="Закрыть" BorderBrush="{DynamicResource SgButtonOutlineBrush}">
                         <materialDesign:PackIcon Width="19" Height="19" Kind="Close" />
                     </Button>
                 </Grid>

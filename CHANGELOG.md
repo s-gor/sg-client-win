@@ -1,3 +1,92 @@
+## SG Client 095 — Simplified Settings and Mandatory Diagnostics
+
+- Kept the complete SG Client 089 functional and visual base.
+- Removed General, TUN and Advanced section headings and subtitles from the unified Settings page.
+- Kept all working setting cards in one continuous classic full-width list.
+- Made UDP, traffic sniffing and the local Xray connections log mandatory and always enabled.
+- Removed the three mandatory capability switches from the UI while keeping log-level selection.
+- Preserved the separate compact About page and updated it to build 095.
+- Preserved protocols, routing, traffic accounting, tray controls, subscriptions, Local Proxy and runtime binaries.
+
+## SG Client 088 — Unified Settings and Header Geometry
+
+- Merged General, TUN and Advanced settings into one compact Settings page.
+- Removed three decorative switches that did not affect the main UI.
+- Reworked About so it fits without inner scrolling or fixed-width clipping.
+- Fixed the top navigation separator clipping the Import item.
+- Preserved SG Client 087 routing, traffic, protocols, tray, subscriptions and Connections work.
+
+## SG Client 087 — Connections Layout and Contrast
+
+- Kept the complete SG Client 086 Build Fix 2 functional base, including Latte RC6, tray controls and flexible subscriptions.
+- Rebuilt the live-connections toolbar as two stable rows so search, output filter, history and export actions no longer overlap.
+- Added an inset table container with safe left, right and bottom padding and a scrollbar that stays inside the card.
+- Rebalanced column widths for Xray and sing-box without a horizontal scrollbar at the normal window size.
+- Added route badges for VPN, Direct, Block and Other.
+- Added deeper, higher-contrast Connections surfaces for Graphite, Latte and Northern without changing the rest of each theme.
+- Preserved routing logic, traffic accounting, diagnostics, protocols and runtime binaries.
+
+## SG Client 085 — Inline Latency Action
+
+- Kept the complete SG Client 084 functional base.
+- Removed the separate latency status/progress container from the profile footer.
+- Kept only three permanent actions: Connect/Switch, Check latency and Delete.
+- Reused the middle action for live progress and Stop while a test is running.
+- Preserved every protocol, traffic counter, routing fix, Local Proxy function and runtime binary.
+
+## SG Client 082 — Bottom-Anchored Connection Scene
+
+- Kept SG Client 080 as the complete functional base; SG Client 077 was used only as a visual reference.
+- Restored a flexible main scene and anchored the complete 2×2 mode grid immediately above the traffic card.
+- Kept the connection emblem and profile/status area above the controls with natural breathing room.
+- Preserved every 080 protocol, traffic counter, routing fix, Local Proxy function, backup feature and runtime binary.
+
+## SG Client 079 — Restored Connection Scene and Local Proxy UX
+
+- Restored the circular connection emblem, selected profile and connection detail above the compact mode grid.
+- Kept the TUN, System Proxy, Local Proxy and Disconnect All 2×2 grid.
+- Fixed the full `SG-Client` brand in the header and removed the stale version badge.
+- Polished the three profile-list actions and hides the latency progress block when no test is running.
+- Moved the mixed HTTP/SOCKS port from general Advanced settings into Expert → Local Proxy.
+- Added the ready-to-copy local proxy address and safe port editing while all modes are off.
+- Preserved the SG Client 077/078 routing reload, diagnostics and safe disconnect logic.
+
+## SG Client 078 — Compact Main Mode Grid
+
+- Removed the large central profile scene from the main screen.
+- Added a 2×2 grid for TUN, System Proxy, Local Proxy and Disconnect All.
+- Added a safe global stop command for proxy modes, cores, TUN/AWG, tests and Kill Switch.
+- Replaced two separate latency buttons with one latency menu.
+- Preserved the SG Client 077 active-mode routing reload and final-route verification.
+
+## SG Client 076 — Rebuilt and Verified Base
+
+- Rebuilt from the confirmed SG Client 074 launcher/build foundation.
+- Preserves SG Client 075 latency-test summary, problem filtering, Local Proxy routing fixes and 15-minute connection history.
+- Replaces the silent VBS elevation path with a logged PowerShell elevation wrapper.
+- Adds launcher logging before UAC and a persistent result window for startup/build failures.
+- Keeps complete recursive backups, modern VLESS/XHTTP and AmneziaWG support, WinTUN traffic counters and live routes.
+
+## SG Client 075 Build Fix 1 — Local Proxy Routing and Test Summary
+
+- Applied SG Smart Routing consistently to TUN, System Proxy and Local Proxy.
+- Fixed custom schemes with Direct as the final action: only explicitly listed domains/IPs use VPN.
+- Prevented legacy routing profiles from overriding SG routing in proxy modes.
+- Added Xray and sing-box regression tests for Local Proxy custom routing.
+- Added a full latency-test result summary and a problem-only profile filter.
+- Restored a functional 15-minute connection history for sing-box.
+- Clarified connection actions and added a dedicated Close Window button.
+
+## SG Client 075 — Reliable Subscription Tests and Stable Live Routes
+
+- Reworked large-list latency testing with deterministic progress and cancellation.
+- Every tested profile receives a final state; stale `Testing` values are cleared.
+- Added explicit `Unavailable`, `Error`, `Cancelled`, and `Not tested` outcomes.
+- Improved the progress panel and widened the Stop button.
+- Marked localhost/127.0.0.1 Direct routes as expected local traffic.
+- Stabilized and widened the live-routes output filter.
+- Fixed sing-box DNS route unit-test initialization.
+
 ## SG Client 074 — Complete Backup and Restored Live Routes
 
 - Restored the factual live VPN / Direct / Block list after the Fix 12 empty-window regression.

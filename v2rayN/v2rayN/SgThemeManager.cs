@@ -19,7 +19,7 @@ public static class SgThemeManager
     [
         new(Graphite, "Графит"),
         new(Light, "Латте"),
-        new(Northern, "Северная")
+        new(Northern, "Север")
     ];
 
     public static string Current => Normalize(AppManager.Instance.Config.UiItem.CurrentTheme);
@@ -73,6 +73,20 @@ public static class SgThemeManager
             Application.Current.Resources[item.Key] = CreateBrush(item.Value);
         }
 
+        // One exact outline brush for enabled and disabled buttons in every theme.
+        // Disabled state is shown by fill/text only; the border color must not change.
+        var buttonOutlineBrush = CreateBrush(palette.Brushes["SgBorderStrongBrush"]);
+        Application.Current.Resources["SgButtonOutlineBrush"] = buttonOutlineBrush;
+        Application.Current.Resources["SgButtonDisabledOutlineBrush"] = buttonOutlineBrush;
+
+        if (themeName == Light)
+        {
+            Application.Current.Resources["SgBackgroundBrush"] = CreateLatteBackground();
+            Application.Current.Resources["SgSidebarBrush"] = CreateVerticalGradient("#DCE4E9", "#D3DDE3");
+        }
+
+        ApplyLegacy060CompatibilityAliases();
+
         Application.Current.Resources["SgPrimaryActionBrush"] = CreateVerticalGradient(
             palette.Brushes["SgPrimaryActionTopColor"],
             palette.Brushes["SgPrimaryActionBottomColor"]);
@@ -104,6 +118,41 @@ public static class SgThemeManager
         foreach (Window window in Application.Current.Windows)
         {
             WindowsUtils.SetDarkBorder(window, palette.IsLight ? nameof(ETheme.Light) : nameof(ETheme.Dark));
+        }
+    }
+
+
+    // SG Client 095: Graphite and Northern use the exact SG Client 060/GitHub palette.
+    // Newer controls receive aliases to those original brushes instead of introducing new colours.
+    private static void ApplyLegacy060CompatibilityAliases()
+    {
+        SetAlias("SgSuccessBorderBrush", "SgAccentBorderBrush");
+        SetAlias("SgSuccessTextBrush", "SgSuccessBrush");
+        SetAlias("SgSuccessDotBrush", "SgSuccessBrush");
+        SetAlias("SgSuccessHoverSoftBrush", "SgAccentSoftBrush");
+        SetAlias("SgWarningButtonBrush", "SgWarningBrush");
+        SetAlias("SgWarningButtonBorderBrush", "SgWarningBrush");
+        SetAlias("SgDangerButtonBrush", "SgErrorBrush");
+        SetAlias("SgDangerButtonBorderBrush", "SgErrorBrush");
+        SetAlias("SgDangerButtonTextBrush", "SgPrimaryActionTextBrush");
+
+        SetAlias("SgConnectionsWindowBrush", "SgBackgroundBrush");
+        SetAlias("SgConnectionsPanelBrush", "SgSurfaceBrush");
+        SetAlias("SgConnectionsPanelRaisedBrush", "SgSurfaceRaisedBrush");
+        SetAlias("SgConnectionsTableBrush", "SgSurfaceSoftBrush");
+        SetAlias("SgConnectionsTableHeaderBrush", "SgSurfaceRaisedBrush");
+        SetAlias("SgConnectionsTableAltBrush", "SgSurfaceBrush");
+        SetAlias("SgConnectionsTableBorderBrush", "SgBorderBrush");
+        SetAlias("SgConnectionsTableHoverBrush", "SgHoverBrush");
+        SetAlias("SgConnectionsTableSelectedBrush", "SgSelectedBrush");
+
+    }
+
+    private static void SetAlias(string target, string source)
+    {
+        if (Application.Current.Resources.Contains(source))
+        {
+            Application.Current.Resources[target] = Application.Current.Resources[source];
         }
     }
 
@@ -179,10 +228,23 @@ public static class SgThemeManager
         ["SgTrafficCardBrush"] = "#0F1A27",
         ["SgTrafficSectionBrush"] = "#162438",
         ["SgDangerSoftBrush"] = "#3B1E2A",
-        ["SgPrimaryActionTopColor"] = "#163B36",
-        ["SgPrimaryActionBottomColor"] = "#102E2A",
-        ["SgPrimaryActionHoverTopColor"] = "#1B4B43",
-        ["SgPrimaryActionHoverBottomColor"] = "#143C36",
+        ["SgConnectionsVpnBadgeBrush"] = "#132B43",
+        ["SgConnectionsVpnBadgeBorderBrush"] = "#31516F",
+        ["SgConnectionsVpnBadgeTextBrush"] = "#74C0FF",
+        ["SgConnectionsDirectBadgeBrush"] = "#15362D",
+        ["SgConnectionsDirectBadgeBorderBrush"] = "#2A7A5C",
+        ["SgConnectionsDirectBadgeTextBrush"] = "#54DFA8",
+        ["SgConnectionsBlockBadgeBrush"] = "#332229",
+        ["SgConnectionsBlockBadgeBorderBrush"] = "#7A4652",
+        ["SgConnectionsBlockBadgeTextBrush"] = "#D98A98",
+        ["SgConnectionsOtherBadgeBrush"] = "#1A2431",
+        ["SgConnectionsOtherBadgeBorderBrush"] = "#3A4A5C",
+        ["SgConnectionsOtherBadgeTextBrush"] = "#9AA8B8",
+
+        ["SgPrimaryActionTopColor"] = "#1A493F",
+        ["SgPrimaryActionBottomColor"] = "#143A33",
+        ["SgPrimaryActionHoverTopColor"] = "#20564A",
+        ["SgPrimaryActionHoverBottomColor"] = "#19453D",
         ["SgPrimaryActionPressedTopColor"] = "#102E2A",
         ["SgPrimaryActionPressedBottomColor"] = "#0C2421",
         ["SgPrimaryActionBorderBrush"] = "#2A7A5C",
@@ -190,97 +252,129 @@ public static class SgThemeManager
         ["SgLogoFillBrush"] = "#10242B"
     });
 
-    private static ThemePalette CreateLightPalette() => new(true, "#31566F", new Dictionary<string, string>
+    private static ThemePalette CreateLightPalette() => new(true, "#31536F", new Dictionary<string, string>
     {
-        // Latte Graphite: warm coffee-and-milk surfaces with a restrained steel-blue accent.
-        ["SgBackgroundBrush"] = "#D8CEC1",
-        ["SgHeaderBrush"] = "#CDBEAD",
-        ["SgSidebarBrush"] = "#D2C4B4",
-        ["SgSurfaceBrush"] = "#DDD2C5",
-        ["SgSurfaceSoftBrush"] = "#CFC2B3",
-        ["SgSurfaceRaisedBrush"] = "#E1D7CB",
-        ["SgBorderBrush"] = "#7C6E5F",
-        ["SgBorderStrongBrush"] = "#66584C",
-        ["SgTextBrush"] = "#2B2521",
-        ["SgMutedBrush"] = "#62584F",
-        ["SgSubtleTextBrush"] = "#6E6052",
-        ["SgAccentBrush"] = "#31566F",
-        ["SgTrafficDownloadBrush"] = "#31566F",
-        ["SgTrafficUploadBrush"] = "#4E7B48",
+        // Latte Graphite — exact SG-AWG-Panel RC6 palette.
+        ["SgBackgroundBrush"] = "#E3E9EE",
+        ["SgHeaderBrush"] = "#E3E9EE",
+        ["SgSidebarBrush"] = "#D7E0E5",
+        ["SgSurfaceBrush"] = "#EEF2F4",
+        ["SgSurfaceSoftBrush"] = "#D9E2E8",
+        ["SgSurfaceRaisedBrush"] = "#E4EBEE",
+        ["SgBorderBrush"] = "#AEBCC7",
+        ["SgBorderStrongBrush"] = "#7E91A0",
+        ["SgTextBrush"] = "#192530",
+        ["SgMutedBrush"] = "#556672",
+        ["SgSubtleTextBrush"] = "#71808B",
+        ["SgAccentBrush"] = "#31536F",
+        ["SgTrafficDownloadBrush"] = "#31536F",
+        ["SgTrafficUploadBrush"] = "#2F805A",
 
-        // Connection-state scenes stay warm and calm instead of recolouring the whole application.
-        ["SgTunHeroBrush"] = "#D9DFC9",
-        ["SgTunCardBrush"] = "#CFD8BC",
-        ["SgTunCardBorderBrush"] = "#7D986A",
-        ["SgSystemProxyBrush"] = "#9B6C24",
-        ["SgSystemProxySoftBrush"] = "#E2D1AD",
-        ["SgSystemProxyBorderBrush"] = "#B48A47",
-        ["SgSystemProxyHeroBrush"] = "#E4D2AD",
-        ["SgSystemProxyCardBrush"] = "#D8C59E",
-        ["SgSystemProxyCardBorderBrush"] = "#A97C38",
-        ["SgLocalProxyBrush"] = "#31566F",
-        ["SgLocalProxySoftBrush"] = "#C8D3D8",
-        ["SgLocalProxyBorderBrush"] = "#7890A0",
-        ["SgLocalProxyHeroBrush"] = "#D0D8D8",
-        ["SgLocalProxyCardBrush"] = "#C2CFD2",
-        ["SgLocalProxyCardBorderBrush"] = "#6F8999",
+        // Mode scenes use the same neutral graphite surfaces; state is shown by accent, border and icon.
+        ["SgTunHeroBrush"] = "#EEF2F4",
+        ["SgTunCardBrush"] = "#D8EADF",
+        ["SgTunCardBorderBrush"] = "#8DBFA2",
+        ["SgSystemProxyBrush"] = "#7A5318",
+        ["SgSystemProxySoftBrush"] = "#ECE2CF",
+        ["SgSystemProxyBorderBrush"] = "#57956820",
+        ["SgSystemProxyHeroBrush"] = "#EEF2F4",
+        ["SgSystemProxyCardBrush"] = "#ECE2CF",
+        ["SgSystemProxyCardBorderBrush"] = "#57956820",
+        ["SgLocalProxyBrush"] = "#31536F",
+        ["SgLocalProxySoftBrush"] = "#D9E2E8",
+        ["SgLocalProxyBorderBrush"] = "#AEBCC7",
+        ["SgLocalProxyHeroBrush"] = "#EEF2F4",
+        ["SgLocalProxyCardBrush"] = "#D9E2E8",
+        ["SgLocalProxyCardBorderBrush"] = "#C5D0D7",
 
-        ["SgAccentSoftBrush"] = "#C3D0D4",
-        ["SgAccentBorderBrush"] = "#31566F",
-        ["SgSuccessBrush"] = "#47793A",
-        ["SgSuccessSoftBrush"] = "#D7E3CB",
-        ["SgWarningBrush"] = "#A86F1D",
-        ["SgWarningSoftBrush"] = "#EAD8B6",
-        ["SgErrorBrush"] = "#C43C32",
-        ["SgErrorSoftBrush"] = "#ECD0C9",
-        ["SgOffBrush"] = "#85796E",
-        ["SgHoverBrush"] = "#C4B29F",
-        ["SgPressedBrush"] = "#B7A490",
-        ["SgSelectedBrush"] = "#C1CDD2",
-        ["SgInputBrush"] = "#E1D7CB",
-        ["SgHeroBrush"] = "#DDD2C5",
-        ["SgHeroBusyBrush"] = "#E6D9BC",
-        ["SgHeroErrorBrush"] = "#E8CFC8",
-        ["SgOnButtonBrush"] = "#31566F",
+        ["SgAccentSoftBrush"] = "#1F31536F",
+        ["SgAccentBorderBrush"] = "#31536F",
+        ["SgSuccessBrush"] = "#17623F",
+        ["SgSuccessSoftBrush"] = "#D8EADF",
+        ["SgWarningBrush"] = "#7A5318",
+        ["SgWarningSoftBrush"] = "#ECE2CF",
+        ["SgErrorBrush"] = "#973E49",
+        ["SgErrorSoftBrush"] = "#ECD9DC",
+        ["SgSuccessBorderBrush"] = "#8DBFA2",
+        ["SgSuccessTextBrush"] = "#17623F",
+        ["SgSuccessDotBrush"] = "#2F805A",
+        ["SgSuccessHoverSoftBrush"] = "#CCE3D5",
+        ["SgWarningButtonBrush"] = "#956820",
+        ["SgWarningButtonBorderBrush"] = "#835A1C",
+        ["SgDangerButtonBrush"] = "#B34F5A",
+        ["SgDangerButtonBorderBrush"] = "#A8424D",
+        ["SgDangerButtonTextBrush"] = "#FFFFFF",
+        ["SgOffBrush"] = "#71808B",
+        ["SgHoverBrush"] = "#1731536F",
+        ["SgPressedBrush"] = "#27465F",
+        ["SgSelectedBrush"] = "#1C31536F",
+        ["SgInputBrush"] = "#EAF0F3",
+        ["SgHeroBrush"] = "#EEF2F4",
+        ["SgHeroBusyBrush"] = "#ECE2CF",
+        ["SgHeroErrorBrush"] = "#ECD9DC",
+        ["SgOnButtonBrush"] = "#31536F",
         ["SgOnButtonTextBrush"] = "#FFFFFF",
 
-        // Steel-blue actions are reserved for primary/important commands.
-        ["SgNeutralActionBrush"] = "#31566F",
-        ["SgNeutralActionHoverBrush"] = "#3B6682",
-        ["SgNeutralActionPressedBrush"] = "#294A61",
-        ["SgNeutralActionBorderBrush"] = "#27475C",
+        // Primary actions: exact accent/hover/pressed values with white SemiBold text.
+        ["SgNeutralActionBrush"] = "#31536F",
+        ["SgNeutralActionHoverBrush"] = "#3A607F",
+        ["SgNeutralActionPressedBrush"] = "#27465F",
+        ["SgNeutralActionBorderBrush"] = "#31536F",
         ["SgNeutralActionTextBrush"] = "#FFFFFF",
 
-        // Ordinary actions stay in the coffee family.
-        ["SgSecondaryActionBrush"] = "#786858",
-        ["SgSecondaryActionHoverBrush"] = "#877565",
-        ["SgSecondaryActionPressedBrush"] = "#66584B",
-        ["SgSecondaryActionBorderBrush"] = "#66584C",
-        ["SgSecondaryActionTextBrush"] = "#FFFFFF",
-        ["SgIconButtonBrush"] = "#CFC2B3",
-        ["SgIconButtonHoverBrush"] = "#C4B29F",
-        ["SgIconButtonPressedBrush"] = "#B7A490",
-        ["SgDisabledBrush"] = "#D1C7BC",
-        ["SgDisabledBorderBrush"] = "#AA9C8D",
-        ["SgDisabledTextBrush"] = "#85796E",
+        // Secondary actions keep the neutral graphite hierarchy.
+        ["SgSecondaryActionBrush"] = "#D9E2E8",
+        ["SgSecondaryActionHoverBrush"] = "#EAF0F3",
+        ["SgSecondaryActionPressedBrush"] = "#C5D0D7",
+        ["SgSecondaryActionBorderBrush"] = "#AEBCC7",
+        ["SgSecondaryActionTextBrush"] = "#192530",
+        ["SgIconButtonBrush"] = "#D9E2E8",
+        ["SgIconButtonHoverBrush"] = "#EAF0F3",
+        ["SgIconButtonPressedBrush"] = "#C5D0D7",
+        ["SgDisabledBrush"] = "#D9E2E8",
+        ["SgDisabledBorderBrush"] = "#C5D0D7",
+        ["SgDisabledTextBrush"] = "#71808B",
 
-        ["SgTileBrush"] = "#DDD2C5",
-        ["SgTileHoverBrush"] = "#CFC2B3",
-        ["SgTileActiveBrush"] = "#C1CDD2",
-        ["SgTileIconBrush"] = "#C8D2D5",
-        ["SgTrafficCardBrush"] = "#DDD2C5",
-        ["SgTrafficSectionBrush"] = "#E1D7CB",
-        ["SgDangerSoftBrush"] = "#ECD0C9",
+        ["SgTileBrush"] = "#EEF2F4",
+        ["SgTileHoverBrush"] = "#EAF0F3",
+        ["SgTileActiveBrush"] = "#1F31536F",
+        ["SgTileIconBrush"] = "#D9E2E8",
+        ["SgTrafficCardBrush"] = "#EEF2F4",
+        ["SgTrafficSectionBrush"] = "#D9E2E8",
+        ["SgDangerSoftBrush"] = "#ECD9DC",
 
-        ["SgPrimaryActionTopColor"] = "#3A647F",
-        ["SgPrimaryActionBottomColor"] = "#31566F",
-        ["SgPrimaryActionHoverTopColor"] = "#46738F",
-        ["SgPrimaryActionHoverBottomColor"] = "#39647F",
-        ["SgPrimaryActionPressedTopColor"] = "#294A61",
-        ["SgPrimaryActionPressedBottomColor"] = "#223F53",
-        ["SgPrimaryActionBorderBrush"] = "#27475C",
+        // Connections window: stronger graphite hierarchy while keeping Latte RC6 tokens.
+        ["SgConnectionsWindowBrush"] = "#E3E9EE",
+        ["SgConnectionsPanelBrush"] = "#E6ECEF",
+        ["SgConnectionsPanelRaisedBrush"] = "#D9E2E8",
+        ["SgConnectionsTableBrush"] = "#EEF2F4",
+        ["SgConnectionsTableHeaderBrush"] = "#CBD7DE",
+        ["SgConnectionsTableAltBrush"] = "#E3EAEE",
+        ["SgConnectionsTableBorderBrush"] = "#8FA2AF",
+        ["SgConnectionsTableHoverBrush"] = "#D9E4E9",
+        ["SgConnectionsTableSelectedBrush"] = "#CEDCE3",
+        ["SgConnectionsVpnBadgeBrush"] = "#D8E4ED",
+        ["SgConnectionsVpnBadgeBorderBrush"] = "#6F8DA4",
+        ["SgConnectionsVpnBadgeTextBrush"] = "#274D69",
+        ["SgConnectionsDirectBadgeBrush"] = "#D8EADF",
+        ["SgConnectionsDirectBadgeBorderBrush"] = "#8DBFA2",
+        ["SgConnectionsDirectBadgeTextBrush"] = "#17623F",
+        ["SgConnectionsBlockBadgeBrush"] = "#ECD9DC",
+        ["SgConnectionsBlockBadgeBorderBrush"] = "#C78891",
+        ["SgConnectionsBlockBadgeTextBrush"] = "#973E49",
+        ["SgConnectionsOtherBadgeBrush"] = "#E5E1DC",
+        ["SgConnectionsOtherBadgeBorderBrush"] = "#B2A79C",
+        ["SgConnectionsOtherBadgeTextBrush"] = "#62594F",
+
+        ["SgPrimaryActionTopColor"] = "#31536F",
+        ["SgPrimaryActionBottomColor"] = "#31536F",
+        ["SgPrimaryActionHoverTopColor"] = "#3A607F",
+        ["SgPrimaryActionHoverBottomColor"] = "#3A607F",
+        ["SgPrimaryActionPressedTopColor"] = "#27465F",
+        ["SgPrimaryActionPressedBottomColor"] = "#27465F",
+        ["SgPrimaryActionBorderBrush"] = "#31536F",
         ["SgPrimaryActionTextBrush"] = "#FFFFFF",
-        ["SgLogoFillBrush"] = "#D2C4B4"
+        ["SgLogoFillBrush"] = "#D7E0E5"
     });
 
 
@@ -356,6 +450,20 @@ public static class SgThemeManager
         ["SgTrafficCardBrush"] = "#0C1E31",
         ["SgTrafficSectionBrush"] = "#17314D",
         ["SgDangerSoftBrush"] = "#3A1D2A",
+        ["SgConnectionsVpnBadgeBrush"] = "#163552",
+        ["SgConnectionsVpnBadgeBorderBrush"] = "#3D75A8",
+        ["SgConnectionsVpnBadgeTextBrush"] = "#79C3FF",
+        ["SgConnectionsDirectBadgeBrush"] = "#14372B",
+        ["SgConnectionsDirectBadgeBorderBrush"] = "#2E7E5A",
+        ["SgConnectionsDirectBadgeTextBrush"] = "#55D99A",
+        ["SgConnectionsBlockBadgeBrush"] = "#342229",
+        ["SgConnectionsBlockBadgeBorderBrush"] = "#824856",
+        ["SgConnectionsBlockBadgeTextBrush"] = "#DC8C9B",
+        ["SgConnectionsOtherBadgeBrush"] = "#17283A",
+        ["SgConnectionsOtherBadgeBorderBrush"] = "#41627D",
+        ["SgConnectionsOtherBadgeTextBrush"] = "#9CB0C2",
+
+        // Connections window: deeper northern surfaces and clearer route badges.
         ["SgPrimaryActionTopColor"] = "#1D4C7B",
         ["SgPrimaryActionBottomColor"] = "#163B62",
         ["SgPrimaryActionHoverTopColor"] = "#245C91",
@@ -384,6 +492,28 @@ public static class SgThemeManager
             {
                 new(ParseColor(top), 0),
                 new(ParseColor(bottom), 1)
+            }
+        };
+        brush.Freeze();
+        return brush;
+    }
+
+    private static RadialGradientBrush CreateLatteBackground()
+    {
+        // CSS equivalent: radial-gradient(circle at 75% -10%,
+        // rgba(49,83,111,.11), transparent 36%), #E3E9EE.
+        var brush = new RadialGradientBrush
+        {
+            MappingMode = BrushMappingMode.RelativeToBoundingBox,
+            Center = new System.Windows.Point(0.75, -0.10),
+            GradientOrigin = new System.Windows.Point(0.75, -0.10),
+            RadiusX = 0.55,
+            RadiusY = 0.55,
+            GradientStops = new GradientStopCollection
+            {
+                new(ParseColor("#CFD8E0"), 0),
+                new(ParseColor("#E3E9EE"), 0.36),
+                new(ParseColor("#E3E9EE"), 1)
             }
         };
         brush.Freeze();

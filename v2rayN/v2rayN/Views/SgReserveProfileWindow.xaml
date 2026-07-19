@@ -72,11 +72,11 @@
 
             <Border Grid.Row="2" Padding="20,14" Background="{DynamicResource SgHeaderBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="0,1,0,0" CornerRadius="0,0,15,15">
                 <Grid>
-                    <Button HorizontalAlignment="Left" Width="130" Height="38" Click="Clear_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Content="Сбросить" />
+                    <Button HorizontalAlignment="Left" Width="130" Height="38" Click="Clear_Click" Style="{StaticResource SgMaterialOutlinedButton}" Content="Сбросить" />
                     <TextBlock x:Name="txtFooterStatus" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10" Foreground="{DynamicResource SgMutedBrush}" Text="Изменения будут применены после нажатия кнопки справа." />
                     <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                        <Button Width="104" Height="38" Click="Cancel_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Content="Отмена" />
-                        <Button Width="140" Height="38" Margin="10,0,0,0" Click="Save_Click" Style="{StaticResource MaterialDesignRaisedButton}" Content="Применить" />
+                        <Button Width="104" Height="38" Click="Cancel_Click" Style="{StaticResource SgMaterialOutlinedButton}" Content="Отмена" />
+                        <Button Width="140" Height="38" Margin="10,0,0,0" Click="Save_Click" Style="{StaticResource SgMaterialRaisedButton}" Content="Применить" />
                     </StackPanel>
                 </Grid>
             </Border>

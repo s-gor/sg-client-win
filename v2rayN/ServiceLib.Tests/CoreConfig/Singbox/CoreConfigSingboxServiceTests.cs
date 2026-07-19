@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using ServiceLib.Common;
 using ServiceLib.Enums;
+using ServiceLib.Helper;
 using ServiceLib.Manager;
 using ServiceLib.Models;
 using ServiceLib.Services.CoreConfig;
@@ -375,6 +376,7 @@ public class CoreConfigSingboxServiceTests
         var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
         config.SimpleDNSItem.DirectDNS = "1.1.1.1";
         config.SimpleDNSItem.RemoteDNS = "9.9.9.9";
+        config.SgQuickSettingsItem ??= new();
         config.SgQuickSettingsItem.DnsThroughTun = false;
         CoreConfigTestFactory.BindAppManagerConfig(config);
 
@@ -398,6 +400,7 @@ public class CoreConfigSingboxServiceTests
         var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
         config.SimpleDNSItem.DirectDNS = "1.1.1.1";
         config.SimpleDNSItem.RemoteDNS = "9.9.9.9";
+        config.SgQuickSettingsItem ??= new();
         config.SgQuickSettingsItem.DnsThroughTun = true;
         CoreConfigTestFactory.BindAppManagerConfig(config);
 
@@ -586,4 +589,57 @@ public class CoreConfigSingboxServiceTests
         cfg.dns.rules.Should().Contain(r => r.clash_mode == nameof(ERuleMode.Global));
         cfg.dns.rules.Should().Contain(r => r.clash_mode == nameof(ERuleMode.Direct));
     }
+    [Fact]
+    public void GenerateClientConfigContent_LocalProxyCustomRouting_ShouldUseDirectFinalAndProxyOnlyListedDomains()
+    {
+        var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
+        config.SgQuickSettingsItem = new SgQuickSettingsItem
+        {
+            ConnectionMode = "local-proxy",
+            SmartRouting = new SgSmartRoutingItem
+            {
+                Preset = SgSmartRoutingHelper.PresetCustom,
+                DefaultAction = SgSmartRoutingHelper.ActionDirect,
+                LocalNetworkAction = SgSmartRoutingHelper.ActionDirect,
+                CustomProxyDomains = ["domain:only-vpn.example"],
+            },
+        };
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+        var node = CoreConfigTestFactory.CreateSocksNode(ECoreType.sing_box);
+        var context = CoreConfigTestFactory.CreateContext(config, node, ECoreType.sing_box) with
+        {
+            IsTunEnabled = false,
+            RoutingItem = new RoutingItem
+            {
+                Id = "legacy-proxy",
+                Remarks = "legacy-proxy",
+                RuleSet = JsonUtils.Serialize(new List<RulesItem>
+                {
+                    new()
+                    {
+                        Enabled = true,
+                        RuleType = ERuleType.Routing,
+                        OutboundTag = Global.ProxyTag,
+                        Domain = ["domain:legacy-should-not-win.example"],
+                    }
+                }),
+                DomainStrategy = Global.AsIs,
+                DomainStrategy4Singbox = string.Empty,
+            }
+        };
+
+        var result = new CoreConfigSingboxService(context).GenerateClientConfigContent();
+
+        result.Success.Should().BeTrue($"ret msg: {result.Msg}");
+        var cfg = JsonUtils.Deserialize<SingboxConfig>(result.Data!.ToString())!;
+        cfg.route.final.Should().Be(Global.DirectTag);
+        cfg.route.rules.Should().Contain(rule =>
+            rule.outbound == Global.ProxyTag
+            && (rule.domain_suffix?.Contains("only-vpn.example") == true
+                || rule.domain?.Contains("only-vpn.example") == true));
+        cfg.route.rules.Should().NotContain(rule =>
+            rule.domain_suffix?.Contains("legacy-should-not-win.example") == true
+            || rule.domain?.Contains("legacy-should-not-win.example") == true);
+    }
+
 }

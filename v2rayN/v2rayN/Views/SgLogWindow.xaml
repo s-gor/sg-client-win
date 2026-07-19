@@ -94,10 +94,10 @@
                         MinWidth="38"
                         Margin="0"
                         Background="Transparent"
-                        BorderThickness="0"
+                        BorderThickness="1"
                         Foreground="{DynamicResource SgMutedBrush}"
                         Style="{StaticResource MaterialDesignIconButton}"
-                        ToolTip="Свернуть">
+                        ToolTip="Свернуть" BorderBrush="{DynamicResource SgButtonOutlineBrush}">
                         <materialDesign:PackIcon Width="19" Height="19" Kind="Minimize" />
                     </Button>
                     <Button
@@ -108,10 +108,10 @@
                         MinWidth="38"
                         Margin="0"
                         Background="Transparent"
-                        BorderThickness="0"
+                        BorderThickness="1"
                         Foreground="{DynamicResource SgMutedBrush}"
                         Style="{StaticResource MaterialDesignIconButton}"
-                        ToolTip="Развернуть">
+                        ToolTip="Развернуть" BorderBrush="{DynamicResource SgButtonOutlineBrush}">
                         <materialDesign:PackIcon x:Name="icoWindowMaximize" Width="18" Height="18" Kind="WindowMaximize" />
                     </Button>
                     <Button
@@ -122,10 +122,10 @@
                         MinWidth="38"
                         Margin="0"
                         Background="Transparent"
-                        BorderThickness="0"
+                        BorderThickness="1"
                         Foreground="{DynamicResource SgMutedBrush}"
                         Style="{StaticResource MaterialDesignIconButton}"
-                        ToolTip="Закрыть">
+                        ToolTip="Закрыть" BorderBrush="{DynamicResource SgButtonOutlineBrush}">
                         <materialDesign:PackIcon Width="19" Height="19" Kind="Close" />
                     </Button>
                 </Grid>

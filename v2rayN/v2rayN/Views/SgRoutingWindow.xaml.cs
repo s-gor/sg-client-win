@@ -200,6 +200,25 @@ public partial class SgRoutingWindow : Window
         RefreshSelectedPreset();
     }
 
+    private void RoutingTab_Click(object sender, RoutedEventArgs e)
+    {
+        tabRouting.IsChecked = true;
+        tabGeoFiles.IsChecked = false;
+        routingPanel.Visibility = Visibility.Visible;
+        geoFilesPanel.Visibility = Visibility.Collapsed;
+        routingFooter.Visibility = Visibility.Visible;
+    }
+
+    private async void GeoFilesTab_Click(object sender, RoutedEventArgs e)
+    {
+        tabRouting.IsChecked = false;
+        tabGeoFiles.IsChecked = true;
+        routingPanel.Visibility = Visibility.Collapsed;
+        geoFilesPanel.Visibility = Visibility.Visible;
+        routingFooter.Visibility = Visibility.Collapsed;
+        await geoFilesPanel.RefreshAsync();
+    }
+
     private async void Update_Click(object sender, RoutedEventArgs e)
     {
         await UpdateRulesAsync(true);
@@ -260,18 +279,41 @@ public partial class SgRoutingWindow : Window
             RefreshSelectedPreset();
             RefreshWarning();
 
-            if (_config.TunModeItem.EnableTun)
+            // SG_ROUTING_RELOAD_ACTIVE_MODE_078
+            // Routing is authoritative in TUN, System Proxy and Local Proxy.
+            // Saving while a proxy mode is active must rebuild the running
+            // config.json immediately; otherwise the UI shows the new scheme
+            // while Xray/sing-box continues using the previous one.
+            var activeMode = StatusBarViewModel.Instance.GetConnectionModeKey();
+            if (activeMode is "tun" or "system-proxy" or "local-proxy")
             {
-                SetInlineStatus("Настройки сохранены. Перезапускаю TUN и проверяю рабочий config.json…", "SgWarningBrush");
-                AppEvents.ReloadRequested.Publish();
-                await Task.Delay(1500);
+                var modeTitle = ConnectionModeTitle(activeMode);
+                SetInlineStatus($"Настройки сохранены. Перезапускаю {modeTitle} и проверяю рабочий config.json…", "SgWarningBrush");
+
+                if (MainWindowViewModel.Instance != null)
+                {
+                    await MainWindowViewModel.Instance.Reload();
+                }
+                else
+                {
+                    AppEvents.ReloadRequested.Publish();
+                    await Task.Delay(1800);
+                }
+
                 RefreshDiagnostics();
-                SetInlineStatus("Применено. Окно оставлено открытым для проверки и дальнейших изменений.", "SgAccentBrush");
+                var verification = VerifyGeneratedDefaultRoute(_working, activeMode);
+                if (!verification.Success)
+                {
+                    SetInlineStatus($"Настройки сохранены, но рабочая маршрутизация не подтверждена: {verification.Message}", "SgErrorBrush");
+                    return;
+                }
+
+                SetInlineStatus($"Применено к активному режиму {modeTitle}. {verification.Message}", "SgAccentBrush");
             }
             else
             {
                 RefreshDiagnostics();
-                SetInlineStatus("Сохранено. Правила попадут в рабочий config.json при следующем включении TUN.", "SgAccentBrush");
+                SetInlineStatus("Сохранено. Правила будут применены при следующем включении TUN, System Proxy или Local Proxy.", "SgAccentBrush");
             }
         }
         catch (Exception ex)
@@ -291,6 +333,116 @@ public partial class SgRoutingWindow : Window
         txtFooterStatus.Foreground = (System.Windows.Media.Brush)FindResource(brushKey);
         txtProgress.Text = text;
         txtProgress.Foreground = (System.Windows.Media.Brush)FindResource(brushKey);
+    }
+
+
+    private static string ConnectionModeTitle(string mode)
+    {
+        return mode switch
+        {
+            "tun" => "TUN",
+            "system-proxy" => "System Proxy",
+            "local-proxy" => "Local Proxy",
+            _ => "подключение",
+        };
+    }
+
+    private static (bool Success, string Message) VerifyGeneratedDefaultRoute(SgSmartRoutingItem item, string activeMode)
+    {
+        if (AmneziaWgManager.Instance.GetSelectedProfile() != null)
+        {
+            return (true, "AmneziaWG переподключён; для него действует поддерживаемый набор IP/подсетей.");
+        }
+
+        var path = Utils.GetBinConfigPath(Global.CoreConfigFileName);
+        if (!File.Exists(path))
+        {
+            return (false, "рабочий config.json не найден");
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(path));
+            var root = document.RootElement;
+            var expected = SgSmartRoutingHelper.ToOutboundTag(item.DefaultAction);
+
+            if (root.TryGetProperty("route", out var singboxRoute))
+            {
+                var actual = ReadString(singboxRoute, "final") ?? "не указан";
+                return string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase)
+                    ? (true, $"Проверено: финальный маршрут → {actual}.")
+                    : (false, $"в config.json final={actual}, ожидалось {expected}");
+            }
+
+            if (root.TryGetProperty("routing", out var xrayRouting)
+                && xrayRouting.TryGetProperty("rules", out var rules)
+                && rules.ValueKind == JsonValueKind.Array)
+            {
+                string? actual = null;
+                var expectedInbound = activeMode == "tun" ? "tun" : nameof(EInboundProtocol.socks);
+                foreach (var rule in rules.EnumerateArray())
+                {
+                    if (!IsXrayCatchAllRule(rule))
+                    {
+                        continue;
+                    }
+
+                    var inboundTags = ReadStringArray(rule, "inboundTag");
+                    var appliesToActiveInbound = inboundTags.Count == 0
+                        || inboundTags.Contains(expectedInbound, StringComparer.OrdinalIgnoreCase);
+                    if (!appliesToActiveInbound)
+                    {
+                        continue;
+                    }
+
+                    // Xray uses the first matching rule. Select the first
+                    // catch-all that can actually receive the active inbound.
+                    actual = ReadString(rule, "outboundTag") ?? ReadString(rule, "balancerTag");
+                    break;
+                }
+
+                if (actual.IsNullOrEmpty())
+                {
+                    return (false, "в Xray config.json не найдено явное финальное правило");
+                }
+
+                var matches = string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase)
+                    || (expected == Global.ProxyTag
+                        && actual!.StartsWith(Global.ProxyTag, StringComparison.OrdinalIgnoreCase));
+                return matches
+                    ? (true, $"Проверено: финальный маршрут → {actual}.")
+                    : (false, $"в config.json финальный маршрут → {actual}, ожидалось {expected}");
+            }
+
+            return (false, "в config.json не найден раздел routing/route");
+        }
+        catch (Exception ex)
+        {
+            return (false, $"не удалось прочитать config.json: {ex.Message}");
+        }
+    }
+
+    private static bool IsXrayCatchAllRule(JsonElement rule)
+    {
+        static bool HasValues(JsonElement element, string property)
+        {
+            if (!element.TryGetProperty(property, out var value))
+            {
+                return false;
+            }
+            return value.ValueKind switch
+            {
+                JsonValueKind.Array => value.GetArrayLength() > 0,
+                JsonValueKind.String => !string.IsNullOrWhiteSpace(value.GetString()),
+                _ => false,
+            };
+        }
+
+        return !HasValues(rule, "domain")
+            && !HasValues(rule, "ip")
+            && !HasValues(rule, "port")
+            && !HasValues(rule, "process")
+            && !HasValues(rule, "protocol");
     }
 
     private void RefreshVersion()
@@ -384,7 +536,7 @@ public partial class SgRoutingWindow : Window
         var path = Utils.GetBinConfigPath(Global.CoreConfigFileName);
         if (!File.Exists(path))
         {
-            return "config.json ещё не создан. Подключите TUN или переподключите профиль, затем обновите диагностику.";
+            return "config.json ещё не создан. Включите TUN, System Proxy или Local Proxy, затем обновите диагностику.";
         }
 
         using var document = JsonDocument.Parse(File.ReadAllText(path));
@@ -425,13 +577,19 @@ public partial class SgRoutingWindow : Window
                     categoryIndex = index;
                 }
 
-                var relevant = values.Any(IsSgRoutingValue)
-                    || (inbound.Contains("tun", StringComparer.OrdinalIgnoreCase) && values.Count == 0);
+                // SG_XRAY_PROXY_CATCH_ALL_DIAGNOSTICS_078
+                var catchAll = values.Count == 0 && IsXrayCatchAllRule(rule);
+                var relevant = values.Any(IsSgRoutingValue) || catchAll;
                 if (relevant)
                 {
+                    var finalTitle = inbound.Contains("tun", StringComparer.OrdinalIgnoreCase)
+                        ? "остальной TUN-трафик"
+                        : inbound.Any(tag => tag.StartsWith("socks", StringComparison.OrdinalIgnoreCase))
+                            ? "остальной трафик Local/System Proxy"
+                            : "остальной трафик";
                     findings.Add(values.Count > 0
                         ? $"{string.Join(", ", values)} => {target}"
-                        : $"остальной TUN-трафик => {target}");
+                        : $"{finalTitle} => {target}");
                 }
                 index++;
             }
@@ -610,7 +768,8 @@ public partial class SgRoutingWindow : Window
 
     private void Help_Click(object sender, RoutedEventArgs e)
     {
-        new SgHelpWindow("routing") { Owner = this }.ShowDialog();
+        var section = tabGeoFiles.IsChecked == true ? "geofiles" : "routing";
+        new SgHelpWindow(section) { Owner = this }.ShowDialog();
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e)
