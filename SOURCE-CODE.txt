@@ -1,5 +1,0 @@
-SG Client source code:
-https://github.com/s-gor/sg-client-win
-
-Release:
-https://github.com/s-gor/sg-client-win/releases/tag/v0.0.40
