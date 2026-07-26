@@ -37,7 +37,7 @@ jobs:
         run: if not exist "artifacts\sg-client\SG-Client.exe" exit /b 1
 
       - name: Upload source-build artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: SG-CLIENT-096-WINDOWS-x64-SOURCE-BUILD
           path: artifacts/sg-client
