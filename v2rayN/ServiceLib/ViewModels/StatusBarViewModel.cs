@@ -1977,6 +1977,10 @@ public class StatusBarViewModel : MyReactiveObject
 
     private static string GetProtocolDisplay(ProfileItem running)
     {
+        if (running.ConfigType == EConfigType.Mieru)
+        {
+            return running.Network.IsNotEmpty() ? $"Mieru · {running.Network.ToUpperInvariant()}" : "Mieru";
+        }
         if (running.ConfigType == EConfigType.Hysteria2)
         {
             return "Hysteria2";

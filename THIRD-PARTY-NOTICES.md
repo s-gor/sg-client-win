@@ -38,3 +38,8 @@ They retain their upstream copyrights and licenses.
 ## Routing data
 
 GeoIP, GeoSite and sing-box rule-set files retain the licenses and attribution of their upstream projects and data-source contributors.
+
+## SG-Client v0.96 additions
+
+- Mihomo by MetaCubeX: https://github.com/MetaCubeX/mihomo
+- Mieru protocol and sharing format by enfein: https://github.com/enfein/mieru

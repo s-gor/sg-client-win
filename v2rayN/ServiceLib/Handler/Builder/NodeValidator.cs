@@ -68,6 +68,13 @@ public class NodeValidator
                 v.Error(string.Format(ResUI.MsgCoreNotSupportProtocol, nameof(ECoreType.Xray), item.ConfigType));
             }
         }
+        else if (coreType is ECoreType.mihomo)
+        {
+            if (item.ConfigType != EConfigType.Mieru)
+            {
+                v.Error(string.Format(ResUI.MsgCoreNotSupportProtocol, nameof(ECoreType.mihomo), item.ConfigType));
+            }
+        }
 
         // Protocol Specifics
         var protocolExtra = item.GetProtocolExtra();
@@ -97,6 +104,13 @@ public class NodeValidator
                     !string.IsNullOrEmpty(protocolExtra.SsMethod) &&
                     Global.SsSecuritiesInSingbox.Contains(protocolExtra.SsMethod),
                     string.Format(ResUI.MsgInvalidProperty, "SsMethod"));
+                break;
+
+            case EConfigType.Mieru:
+                v.Assert(!item.Username.IsNullOrEmpty(), string.Format(ResUI.MsgInvalidProperty, "Username"));
+                v.Assert(!item.Password.IsNullOrEmpty(), string.Format(ResUI.MsgInvalidProperty, "Password"));
+                v.Assert(protocolExtra.MieruBindings is { Count: > 0 },
+                    string.Format(ResUI.MsgInvalidProperty, "MieruBindings"));
                 break;
         }
 

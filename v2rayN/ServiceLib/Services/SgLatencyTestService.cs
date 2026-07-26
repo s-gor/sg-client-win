@@ -87,10 +87,26 @@ public sealed class SgLatencyTestService
         try
         {
             var validItems = await PrepareItemsAsync(profiles, cts.Token);
-            var configuredPageSize = _config.SpeedTestItem.SpeedTestPageSize ?? MaxReliableBatchSize;
-            var pageSize = Math.Max(1, Math.Min(validItems.Count, Math.Min(configuredPageSize, MaxReliableBatchSize)));
 
-            foreach (var coreGroup in validItems.GroupBy(item => item.CoreType))
+            // Mieru is executed by Mihomo and does not use the Xray/sing-box
+            // temporary SOCKS speed-test configuration. Test its reachable TCP
+            // endpoint directly, so large mixed subscriptions can still finish
+            // with a deterministic result for every profile.
+            var mieruItems = validItems
+                .Where(item => item.ConfigType == EConfigType.Mieru)
+                .ToList();
+            if (mieruItems.Count > 0)
+            {
+                await RunMieruLatencyAsync(mieruItems, cts.Token);
+            }
+
+            var coreItems = validItems
+                .Where(item => item.ConfigType != EConfigType.Mieru)
+                .ToList();
+            var configuredPageSize = _config.SpeedTestItem.SpeedTestPageSize ?? MaxReliableBatchSize;
+            var pageSize = Math.Max(1, Math.Min(coreItems.Count, Math.Min(configuredPageSize, MaxReliableBatchSize)));
+
+            foreach (var coreGroup in coreItems.GroupBy(item => item.CoreType))
             {
                 foreach (var batch in coreGroup.Chunk(pageSize))
                 {
@@ -173,6 +189,83 @@ public sealed class SgLatencyTestService
         }
 
         return result;
+    }
+
+    private async Task RunMieruLatencyAsync(
+        IReadOnlyCollection<ServerTestItem> items,
+        CancellationToken cancellationToken)
+    {
+        var concurrency = Math.Clamp(_config.SpeedTestItem.MixedConcurrencyCount, 1, 16);
+        using var gate = new SemaphoreSlim(concurrency, concurrency);
+        var tasks = items.Select(async item =>
+        {
+            await gate.WaitAsync(cancellationToken);
+            try
+            {
+                await TestMieruEndpointAsync(item, cancellationToken);
+            }
+            finally
+            {
+                gate.Release();
+            }
+        });
+        await Task.WhenAll(tasks);
+    }
+
+    private async Task TestMieruEndpointAsync(ServerTestItem item, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var binding = item.Profile.GetProtocolExtra().MieruBindings?
+                .FirstOrDefault(value => string.Equals(value.Protocol, "TCP", StringComparison.OrdinalIgnoreCase));
+            if (binding is null || !TryGetFirstPort(binding.Port, out var port) || item.Address.IsNullOrEmpty())
+            {
+                // A UDP-only Mieru endpoint cannot be measured reliably with a
+                // connection handshake, so leave it explicit instead of showing
+                // a false error or keeping the row in "Проверяется…".
+                await FinalizeAsync(item.IndexId, SgLatencyOutcome.NotTested);
+                return;
+            }
+
+            using var client = new TcpClient();
+            var stopwatch = Stopwatch.StartNew();
+            await client.ConnectAsync(item.Address, port, cancellationToken)
+                .AsTask()
+                .WaitAsync(ProfileTimeout, cancellationToken);
+            stopwatch.Stop();
+
+            var elapsed = Math.Max(1, (int)Math.Round(stopwatch.Elapsed.TotalMilliseconds));
+            await FinalizeAsync(item.IndexId, SgLatencyOutcome.Available, elapsed);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            await FinalizeAsync(item.IndexId, SgLatencyOutcome.Cancelled);
+        }
+        catch (TimeoutException)
+        {
+            await FinalizeAsync(item.IndexId, SgLatencyOutcome.Unavailable);
+        }
+        catch (SocketException)
+        {
+            await FinalizeAsync(item.IndexId, SgLatencyOutcome.Unavailable);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog($"SG Mieru latency failed: {item.IndexId}", ex);
+            await FinalizeAsync(item.IndexId, SgLatencyOutcome.Error);
+        }
+    }
+
+    private static bool TryGetFirstPort(string? value, out int port)
+    {
+        port = 0;
+        if (value.IsNullOrEmpty())
+        {
+            return false;
+        }
+
+        var first = value!.Split('-', 2, StringSplitOptions.TrimEntries)[0];
+        return int.TryParse(first, out port) && port is > 0 and <= 65535;
     }
 
     private async Task RunBatchWithFallbackAsync(List<ServerTestItem> batch, CancellationToken cancellationToken)

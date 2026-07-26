@@ -1,0 +1,16 @@
+SG Client v0.0.96 publication audit
+
+Working source:
+096-SG-CLIENT-WIN-MIHOMO-MIERU-FINAL.zip
+SHA-256: D5B71050CAFE3240DB72681ED08F78591E8348EF3621773B4C98575186282BB2
+
+Confirmed state:
+- final Luxury Jade Depth light theme included;
+- original Graphite palette preserved;
+- original Northern palette preserved;
+- rejected Dark Depth experiment excluded;
+- Windows build previously succeeded;
+- 61 unit tests previously passed;
+- source and runtime preserved;
+- publication changes are limited to public documentation, release naming and build-log labels;
+- no runtime logic or UI geometry changed during publication preparation.

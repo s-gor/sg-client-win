@@ -408,6 +408,7 @@ public static class ConfigHandler
             EConfigType.WireGuard => await AddWireguardServer(config, item),
             EConfigType.Anytls => await AddAnytlsServer(config, item),
             EConfigType.Naive => await AddNaiveServer(config, item),
+            EConfigType.Mieru => await AddServerCommon(config, item),
             _ => -1,
         };
         return ret;
@@ -1323,6 +1324,11 @@ public static class ConfigHandler
                && (o.ConfigType == EConfigType.Trojan || o.StreamSecurity == n.StreamSecurity)
                && AreEqual(oProtocolExtra.Flow, nProtocolExtra.Flow)
                && AreEqual(oProtocolExtra.SalamanderPass, nProtocolExtra.SalamanderPass)
+               && MieruBindingsEqual(oProtocolExtra.MieruBindings, nProtocolExtra.MieruBindings)
+               && oProtocolExtra.MieruMtu == nProtocolExtra.MieruMtu
+               && AreEqual(oProtocolExtra.MieruMultiplexing, nProtocolExtra.MieruMultiplexing)
+               && AreEqual(oProtocolExtra.MieruHandshakeMode, nProtocolExtra.MieruHandshakeMode)
+               && AreEqual(oProtocolExtra.MieruTrafficPattern, nProtocolExtra.MieruTrafficPattern)
                && AreEqual(o.Sni, n.Sni)
                && AreEqual(o.Alpn, n.Alpn)
                && AreEqual(o.Fingerprint, n.Fingerprint)
@@ -1334,6 +1340,18 @@ public static class ConfigHandler
         static bool AreEqual(string? a, string? b)
         {
             return string.Equals(a, b) || (string.IsNullOrEmpty(a) && string.IsNullOrEmpty(b));
+        }
+
+        static bool MieruBindingsEqual(
+            IReadOnlyList<MieruBindingItem>? a,
+            IReadOnlyList<MieruBindingItem>? b)
+        {
+            var left = a ?? [];
+            var right = b ?? [];
+            return left.Count == right.Count
+                   && left.Zip(right).All(pair =>
+                       AreEqual(pair.First.Port, pair.Second.Port)
+                       && string.Equals(pair.First.Protocol, pair.Second.Protocol, StringComparison.OrdinalIgnoreCase));
         }
     }
 
@@ -1737,6 +1755,7 @@ public static class ConfigHandler
                 EConfigType.WireGuard => await AddWireguardServer(config, profileItem, false),
                 EConfigType.Anytls => await AddAnytlsServer(config, profileItem, false),
                 EConfigType.Naive => await AddNaiveServer(config, profileItem, false),
+                EConfigType.Mieru => await AddServerCommon(config, profileItem, false),
                 _ => -1,
             };
 
@@ -1934,6 +1953,7 @@ public static class ConfigHandler
                     EConfigType.WireGuard => await AddWireguardServer(config, profileItem, false),
                     EConfigType.Anytls => await AddAnytlsServer(config, profileItem, false),
                     EConfigType.Naive => await AddNaiveServer(config, profileItem, false),
+                    EConfigType.Mieru => await AddServerCommon(config, profileItem, false),
                     EConfigType.PolicyGroup or EConfigType.ProxyChain => await AddServerCommon(config, profileItem, false),
                     _ => -1,
                 };

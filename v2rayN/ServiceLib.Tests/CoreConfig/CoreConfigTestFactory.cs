@@ -130,6 +130,35 @@ internal static class CoreConfigTestFactory
         };
     }
 
+    public static ProfileItem CreateMieruNode(string indexId = "node-mieru-1", string remarks = "demo-mieru")
+    {
+        var node = new ProfileItem
+        {
+            IndexId = indexId,
+            ConfigType = EConfigType.Mieru,
+            CoreType = ECoreType.mihomo,
+            Remarks = remarks,
+            Address = "mieru.example.com",
+            Port = 40000,
+            Username = "user",
+            Password = "pass",
+            Network = "tcp",
+            StreamSecurity = string.Empty,
+            Subid = string.Empty,
+        };
+        node.SetProtocolExtra(node.GetProtocolExtra() with
+        {
+            MieruBindings =
+            [
+                new MieruBindingItem { Port = "40000-40010", Protocol = "TCP" },
+                new MieruBindingItem { Port = "41000", Protocol = "UDP" },
+            ],
+            MieruMultiplexing = "MULTIPLEXING_HIGH",
+            MieruTrafficPattern = "pattern-a",
+        });
+        return node;
+    }
+
     public static ProfileItem CreatePolicyGroupNode(ECoreType coreType, string indexId, string remarks,
         IEnumerable<string> childIndexIds)
     {

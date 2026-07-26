@@ -116,6 +116,15 @@
                 <GradientStop Offset="1" Color="#0C2421" />
             </LinearGradientBrush>
 
+            <SolidColorBrush x:Key="SgToolbarButtonBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="SgToolbarButtonHoverBrush" Color="#17263A" />
+            <SolidColorBrush x:Key="SgToolbarButtonPressedBrush" Color="#20324A" />
+            <SolidColorBrush x:Key="SgToolbarIconButtonBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="SgToolbarIconButtonHoverBrush" Color="#20324A" />
+            <SolidColorBrush x:Key="SgToolbarIconButtonPressedBrush" Color="#263B56" />
+            <DropShadowEffect x:Key="SgButtonShadowEffect" BlurRadius="0" Direction="270" ShadowDepth="0" Opacity="0" Color="#000000" />
+            <DropShadowEffect x:Key="SgCardShadowEffect" BlurRadius="0" Direction="270" ShadowDepth="0" Opacity="0" Color="#000000" />
+
 
             <!-- Base template for SG Client action buttons. It keeps disabled, hover and pressed states inside the active SG palette and prevents the white WPF fallback. -->
             <Style x:Key="SgWindowButtonBase" TargetType="{x:Type Button}">
@@ -135,7 +144,8 @@
                                 BorderBrush="{DynamicResource SgButtonOutlineBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="10"
-                                SnapsToDevicePixels="True">
+                                SnapsToDevicePixels="True"
+                                Effect="{DynamicResource SgButtonShadowEffect}">
                                 <ContentPresenter
                                     HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                     VerticalAlignment="{TemplateBinding VerticalContentAlignment}"

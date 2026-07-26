@@ -78,7 +78,7 @@ public partial class SgMaintenanceWindow : Window
 
         try
         {
-            var fileName = $"SG-CLIENT-095-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
+            var fileName = $"SG-CLIENT-096-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
             var filePath = Utils.GetBackupPath(fileName);
             var created = await _backupViewModel.LocalBackup(filePath);
 
@@ -183,7 +183,7 @@ public partial class SgMaintenanceWindow : Window
 
     private async void CreateBackupFile_Click(object sender, RoutedEventArgs e)
     {
-        var fileName = $"SG-CLIENT-095-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
+        var fileName = $"SG-CLIENT-096-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
         var dialog = new SaveFileDialog
         {
             Title = "Сохранить резервную копию SG Client",

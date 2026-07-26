@@ -20,6 +20,7 @@ public class FmtHandler
                 EConfigType.WireGuard => WireguardFmt.ToUri(item),
                 EConfigType.Anytls => AnytlsFmt.ToUri(item),
                 EConfigType.Naive => NaiveFmt.ToUri(item),
+                EConfigType.Mieru => MieruFmt.ToUri(item),
                 _ => null,
             };
 
@@ -89,6 +90,10 @@ public class FmtHandler
                      || str.StartsWith(Global.NaiveQuicProtocolShare))
             {
                 return NaiveFmt.Resolve(str, out msg);
+            }
+            else if (str.StartsWith(Global.ProtocolShares[EConfigType.Mieru], StringComparison.OrdinalIgnoreCase))
+            {
+                return MieruFmt.Resolve(str, out msg);
             }
             else
             {

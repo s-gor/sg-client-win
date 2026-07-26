@@ -374,8 +374,8 @@
                             <TextBlock VerticalAlignment="Center" Text="О программе"/>
                         </StackPanel>
                     </TabItem.Header>
-                    <!-- SG_ABOUT_FIT_095: compact About page fits without inner scrolling or fixed-width overflow. -->
-                    <!-- SG_ABOUT_BUILD_095: About page displays build 095. -->
+                    <!-- SG_ABOUT_FIT_096: compact About page fits without inner scrolling or fixed-width overflow. -->
+                    <!-- SG_ABOUT_BUILD_096: About page displays build 096. -->
                     <Border Margin="2,0,8,8" Padding="20" Background="{DynamicResource SgSurfaceSoftBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="18">
                         <Grid>
                             <Grid.RowDefinitions>
@@ -391,9 +391,9 @@
                             </Grid>
                             <StackPanel Grid.Row="1" HorizontalAlignment="Center">
                                 <TextBlock Margin="0,10,0,0" HorizontalAlignment="Center" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="SG-Client"/>
-                                <TextBlock Margin="0,3,0,0" HorizontalAlignment="Center" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource SgAccentBrush}" Text="Сборка 095"/>
+                                <TextBlock Margin="0,3,0,0" HorizontalAlignment="Center" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource SgAccentBrush}" Text="Сборка 096"/>
                             </StackPanel>
-                            <TextBlock Grid.Row="2" MaxWidth="720" Margin="0,10,0,14" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" FontSize="10.5" LineHeight="17" Foreground="{DynamicResource SgMutedBrush}" Text="Единый Windows-клиент для профилей SG-Panel и SG-AWG-Panel. Поддерживает TUN, системный прокси Windows и локальный HTTP/SOCKS-прокси."/>
+                            <TextBlock Grid.Row="2" MaxWidth="720" Margin="0,10,0,14" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" FontSize="10.5" LineHeight="17" Foreground="{DynamicResource SgMutedBrush}" Text="Универсальный Windows-клиент для совместимых профилей и подписок из разных источников. Наиболее полная интеграция — с SG-Panel и SG-AWG-Panel."/>
 
                             <Grid Grid.Row="3" HorizontalAlignment="Stretch">
                                 <Grid.ColumnDefinitions>
@@ -406,13 +406,13 @@
                                 <Border Grid.Column="0" Padding="14" Background="{DynamicResource SgSurfaceRaisedBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="13">
                                     <StackPanel>
                                         <TextBlock FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource SgAccentBrush}" Text="ПОДДЕРЖИВАЕМЫЕ ПРОФИЛИ"/>
-                                        <TextBlock Margin="0,7,0,0" FontSize="10.5" LineHeight="17" Foreground="{DynamicResource SgTextBrush}" TextWrapping="Wrap" Text="VLESS REALITY и TLS&#10;XHTTP и raw/TCP&#10;Hysteria2&#10;AmneziaWG&#10;Trojan и AnyTLS"/>
+                                        <TextBlock Margin="0,7,0,0" FontSize="10.5" LineHeight="17" Foreground="{DynamicResource SgTextBrush}" TextWrapping="Wrap" Text="VLESS REALITY и TLS&#10;Mieru TCP/UDP&#10;Hysteria2 и AnyTLS&#10;AmneziaWG&#10;Trojan и другие"/>
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="2" Padding="14" Background="{DynamicResource SgSurfaceRaisedBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="13">
                                     <StackPanel>
                                         <TextBlock FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource SgAccentBrush}" Text="ЯДРА И КОМПОНЕНТЫ"/>
-                                        <TextBlock Margin="0,7,0,0" FontSize="10.5" LineHeight="17" Foreground="{DynamicResource SgTextBrush}" TextWrapping="Wrap" Text="Xray-core и sing-box&#10;AmneziaWG и Wintun&#10;Основа v2rayN&#10;.NET 10 · WPF&#10;Windows x64"/>
+                                        <TextBlock Margin="0,7,0,0" FontSize="10.5" LineHeight="17" Foreground="{DynamicResource SgTextBrush}" TextWrapping="Wrap" Text="Xray-core и sing-box&#10;Mihomo Core&#10;AmneziaWG и Wintun&#10;Основа v2rayN&#10;.NET 10 · Windows x64"/>
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="4" Padding="14" Background="{DynamicResource SgSurfaceRaisedBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="13">

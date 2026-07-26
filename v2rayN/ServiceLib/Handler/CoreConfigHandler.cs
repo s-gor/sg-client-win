@@ -21,6 +21,10 @@ public static class CoreConfigHandler
                 _ => await GenerateClientCustomConfig(node, fileName)
             };
         }
+        else if (context.RunCoreType == ECoreType.mihomo && node.ConfigType == EConfigType.Mieru)
+        {
+            result = new CoreConfigMihomoMieruService(context).GenerateClientConfigContent();
+        }
         else if (context.RunCoreType == ECoreType.sing_box)
         {
             result = new CoreConfigSingboxService(context).GenerateClientConfigContent();

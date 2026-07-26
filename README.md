@@ -1,129 +1,83 @@
-# SG-Client v0.95
+# SG Client v0.0.96
 
-**SG-Client** — универсальный VPN-клиент для Windows, работающий с совместимыми профилями и подписками из разных источников. Он не привязан только к SG-Panel или SG-AWG-Panel: можно использовать собственные серверы, обычные ссылки и сторонние подписки. Наиболее полная интеграция доступна с SG-Panel и SG-AWG-Panel.
+SG Client is a Windows client for VPN profiles and subscriptions from SG-Panel, SG-AWG-Panel and compatible third-party sources.
 
-[Скачать последнюю Portable-версию](../../releases/latest)
+## Highlights of 096
 
-![SG-Client v0.95 — главный экран](docs/images/sg-client-095/01-main-idle.png)
+- Mihomo runtime integration;
+- import and export of simple `mierus://` links;
+- Mieru TCP and UDP, single ports and port ranges;
+- Mieru support in TUN, System Proxy and Local Proxy;
+- SG routing conversion for Mihomo;
+- profile display, filtering and latency handling for Mieru;
+- final **Luxury Jade Depth** light theme with soft gradients, layered cards and restrained shadows;
+- original **Graphite** and **Northern** themes preserved;
+- theme selector remains in the main header;
+- GeoFiles management is located in Routing;
+- Settings, Routing, Maintenance and GeoFiles use classic raised surfaces.
 
-## Совместимость
+## Connection modes
 
-SG-Client принимает совместимые профили, обычные ссылки и подписки из разных источников. Клиент подходит для собственных серверов и сторонних сервисов. SG-Panel и SG-AWG-Panel дают наиболее полную готовую интеграцию, но не являются обязательным условием использования.
+- TUN;
+- System Proxy;
+- Local Proxy.
 
-## Главное в версии v0.95
+## Runtime engines
 
-- три отдельных режима: **TUN**, **System Proxy** и **Local Proxy**;
-- цветовая индикация активного режима и понятное состояние кнопок;
-- полное управление из **системного трея** без открытия главного окна;
-- мониторинг фактических направлений **VPN / Direct / Block**;
-- статистика трафика по каждому профилю за сеанс, день, месяц и всё время;
-- текущая скорость в `bps`, `kbps`, `Mbps` и `Gbps`;
-- поиск, фильтры, страны и проверка задержки для больших подписок;
-- единая маршрутизация для Xray и sing-box;
-- управление GeoFiles с проверкой источника, SHA-256 и резервным откатом;
-- безопасное обновление подписок напрямую или через VPN;
-- резервные копии, проверка ZIP и восстановление со страховочной копией;
-- проверяемое обновление Xray с контролем версии, SHA-256 и текущего `config.json`;
-- встроенная подробная справка.
+| Profiles | Engine |
+|---|---|
+| VLESS REALITY / TLS, raw/TCP and XHTTP | Xray-core |
+| Hysteria 2, AnyTLS and other compatible profiles | sing-box |
+| Mieru TCP / UDP | Mihomo |
+| AmneziaWG `.conf` | AmneziaWG |
 
-## Три режима подключения
+## Full build kit
 
-### TUN
+The full release build kit contains the source tree, runtime files and guarded Windows build scripts.
 
-Системный трафик направляется через выбранный профиль. Активное состояние выделяется зелёным.
+1. Extract the archive completely.
+2. Run `START-096.cmd` as administrator.
+3. The builder restores NuGet packages, runs tests and publishes the x64 application.
+4. The result is written to `build\096\SG-Client.exe`.
 
-![SG-Client v0.95 — TUN](docs/images/sg-client-095/02-tun-active.png)
+Requirements for building:
 
-### System Proxy
+- Windows 10/11 x64;
+- .NET SDK 10.x;
+- internet access for NuGet and the official Mihomo verification step when required.
 
-Windows и приложения используют локальный HTTP/SOCKS-порт. Активное состояние выделяется янтарным.
+## Source build
 
-![SG-Client v0.95 — System Proxy](docs/images/sg-client-095/03-system-proxy.png)
+```text
+dotnet restore v2rayN/v2rayN.sln
+dotnet test v2rayN/ServiceLib.Tests/ServiceLib.Tests.csproj -c Release
+dotnet publish v2rayN/v2rayN/v2rayN.csproj -c Release -r win-x64 -p:SelfContained=true -p:EnableWindowsTargeting=true
+```
 
-### Local Proxy
+## Safety and release verification
 
-Локальный HTTP/SOCKS-прокси работает без изменения системных настроек Windows. Активное состояние выделяется фиолетовым.
+The release builder:
 
-![SG-Client v0.95 — Local Proxy](docs/images/sg-client-095/04-local-proxy.png)
+- validates the package structure;
+- restores previous local profile data only through the guarded migration path;
+- verifies the official Mihomo archive by SHA-256;
+- runs `ServiceLib.Tests`;
+- publishes the WPF application;
+- checks required runtime files;
+- preserves Graphite and Northern while applying Luxury Jade Depth only to the light theme.
 
-## Управление из системного трея
+The approved release source passed 61 unit tests on Windows. The final package manifest and XAML/XML files were also rechecked before publication.
 
-Главное окно можно не держать открытым. Из меню трея доступны:
+## Documentation
 
-- включение и отключение TUN;
-- включение System Proxy;
-- включение Local Proxy;
-- команда **«Отключить всё»**;
-- быстрый выбор профиля;
-- проверка задержки текущего профиля;
-- копирование адреса Local Proxy;
-- открытие маршрутов и журнала;
-- импорт ссылки из буфера обмена;
-- открытие и завершение SG-Client.
+- [Quick start](docs/01-QUICK-START.md)
+- [Profiles and engines](docs/02-PROFILES-AND-ENGINES.md)
+- [TUN and routing](docs/03-TUN-AND-ROUTING.md)
+- [DPI](docs/04-DPI.md)
+- [Troubleshooting](docs/05-TROUBLESHOOTING.md)
+- [Build](docs/06-BUILD.md)
+- [Release checklist](docs/07-RELEASE-CHECKLIST.md)
 
-![SG-Client v0.95 — меню трея](docs/images/sg-client-095/12-tray-menu.png)
+## License and upstream components
 
-## Маршруты и соединения
-
-Отдельное окно показывает фактические назначения Xray в реальном времени:
-
-- страну, домен или IP;
-- применённое правило;
-- направление VPN, Direct или Block;
-- TCP/UDP;
-- количество обращений;
-- время последней активности;
-- поиск, фильтрацию и историю за 15 минут;
-- экспорт в CSV и JSON.
-
-![SG-Client v0.95 — маршруты и соединения](docs/images/sg-client-095/05-live-routes.png)
-
-## Маршрутизация и GeoFiles
-
-Правила маршрутизации применяются единообразно для Xray и sing-box. Доступны российские пресеты, пользовательские правила, локальная сеть, реклама и трекеры, заблокированные ресурсы и общий маршрут.
-
-![SG-Client v0.95 — маршрутизация](docs/images/sg-client-095/08-routing.png)
-
-GeoFiles можно брать из комплекта SG-Client, Loyalsoldier, RunetFreedom, RoscomVPN, пользовательских URL или локальных файлов. Перед применением источник проверяется, а предыдущий комплект сохраняется для отката.
-
-![SG-Client v0.95 — GeoFiles](docs/images/sg-client-095/09-geofiles.png)
-
-## Подписки
-
-Подписки обновляются напрямую или через VPN. Новый список сначала загружается и проверяется; при ошибке прежние рабочие профили сохраняются.
-
-![SG-Client v0.95 — подписки](docs/images/sg-client-095/10-subscriptions.png)
-
-## Резервные копии и обновления
-
-SG-Client сохраняет профили, подписки, настройки, маршрутизацию, статистику, журналы и локальные профили AmneziaWG. Перед восстановлением архив проверяется, а текущее состояние сохраняется отдельно.
-
-![SG-Client v0.95 — резервные копии](docs/images/sg-client-095/06-backups.png)
-
-Ручное обновление Xray выполняется только после проверки выбранной версии, SHA-256 и совместимости текущего `config.json`.
-
-![SG-Client v0.95 — обновление Xray](docs/images/sg-client-095/07-xray-update.png)
-
-## Быстрый запуск
-
-1. Скачайте `SG-CLIENT-095-PORTABLE-x64.zip` на странице Releases.
-2. Полностью распакуйте архив в отдельную папку.
-3. Запустите `SG-Client.exe` и подтвердите запрос прав администратора.
-4. Импортируйте ссылку либо добавьте URL в разделе **Подписки**.
-5. Выберите профиль и включите нужный режим.
-
-Portable-архив не содержит пользовательских профилей, подписок, ключей, настроек, статистики или журналов.
-
-## Встроенная справка
-
-В SG-Client есть подробное руководство по режимам подключения, импорту, подпискам, маршрутизации, соединениям, GeoFiles, DPI, DNS, Kill Switch, раздельному TUN, локальной сети, AmneziaWG и экспертным настройкам.
-
-![SG-Client v0.95 — справка](docs/images/sg-client-095/11-help.png)
-
-## Исходный код и лицензии
-
-Исходный код версии 095 находится в каталоге `v2rayN`. Проект использует открытые компоненты v2rayN, Xray-core, sing-box, AmneziaWG, Wintun и открытые базы маршрутизации. Авторство и лицензии перечислены в [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
-
-Не публикуйте в Issues приватные ключи, UUID действующих профилей, токены, полные серверные конфигурации и неочищенные журналы.
-
-Проект и интерфейс SG-Client: **Ser.Gor**.
+SG Client is based on open-source components, including v2rayN. See [LICENSE](LICENSE), [SG-UPSTREAM.md](SG-UPSTREAM.md) and [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

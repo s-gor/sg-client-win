@@ -775,6 +775,10 @@ public class ProfilesViewModel : MyReactiveObject
 
     private static string GetProtocolDisplay(EConfigType configType, string network, string streamSecurity)
     {
+        if (configType == EConfigType.Mieru)
+        {
+            return network.IsNotEmpty() ? $"Mieru · {network.ToUpperInvariant()}" : "Mieru";
+        }
         if (configType == EConfigType.Hysteria2)
         {
             return "Hysteria2";

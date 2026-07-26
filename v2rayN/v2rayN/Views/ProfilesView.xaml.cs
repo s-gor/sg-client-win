@@ -173,6 +173,8 @@ public partial class ProfilesView
             new BrowserOption("VLESS XHTTP · REALITY", "VLESS XHTTP · REALITY"),
             new BrowserOption("VLESS XHTTP · TLS", "VLESS XHTTP · TLS"),
             new BrowserOption("Hysteria2", "Hysteria2"),
+            new BrowserOption("Mieru · TCP", "Mieru · TCP"),
+            new BrowserOption("Mieru · UDP", "Mieru · UDP"),
             new BrowserOption("AmneziaWG", "AmneziaWG"),
             new BrowserOption("Trojan", "Trojan"),
             new BrowserOption("VMess", "VMess"),

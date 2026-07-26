@@ -110,6 +110,15 @@ public class ProfileItem
                 }
 
                 break;
+
+            case EConfigType.Mieru:
+                var mieruExtra = GetProtocolExtra();
+                if (Username.IsNullOrEmpty() || Password.IsNullOrEmpty()
+                    || mieruExtra.MieruBindings is not { Count: > 0 })
+                {
+                    return false;
+                }
+                break;
         }
 
         if ((ConfigType is EConfigType.VLESS or EConfigType.Trojan)
