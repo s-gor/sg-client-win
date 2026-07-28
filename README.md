@@ -1,83 +1,116 @@
-# SG Client v0.0.96
+# SG Client 096
 
-SG Client is a Windows client for VPN profiles and subscriptions from SG-Panel, SG-AWG-Panel and compatible third-party sources.
+<p align="center">
+  <strong>Современный Windows-клиент для защищённых подключений SG</strong>
+</p>
 
-## Highlights of 096
+<p align="center">
+  <a href="https://github.com/s-gor/sg-client-win/releases/tag/v0.0.96">
+    <img alt="Release" src="https://img.shields.io/badge/Release-v0.0.96-456F5C?style=for-the-badge">
+  </a>
+  <img alt="Windows" src="https://img.shields.io/badge/Windows-10%20%7C%2011-2F6B57?style=for-the-badge">
+  <img alt="Portable" src="https://img.shields.io/badge/Portable-Yes-B88A45?style=for-the-badge">
+</p>
 
-- Mihomo runtime integration;
-- import and export of simple `mierus://` links;
-- Mieru TCP and UDP, single ports and port ranges;
-- Mieru support in TUN, System Proxy and Local Proxy;
-- SG routing conversion for Mihomo;
-- profile display, filtering and latency handling for Mieru;
-- final **Luxury Jade Depth** light theme with soft gradients, layered cards and restrained shadows;
-- original **Graphite** and **Northern** themes preserved;
-- theme selector remains in the main header;
-- GeoFiles management is located in Routing;
-- Settings, Routing, Maintenance and GeoFiles use classic raised surfaces.
+---
 
-## Connection modes
+## Скачать
 
-- TUN;
-- System Proxy;
-- Local Proxy.
+### [⬇ Скачать SG Client 096 Portable](https://github.com/s-gor/sg-client-win/releases/download/v0.0.96/SG-CLIENT-096-PORTABLE.zip)
 
-## Runtime engines
+> Portable не требует установки. Распакуйте архив в отдельную папку и запустите `SG-Client.exe`.
 
-| Profiles | Engine |
+---
+
+## SG Client
+
+**SG Client** — единый Windows-клиент для современных VPN и proxy-подключений с несколькими сетевыми движками и единым интерфейсом.
+
+### Поддерживаемые движки
+
+| Движок | Назначение |
 |---|---|
-| VLESS REALITY / TLS, raw/TCP and XHTTP | Xray-core |
-| Hysteria 2, AnyTLS and other compatible profiles | sing-box |
-| Mieru TCP / UDP | Mihomo |
-| AmneziaWG `.conf` | AmneziaWG |
+| **Xray** | VLESS, REALITY, XHTTP |
+| **sing-box** | дополнительные совместимые профили |
+| **Mihomo** | современные proxy-конфигурации |
+| **Mieru** | отдельный transport/engine |
+| **AmneziaWG** | Amnezia WireGuard |
+| **Wintun** | TUN-режим Windows |
 
-## Full build kit
+---
 
-The full release build kit contains the source tree, runtime files and guarded Windows build scripts.
+## Возможности
 
-1. Extract the archive completely.
-2. Run `START-096.cmd` as administrator.
-3. The builder restores NuGet packages, runs tests and publishes the x64 application.
-4. The result is written to `build\096\SG-Client.exe`.
+- TUN Mode
+- System Proxy
+- Local Proxy
+- импорт ссылок и профилей
+- Xray / VLESS / REALITY
+- XHTTP
+- Mihomo
+- Mieru
+- AmneziaWG
+- встроенные GeoFiles
+- SRS-наборы маршрутизации
+- диагностика и журналы
+- статистика трафика
+- несколько визуальных тем
 
-Requirements for building:
+---
 
-- Windows 10/11 x64;
-- .NET SDK 10.x;
-- internet access for NuGet and the official Mihomo verification step when required.
+## Luxury Jade
 
-## Source build
+SG Client 096 включает новую светлую тему **Luxury Jade**:
 
-```text
-dotnet restore v2rayN/v2rayN.sln
-dotnet test v2rayN/ServiceLib.Tests/ServiceLib.Tests.csproj -c Release
-dotnet publish v2rayN/v2rayN/v2rayN.csproj -c Release -r win-x64 -p:SelfContained=true -p:EnableWindowsTargeting=true
-```
+- тёплый ivory-фон;
+- спокойные jade-акценты;
+- champagne-детали;
+- мягкие градиенты;
+- многоуровневые карточки;
+- аккуратные тени.
 
-## Safety and release verification
+Также сохранены тёмные темы **Графит** и **Север**.
 
-The release builder:
+---
 
-- validates the package structure;
-- restores previous local profile data only through the guarded migration path;
-- verifies the official Mihomo archive by SHA-256;
-- runs `ServiceLib.Tests`;
-- publishes the WPF application;
-- checks required runtime files;
-- preserves Graphite and Northern while applying Luxury Jade Depth only to the light theme.
+## Быстрый старт
 
-The approved release source passed 61 unit tests on Windows. The final package manifest and XAML/XML files were also rechecked before publication.
+1. Скачайте Portable.
+2. Распакуйте ZIP в новую папку.
+3. Запустите `SG-Client.exe`.
+4. Импортируйте ссылку или профиль.
+5. Выберите режим подключения.
+6. Нажмите **Подключить**.
 
-## Documentation
+---
 
-- [Quick start](docs/01-QUICK-START.md)
-- [Profiles and engines](docs/02-PROFILES-AND-ENGINES.md)
-- [TUN and routing](docs/03-TUN-AND-ROUTING.md)
-- [DPI](docs/04-DPI.md)
-- [Troubleshooting](docs/05-TROUBLESHOOTING.md)
-- [Build](docs/06-BUILD.md)
-- [Release checklist](docs/07-RELEASE-CHECKLIST.md)
+## Файлы релиза
 
-## License and upstream components
+На странице GitHub Release публикуются отдельно:
 
-SG Client is based on open-source components, including v2rayN. See [LICENSE](LICENSE), [SG-UPSTREAM.md](SG-UPSTREAM.md) and [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+- `SG-CLIENT-096-PORTABLE.zip` — готовая Portable-версия;
+- `SG-CLIENT-096-SOURCE.zip` — исходный код;
+- `SG-CLIENT-096-FULL-BUILD-KIT.zip` — полный комплект для сборки;
+- `SHA256SUMS.txt` — контрольные суммы;
+- `SG-CLIENT-096-PUBLICATION-AUDIT.txt` — технический аудит.
+
+> Автоматический GitHub-файл `Source code.zip` не является готовым Portable.
+
+---
+
+## Проверка целостности
+
+[SHA256SUMS.txt](https://github.com/s-gor/sg-client-win/releases/download/v0.0.96/SHA256SUMS.txt)
+
+---
+
+## Конфиденциальность
+
+Публичный Portable не должен содержать пользовательские профили, UUID, токены, subscription URL, рабочие конфигурации, журналы, резервные копии и локальную историю трафика.
+
+---
+
+<p align="center">
+  <strong>SG Client 096</strong><br>
+  Windows · Portable · Xray · sing-box · Mihomo · Mieru · AmneziaWG
+</p>
