@@ -1,3 +1,21 @@
+## SG Client 099F — SG-native AWG, transport-aware latency, RU White List and adaptive UI
+
+- Added SG-native subscription support for full AWG2/AWG3 configurations alongside ordinary URI profiles.
+- AWG subscription profiles are updated by stable ownership keys, avoid duplicates, and are removed with their subscription.
+- Switching the same subscription to a successful compatible/bare feed removes stale subscription-owned AWG records when SG-CONFIG is no longer present.
+- Expanded Mihomo integration for Mieru TCP/UDP, AnyTLS and TUIC v5.
+- Added real-profile latency testing for Mihomo-backed Mieru UDP, TUIC v5 and AnyTLS instead of relying on a plain TCP endpoint check.
+- Added real Windows RTT measurement for AWG2/AWG3 through a short-lived AmneziaWG tunnel with readiness polling, cleanup and one internal retry for transient startup states.
+- Reordered latency testing so normal Xray/sing-box/Mihomo profiles finish before slower AWG probes; AWG uses a fast first pass and extended waits only after a transient failure.
+- Added RU White List routing for Xray, sing-box, Mihomo and AmneziaWG using a granular bundled snapshot of 613 domain rules and 78 CIDR networks; whole `geoip:ru` is intentionally excluded from this preset.
+- Added safe AWG RU White List route lifecycle handling on connect, reconnect, failure, disconnect and emergency stop, with a validated bundled snapshot fallback.
+- Kill Switch now defaults ON for new settings and is forced ON exactly once when migrating older settings; later user OFF choice persists.
+- Refined profile cards with cleaned display names, technology badges, independent latency display and subscription-scoped profile counts.
+- Added adaptive low-resolution UI scaling below a 1600×900 work area while preserving 100% scale on normal displays and recalculating on monitor/DPI changes.
+- Fixed checked-overflow CIDR mask handling and covered IPv4 `/0…/32` and IPv6 `/0…/128` boundaries.
+- Updated the Xray runtime.
+- Prepared a clean Portable package without user profiles, logs, temporary test configs, latency cache or duplicate GeoFiles backups.
+
 ## SG Client v0.0.96 — Mihomo, Mieru and Luxury Jade Depth
 
 - Added Mihomo as a runtime core for Mieru profiles.
