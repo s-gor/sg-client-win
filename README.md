@@ -1,116 +1,83 @@
-# SG Client 096
+# SG Client 099F
 
 <p align="center">
-  <strong>Современный Windows-клиент для защищённых подключений SG</strong>
+  <strong>Windows-клиент для современных VPN и proxy-подключений SG</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/s-gor/sg-client-win/releases/tag/v0.0.96">
-    <img alt="Release" src="https://img.shields.io/badge/Release-v0.0.96-456F5C?style=for-the-badge">
-  </a>
+  <img alt="Release" src="https://img.shields.io/badge/Release-099F-456F5C?style=for-the-badge">
   <img alt="Windows" src="https://img.shields.io/badge/Windows-10%20%7C%2011-2F6B57?style=for-the-badge">
   <img alt="Portable" src="https://img.shields.io/badge/Portable-Yes-B88A45?style=for-the-badge">
 </p>
 
 ---
 
-## Скачать
+## SG Client
 
-### [⬇ Скачать SG Client 096 Portable](https://github.com/s-gor/sg-client-win/releases/download/v0.0.96/SG-CLIENT-096-PORTABLE.zip)
+**SG Client** — единый Windows-клиент для современных VPN и proxy-подключений с несколькими сетевыми движками, единым интерфейсом, подписками, маршрутизацией и диагностикой.
 
-> Portable не требует установки. Распакуйте архив в отдельную папку и запустите `SG-Client.exe`.
+Наиболее полная интеграция доступна с **SG-Panel**, **SG-AWG-Panel** и **SG Gateway**, но клиент поддерживает и совместимые сторонние профили.
+
+## Что нового в 099F
+
+- полноценная поддержка **AWG2 / AWG3** в SG-native подписках;
+- реальное измерение задержки **AWG2 / AWG3** через кратковременно поднятый AWG-туннель;
+- расширенная проверка задержки для ранее проблемных профилей: **Mieru UDP**, **TUIC v5**, **AnyTLS**, AWG2/AWG3;
+- ускоренная общая проверка серверов: обычные Xray/Mihomo-профили больше не ждут AWG;
+- быстрый первый AWG-probe и автоматический расширенный retry только при временной неготовности Windows;
+- **RU White List для AmneziaWG** вместе с Xray, sing-box и Mihomo;
+- SG-native подписки умеют получать и обновлять AWG2/AWG3 без создания дублей;
+- обновлены карточки профилей: компактное имя, отдельный badge технологии и независимое отображение latency;
+- **Kill Switch включён по умолчанию** для новых настроек; старые конфигурации переводятся на ON один раз, после чего выбор пользователя сохраняется;
+- исправлены граничные случаи IPv4/IPv6 CIDR;
+- добавлена автоматическая адаптация интерфейса под **низкое разрешение**; на обычных мониторах масштаб остаётся 100%;
+- масштаб пересчитывается при переносе окна между мониторами с разным разрешением/DPI;
+- обновлено ядро **Xray**;
+- подготовлена чистая Portable-сборка без пользовательских профилей, логов, временных конфигураций, latency-cache и backup-дублей GeoFiles.
+
+Подробности: [RELEASE-NOTES-099F.md](RELEASE-NOTES-099F.md).
 
 ---
 
-## SG Client
+## Поддерживаемые движки и профили
 
-**SG Client** — единый Windows-клиент для современных VPN и proxy-подключений с несколькими сетевыми движками и единым интерфейсом.
-
-### Поддерживаемые движки
-
-| Движок | Назначение |
+| Движок | Основные профили |
 |---|---|
-| **Xray** | VLESS, REALITY, XHTTP |
-| **sing-box** | дополнительные совместимые профили |
-| **Mihomo** | современные proxy-конфигурации |
-| **Mieru** | отдельный transport/engine |
-| **AmneziaWG** | Amnezia WireGuard |
+| **Xray** | VLESS REALITY / TLS, RAW/TCP, XHTTP |
+| **sing-box** | Hysteria 2 и совместимые профили |
+| **Mihomo** | Mieru TCP/UDP, AnyTLS, TUIC v5 |
+| **AmneziaWG** | AWG2 / AWG3 |
 | **Wintun** | TUN-режим Windows |
 
 ---
 
 ## Возможности
 
-- TUN Mode
-- System Proxy
-- Local Proxy
-- импорт ссылок и профилей
-- Xray / VLESS / REALITY
-- XHTTP
-- Mihomo
-- Mieru
-- AmneziaWG
-- встроенные GeoFiles
-- SRS-наборы маршрутизации
-- диагностика и журналы
-- статистика трафика
-- несколько визуальных тем
+- TUN Mode, System Proxy и Local Proxy;
+- импорт ссылок, профилей и подписок;
+- SG-native подписки;
+- SG Smart Routing;
+- RU White List;
+- GeoFiles и SRS-наборы маршрутизации;
+- Kill Switch;
+- проверка задержки и фильтрация проблемных профилей;
+- live Connections и диагностика маршрутов;
+- статистика трафика по профилям;
+- резервное копирование и восстановление;
+- управление из системного трея;
+- адаптация интерфейса под небольшие экраны.
 
 ---
 
-## Luxury Jade
+## Portable
 
-SG Client 096 включает новую светлую тему **Luxury Jade**:
+SG Client не требует установки. Для обычного использования достаточно распаковать Portable ZIP в отдельную папку и запустить `SG-Client.exe`.
 
-- тёплый ivory-фон;
-- спокойные jade-акценты;
-- champagne-детали;
-- мягкие градиенты;
-- многоуровневые карточки;
-- аккуратные тени.
-
-Также сохранены тёмные темы **Графит** и **Север**.
-
----
-
-## Быстрый старт
-
-1. Скачайте Portable.
-2. Распакуйте ZIP в новую папку.
-3. Запустите `SG-Client.exe`.
-4. Импортируйте ссылку или профиль.
-5. Выберите режим подключения.
-6. Нажмите **Подключить**.
-
----
-
-## Файлы релиза
-
-На странице GitHub Release публикуются отдельно:
-
-- `SG-CLIENT-096-PORTABLE.zip` — готовая Portable-версия;
-- `SG-CLIENT-096-SOURCE.zip` — исходный код;
-- `SG-CLIENT-096-FULL-BUILD-KIT.zip` — полный комплект для сборки;
-- `SHA256SUMS.txt` — контрольные суммы;
-- `SG-CLIENT-096-PUBLICATION-AUDIT.txt` — технический аудит.
-
-> Автоматический GitHub-файл `Source code.zip` не является готовым Portable.
-
----
-
-## Проверка целостности
-
-[SHA256SUMS.txt](https://github.com/s-gor/sg-client-win/releases/download/v0.0.96/SHA256SUMS.txt)
-
----
-
-## Конфиденциальность
-
-Публичный Portable не должен содержать пользовательские профили, UUID, токены, subscription URL, рабочие конфигурации, журналы, резервные копии и локальную историю трафика.
+Публичная Portable-сборка не должна содержать пользовательские профили, журналы, рабочие конфигурации, резервные копии и локальную историю тестов.
 
 ---
 
 <p align="center">
-  <strong>SG Client 096</strong><br>
-  Windows · Portable · Xray · sing-box · Mihomo · Mieru · AmneziaWG
+  <strong>SG Client 099F</strong><br>
+  Windows · Portable · Xray · sing-box · Mihomo · AmneziaWG
 </p>
