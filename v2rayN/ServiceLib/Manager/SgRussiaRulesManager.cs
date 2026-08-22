@@ -6,16 +6,38 @@ public sealed class SgRussiaRulesManager
     public static SgRussiaRulesManager Instance => _instance.Value;
 
     private const string GeoBase = "https://raw.githubusercontent.com/runetfreedom/russia-v2ray-rules-dat/release";
+    private const string WhiteBase = "https://raw.githubusercontent.com/GrimbirdUsers/ru-routing-dat/main";
+    private const string WhiteRootRelativePath = "rules/ru-white";
+    private static readonly string WhiteDomainsRelativePath = Path.Combine(WhiteRootRelativePath, "ru-white-domains.txt");
+    private static readonly string WhiteCidrsRelativePath = Path.Combine(WhiteRootRelativePath, "ru-white-cidrs.txt");
+    private const string WhiteDomainRootCategory = "category-ru-whitelist";
     private const string ManifestFileName = "sg-routing-rules-manifest.json";
     private static readonly TimeSpan RefreshAge = TimeSpan.FromHours(24);
+
+    // Deliberately granular service/network categories from ru-routing-dat.
+    // Never add data-geoip/ru.txt here: that file represents almost all RU address space,
+    // not the regulator/service white list.
+    private static readonly string[] WhiteIpCategories =
+    [
+        "ru-wildberries",
+        "ru-yandex",
+        "ru-vk",
+        "ru-banks",
+        "ru-ozon",
+        "ru-analytics",
+        "ru-payments",
+        "ru-cdn",
+        "ru-avito",
+    ];
 
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     private sealed record RuleFileSpec(string Url, string RelativePath, long MinimumBytes);
+    private sealed record GeneratedRuleFile(string Url, string RelativePath, byte[] Bytes, long MinimumBytes);
 
     private sealed class RuleManifest
     {
-        public string Source { get; set; } = GeoBase;
+        public string Source { get; set; } = $"{GeoBase}; {WhiteBase}";
         public string Version { get; set; } = string.Empty;
         public DateTime UpdatedUtc { get; set; }
         public List<RuleManifestEntry> Files { get; set; } = [];
@@ -29,7 +51,7 @@ public sealed class SgRussiaRulesManager
         public string Sha256 { get; set; } = string.Empty;
     }
 
-    private static readonly RuleFileSpec[] Files =
+    private static readonly RuleFileSpec[] CoreFiles =
     [
         new($"{GeoBase}/geoip.dat", "geoip.dat", 1_000_000),
         new($"{GeoBase}/geosite.dat", "geosite.dat", 1_000_000),
@@ -59,31 +81,186 @@ public sealed class SgRussiaRulesManager
         var manifest = ReadManifest();
         if (manifest?.Files.Count > 0)
         {
-            return Files.All(spec =>
+            foreach (var spec in CoreFiles)
             {
-                var entry = manifest.Files.FirstOrDefault(item =>
-                    string.Equals(NormalizePath(item.RelativePath), NormalizePath(spec.RelativePath), StringComparison.OrdinalIgnoreCase));
-                if (entry == null)
+                if (!ManifestEntryMatchesFile(manifest, spec.RelativePath, spec.MinimumBytes))
                 {
                     return false;
                 }
+            }
 
-                var path = TargetPath(spec.RelativePath);
-                if (!File.Exists(path) || new FileInfo(path).Length < spec.MinimumBytes)
-                {
-                    return false;
-                }
+            if (!ManifestEntryMatchesFile(manifest, WhiteDomainsRelativePath, 1_000)
+                || !ManifestEntryMatchesFile(manifest, WhiteCidrsRelativePath, 500))
+            {
+                return false;
+            }
 
-                return string.Equals(ComputeFileSha256(path), entry.Sha256, StringComparison.OrdinalIgnoreCase);
-            });
+            return HasUsableWhiteList();
         }
 
-        // Accept files from older SG Client releases, but the next update will create a verified manifest.
-        return Files.All(item =>
+        // Accept files from a build-time/bootstrap snapshot without a manifest.
+        return CoreFiles.All(item =>
         {
             var path = TargetPath(item.RelativePath);
             return File.Exists(path) && new FileInfo(path).Length >= item.MinimumBytes;
-        });
+        }) && HasUsableWhiteList();
+    }
+
+    public bool HasUsableWhiteList()
+    {
+        return GetWhiteDomains().Count >= 400 && GetWhiteIpCidrs().Count >= 50;
+    }
+
+    public IReadOnlyList<string> GetWhiteDomains()
+    {
+        var path = TargetPath(WhiteDomainsRelativePath);
+        if (!File.Exists(path))
+        {
+            return [];
+        }
+
+        try
+        {
+            return ParseWhiteDomains(File.ReadLines(path));
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("Read Russia White List domains", ex);
+            return [];
+        }
+    }
+
+    public IReadOnlyList<string> GetWhiteDomainHosts()
+    {
+        return ExtractResolvableWhiteDomainHosts(GetWhiteDomains());
+    }
+
+    public static List<string> ExtractResolvableWhiteDomainHosts(IEnumerable<string> rules)
+    {
+        var result = new List<string>();
+        foreach (var raw in rules ?? [])
+        {
+            var value = (raw ?? string.Empty).Trim();
+            if (value.IsNullOrEmpty())
+            {
+                continue;
+            }
+
+            if (value.StartsWith("domain:", StringComparison.OrdinalIgnoreCase))
+            {
+                value = value["domain:".Length..];
+            }
+            else if (value.StartsWith("full:", StringComparison.OrdinalIgnoreCase))
+            {
+                value = value["full:".Length..];
+            }
+            else
+            {
+                // regexp:/keyword: cannot be represented by an AWG IP route
+                // until an actual hostname is observed, so do not invent one.
+                continue;
+            }
+
+            value = value.Trim().Trim('.').ToLowerInvariant();
+            if (value.IsNullOrEmpty() || IPAddress.TryParse(value, out _))
+            {
+                continue;
+            }
+
+            if (Uri.CheckHostName(value) == UriHostNameType.Dns)
+            {
+                result.Add(value);
+            }
+        }
+
+        return result
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    public IReadOnlyList<string> GetWhiteIpCidrs()
+    {
+        var path = TargetPath(WhiteCidrsRelativePath);
+        if (!File.Exists(path))
+        {
+            return [];
+        }
+
+        try
+        {
+            return ParseWhiteIpCidrs(File.ReadLines(path));
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("Read Russia White List CIDRs", ex);
+            return [];
+        }
+    }
+
+    public static List<string> ParseWhiteDomains(IEnumerable<string> lines)
+    {
+        var result = new List<string>();
+        foreach (var raw in lines)
+        {
+            var value = StripRuleComment(raw).Trim();
+            if (value.IsNullOrEmpty() || value.StartsWith("include:", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            // v2fly geosite source attributes follow the first whitespace-delimited token.
+            value = value.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)[0];
+            if (value.IsNullOrEmpty())
+            {
+                continue;
+            }
+
+            if (!value.StartsWith("domain:", StringComparison.OrdinalIgnoreCase)
+                && !value.StartsWith("full:", StringComparison.OrdinalIgnoreCase)
+                && !value.StartsWith("regexp:", StringComparison.OrdinalIgnoreCase)
+                && !value.StartsWith("keyword:", StringComparison.OrdinalIgnoreCase))
+            {
+                value = $"domain:{value.TrimStart('.')}";
+            }
+
+            result.Add(value);
+        }
+
+        return result
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    public static List<string> ParseWhiteIpCidrs(IEnumerable<string> lines)
+    {
+        var result = new List<string>();
+        foreach (var raw in lines)
+        {
+            var cleaned = StripRuleComment(raw).Trim();
+            if (cleaned.IsNullOrEmpty())
+            {
+                continue;
+            }
+
+            // Some upstream category files publish several CIDRs on one whitespace-delimited line.
+            foreach (var value in cleaned.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                try
+                {
+                    result.Add(IPNetwork2.Parse(value).ToString());
+                }
+                catch
+                {
+                    // Ignore malformed upstream entries; valid CIDRs remain usable.
+                }
+            }
+        }
+        return result
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     public bool NeedsRefresh(Config config)
@@ -116,6 +293,19 @@ public sealed class SgRussiaRulesManager
     {
         var domains = new List<string>();
         var ips = new List<string>();
+        var whiteDomainCount = 0;
+        var whiteIpCount = 0;
+
+        if (SgSmartRoutingHelper.NormalizeRussiaScope(item.RussiaScope) == SgSmartRoutingHelper.RussiaScopeWhiteIp)
+        {
+            whiteDomainCount = GetWhiteDomains().Count;
+            whiteIpCount = GetWhiteIpCidrs().Count;
+            if (whiteDomainCount < 400 || whiteIpCount < 50)
+            {
+                return (false, "RU White List не установлен или повреждён. Нажмите «Обновить наборы» и повторите сохранение.");
+            }
+            progress?.Report($"RU White List: {whiteDomainCount} доменов · {whiteIpCount} CIDR-подсетей…");
+        }
 
         if (item.AdsAction != item.DefaultAction)
         {
@@ -130,25 +320,30 @@ public sealed class SgRussiaRulesManager
         domains.AddRange(SgSmartRoutingHelper.GetRussiaDomainRules(item));
         ips.AddRange(SgSmartRoutingHelper.GetRussiaIpRules(item));
 
-        domains.AddRange(item.CustomDirectDomains.Where(value =>
-            value.StartsWith(Global.GeoSitePrefix, StringComparison.OrdinalIgnoreCase)));
-        domains.AddRange(item.CustomProxyDomains.Where(value =>
-            value.StartsWith(Global.GeoSitePrefix, StringComparison.OrdinalIgnoreCase)));
-        domains.AddRange(item.CustomBlockDomains.Where(value =>
-            value.StartsWith(Global.GeoSitePrefix, StringComparison.OrdinalIgnoreCase)));
+        if (item.Preset == SgSmartRoutingHelper.PresetCustom)
+        {
+            domains.AddRange(item.CustomDirectDomains.Where(value =>
+                value.StartsWith(Global.GeoSitePrefix, StringComparison.OrdinalIgnoreCase)));
+            domains.AddRange(item.CustomProxyDomains.Where(value =>
+                value.StartsWith(Global.GeoSitePrefix, StringComparison.OrdinalIgnoreCase)));
+            domains.AddRange(item.CustomBlockDomains.Where(value =>
+                value.StartsWith(Global.GeoSitePrefix, StringComparison.OrdinalIgnoreCase)));
 
-        ips.AddRange(item.CustomDirectIps.Where(value =>
-            value.StartsWith(Global.GeoIPPrefix, StringComparison.OrdinalIgnoreCase)));
-        ips.AddRange(item.CustomProxyIps.Where(value =>
-            value.StartsWith(Global.GeoIPPrefix, StringComparison.OrdinalIgnoreCase)));
-        ips.AddRange(item.CustomBlockIps.Where(value =>
-            value.StartsWith(Global.GeoIPPrefix, StringComparison.OrdinalIgnoreCase)));
+            ips.AddRange(item.CustomDirectIps.Where(value =>
+                value.StartsWith(Global.GeoIPPrefix, StringComparison.OrdinalIgnoreCase)));
+            ips.AddRange(item.CustomProxyIps.Where(value =>
+                value.StartsWith(Global.GeoIPPrefix, StringComparison.OrdinalIgnoreCase)));
+            ips.AddRange(item.CustomBlockIps.Where(value =>
+                value.StartsWith(Global.GeoIPPrefix, StringComparison.OrdinalIgnoreCase)));
+        }
 
         domains = domains.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         ips = ips.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         if (domains.Count == 0 && ips.Count == 0)
         {
-            return (true, "Дополнительные категории GeoFiles не требуются.");
+            return whiteDomainCount > 0
+                ? (true, $"RU White List проверен: {whiteDomainCount} доменов · {whiteIpCount} CIDR-подсетей.")
+                : (true, "Дополнительные категории GeoFiles не требуются.");
         }
 
         var xray = Utils.GetBinPath("xray.exe", "xray");
@@ -299,7 +494,7 @@ public sealed class SgRussiaRulesManager
             }
 
             var hadUsableRules = HasUsableRules();
-            var staged = new List<(RuleFileSpec Spec, string Temp, string Target, string? Backup, RuleManifestEntry Entry)>();
+            var staged = new List<(string Temp, string Target, string? Backup, RuleManifestEntry Entry)>();
             var manifestPath = TargetPath(ManifestFileName);
             var manifestBackup = File.Exists(manifestPath) ? manifestPath + ".sg-backup" : null;
             try
@@ -308,38 +503,21 @@ public sealed class SgRussiaRulesManager
                 {
                     Timeout = TimeSpan.FromMinutes(3)
                 };
-                client.DefaultRequestHeaders.UserAgent.ParseAdd("SG-Client/069");
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("SG-Client/099F");
 
-                for (var index = 0; index < Files.Length; index++)
+                for (var index = 0; index < CoreFiles.Length; index++)
                 {
-                    var spec = Files[index];
-                    progress?.Report($"Загрузка {index + 1} из {Files.Length}: {Path.GetFileName(spec.RelativePath)}");
-                    var target = TargetPath(spec.RelativePath);
-                    Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-                    var temp = target + ".sg-new";
-                    var backup = File.Exists(target) ? target + ".sg-backup" : null;
-
+                    var spec = CoreFiles[index];
+                    progress?.Report($"Базовые наборы {index + 1} из {CoreFiles.Length}: {Path.GetFileName(spec.RelativePath)}");
                     var bytes = await client.GetByteArrayAsync(spec.Url);
-                    if (bytes.LongLength < spec.MinimumBytes)
-                    {
-                        throw new InvalidDataException($"Файл {Path.GetFileName(spec.RelativePath)} слишком мал и не прошёл проверку.");
-                    }
+                    StageBytes(staged, spec.Url, spec.RelativePath, bytes, spec.MinimumBytes);
+                }
 
-                    var expectedHash = ComputeSha256(bytes);
-                    await File.WriteAllBytesAsync(temp, bytes);
-                    var writtenHash = ComputeFileSha256(temp);
-                    if (!string.Equals(expectedHash, writtenHash, StringComparison.OrdinalIgnoreCase))
-                    {
-                        throw new InvalidDataException($"SHA-256 файла {Path.GetFileName(spec.RelativePath)} изменился после записи.");
-                    }
-
-                    staged.Add((spec, temp, target, backup, new RuleManifestEntry
-                    {
-                        RelativePath = NormalizePath(spec.RelativePath),
-                        Url = spec.Url,
-                        Size = bytes.LongLength,
-                        Sha256 = expectedHash,
-                    }));
+                progress?.Report("RU White List: загружаю доменные категории ru-routing-dat…");
+                var whiteFiles = await BuildWhiteListSnapshotAsync(client, progress);
+                foreach (var generated in whiteFiles)
+                {
+                    StageBytes(staged, generated.Url, generated.RelativePath, generated.Bytes, generated.MinimumBytes);
                 }
 
                 progress?.Report("Создание резервной копии и применение наборов…");
@@ -386,7 +564,10 @@ public sealed class SgRussiaRulesManager
                 {
                     File.Delete(manifestBackup);
                 }
-                return (true, $"Наборы маршрутизации обновлены. Локальная целостность SHA-256 проверена для {staged.Count} файлов.");
+
+                var domainCount = GetWhiteDomains().Count;
+                var cidrCount = GetWhiteIpCidrs().Count;
+                return (true, $"Наборы обновлены. RU White List: {domainCount} доменов · {cidrCount} CIDR. SHA-256 проверен для {staged.Count} файлов.");
             }
             catch (Exception ex)
             {
@@ -446,6 +627,182 @@ public sealed class SgRussiaRulesManager
         {
             _gate.Release();
         }
+    }
+
+    private static async Task<List<GeneratedRuleFile>> BuildWhiteListSnapshotAsync(HttpClient client, IProgress<string>? progress)
+    {
+        var generated = new List<GeneratedRuleFile>();
+        var domains = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        async Task DownloadDomainCategoryAsync(string category)
+        {
+            category = category.Trim();
+            if (!IsSafeCategoryName(category) || !visited.Add(category))
+            {
+                return;
+            }
+
+            var url = $"{WhiteBase}/data-geosite/{category}";
+            var text = await client.GetStringAsync(url);
+            var rawBytes = new UTF8Encoding(false).GetBytes(text);
+            generated.Add(new GeneratedRuleFile(
+                url,
+                Path.Combine(WhiteRootRelativePath, "source-geosite", category),
+                rawBytes,
+                1));
+
+            var lines = text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (var raw in lines)
+            {
+                var line = StripRuleComment(raw).Trim();
+                if (line.StartsWith("include:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var included = line["include:".Length..].Trim();
+                    await DownloadDomainCategoryAsync(included);
+                    continue;
+                }
+
+                foreach (var value in ParseWhiteDomains([line]))
+                {
+                    domains.Add(value);
+                }
+            }
+        }
+
+        await DownloadDomainCategoryAsync(WhiteDomainRootCategory);
+        if (domains.Count < 400)
+        {
+            throw new InvalidDataException($"RU White List domain snapshot слишком мал: {domains.Count} записей.");
+        }
+
+        var cidrs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (var index = 0; index < WhiteIpCategories.Length; index++)
+        {
+            var category = WhiteIpCategories[index];
+            progress?.Report($"RU White List IP {index + 1} из {WhiteIpCategories.Length}: {category}");
+            var url = $"{WhiteBase}/data-geoip/{category}.txt";
+            var text = await client.GetStringAsync(url);
+            var rawBytes = new UTF8Encoding(false).GetBytes(text);
+            generated.Add(new GeneratedRuleFile(
+                url,
+                Path.Combine(WhiteRootRelativePath, "source-geoip", $"{category}.txt"),
+                rawBytes,
+                1));
+
+            foreach (var cidr in ParseWhiteIpCidrs(text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)))
+            {
+                cidrs.Add(cidr);
+            }
+        }
+
+        if (cidrs.Count < 50)
+        {
+            throw new InvalidDataException($"RU White List CIDR snapshot слишком мал: {cidrs.Count} записей.");
+        }
+
+        var domainText = BuildCombinedListText(
+            "RU White List domains",
+            $"{WhiteBase}/data-geosite/{WhiteDomainRootCategory}",
+            domains.OrderBy(value => value, StringComparer.OrdinalIgnoreCase));
+        generated.Add(new GeneratedRuleFile(
+            $"{WhiteBase}/data-geosite/{WhiteDomainRootCategory} (expanded)",
+            WhiteDomainsRelativePath,
+            new UTF8Encoding(false).GetBytes(domainText),
+            1_000));
+
+        var cidrText = BuildCombinedListText(
+            "RU White List service CIDRs (geoip:ru intentionally excluded)",
+            $"{WhiteBase}/data-geoip/ru-*.txt",
+            cidrs.OrderBy(value => value, StringComparer.OrdinalIgnoreCase));
+        generated.Add(new GeneratedRuleFile(
+            $"{WhiteBase}/data-geoip/ru-*.txt (granular categories only)",
+            WhiteCidrsRelativePath,
+            new UTF8Encoding(false).GetBytes(cidrText),
+            500));
+
+        return generated;
+    }
+
+    private static string BuildCombinedListText(string title, string source, IEnumerable<string> values)
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine($"# {title}");
+        builder.AppendLine($"# Source: {source}");
+        builder.AppendLine("# Generated by SG Client from ru-routing-dat source categories.");
+        builder.AppendLine("# Do not add geoip:ru / data-geoip/ru.txt to this list.");
+        foreach (var value in values)
+        {
+            builder.AppendLine(value);
+        }
+        return builder.ToString();
+    }
+
+    private static void StageBytes(
+        List<(string Temp, string Target, string? Backup, RuleManifestEntry Entry)> staged,
+        string url,
+        string relativePath,
+        byte[] bytes,
+        long minimumBytes)
+    {
+        if (bytes.LongLength < minimumBytes)
+        {
+            throw new InvalidDataException($"Файл {Path.GetFileName(relativePath)} слишком мал и не прошёл проверку.");
+        }
+
+        var target = TargetPath(relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        var temp = target + ".sg-new";
+        var backup = File.Exists(target) ? target + ".sg-backup" : null;
+        var expectedHash = ComputeSha256(bytes);
+        File.WriteAllBytes(temp, bytes);
+        var writtenHash = ComputeFileSha256(temp);
+        if (!string.Equals(expectedHash, writtenHash, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidDataException($"SHA-256 файла {Path.GetFileName(relativePath)} изменился после записи.");
+        }
+
+        staged.Add((temp, target, backup, new RuleManifestEntry
+        {
+            RelativePath = NormalizePath(relativePath),
+            Url = url,
+            Size = bytes.LongLength,
+            Sha256 = expectedHash,
+        }));
+    }
+
+    private static bool ManifestEntryMatchesFile(RuleManifest manifest, string relativePath, long minimumBytes)
+    {
+        var entry = manifest.Files.FirstOrDefault(item =>
+            string.Equals(NormalizePath(item.RelativePath), NormalizePath(relativePath), StringComparison.OrdinalIgnoreCase));
+        if (entry == null)
+        {
+            return false;
+        }
+
+        var path = TargetPath(relativePath);
+        if (!File.Exists(path) || new FileInfo(path).Length < minimumBytes)
+        {
+            return false;
+        }
+
+        return string.Equals(ComputeFileSha256(path), entry.Sha256, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string StripRuleComment(string? value)
+    {
+        var text = value ?? string.Empty;
+        var comment = text.IndexOf('#');
+        return comment >= 0 ? text[..comment] : text;
+    }
+
+    private static bool IsSafeCategoryName(string value)
+    {
+        return value.IsNotEmpty()
+            && value.All(ch => (ch >= 'a' && ch <= 'z')
+                || (ch >= 'A' && ch <= 'Z')
+                || (ch >= '0' && ch <= '9')
+                || ch is '-' or '_');
     }
 
     private static RuleManifest? ReadManifest()

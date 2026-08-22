@@ -1,11 +1,10 @@
-name: Windows CI
+name: SG Client 099F Release Build
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
+  push:
+    tags:
+      - 'v0.0.99'
 
 permissions:
   contents: read
@@ -18,8 +17,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-        with:
-          submodules: false
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v5
@@ -32,17 +29,16 @@ jobs:
       - name: Unit tests
         run: dotnet test v2rayN/ServiceLib.Tests/ServiceLib.Tests.csproj -c Release --no-restore --logger "trx;LogFileName=service-lib-tests.trx"
 
-      - name: Publish SG Client
+      - name: Publish Windows x64
         run: dotnet publish v2rayN/v2rayN/v2rayN.csproj -c Release -r win-x64 -p:SelfContained=true -p:EnableWindowsTargeting=true -o artifacts/sg-client
 
-      - name: Verify output
+      - name: Verify executable
         shell: cmd
-        run: |
-          if not exist "artifacts\sg-client\SG-Client.exe" exit /b 1
+        run: if not exist "artifacts\sg-client\SG-Client.exe" exit /b 1
 
-      - name: Upload build artifact
+      - name: Upload source-build artifact
         uses: actions/upload-artifact@v5
         with:
-          name: sg-client-099f-source-build
+          name: SG-CLIENT-099F-WINDOWS-x64-SOURCE-BUILD
           path: artifacts/sg-client
           if-no-files-found: error

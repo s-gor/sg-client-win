@@ -143,6 +143,7 @@ public static class ConfigHandler
             SgRussiaRulesManager.ApplySources(config);
         }
         ApplySgAutomaticTunDefaults(config);
+        ApplySgKillSwitchDefaultOnMigration(config);
         ApplySgLocalNetworkPreference(config);
         config.GuiItem ??= new();
         config.MsgUIItem ??= new();
@@ -281,6 +282,22 @@ public static class ConfigHandler
         config.SgQuickSettingsItem.AutomaticTunDefaultsMigrated = true;
     }
 
+
+    public static void ApplySgKillSwitchDefaultOnMigration(Config config)
+    {
+        config.SgQuickSettingsItem ??= new SgQuickSettingsItem();
+        if (config.SgQuickSettingsItem.KillSwitchDefaultOnMigrationCompleted)
+        {
+            return;
+        }
+
+        // SG Client 099F: enable Kill Switch once even when an older config
+        // explicitly contains false. After this marker is persisted, all
+        // subsequent user choices (including OFF) are preserved normally.
+        config.SgQuickSettingsItem.KillSwitchEnabled = true;
+        config.SgQuickSettingsItem.KillSwitchDefaultOnMigrationCompleted = true;
+    }
+
     public static string ResolveSgTunStack(Config config)
     {
         var stack = config.TunModeItem?.Stack?.Trim().ToLowerInvariant();
@@ -391,8 +408,12 @@ public static class ConfigHandler
             item.EchConfigList = profileItem.EchConfigList;
             item.VerifyPeerCertByName = profileItem.VerifyPeerCertByName;
             item.Finalmask = profileItem.Finalmask;
-            item.ProtoExtra = profileItem.ProtoExtra;
-            item.TransportExtra = profileItem.TransportExtra;
+            // Refresh the parsed caches as well as the serialized columns. Directly assigning
+            // ProtoExtra/TransportExtra leaves GetProtocolExtra()/GetTransportExtra() on the
+            // already-loaded entity pointing at stale data (for example legacy Salamander
+            // after importing an explicit Gecko profile).
+            item.SetProtocolExtra(profileItem.GetProtocolExtra());
+            item.SetTransportExtra(profileItem.GetTransportExtra());
         }
 
         var ret = item.ConfigType switch
@@ -832,7 +853,7 @@ public static class ConfigHandler
     /// <summary>
     /// Add or edit a Hysteria2 server
     /// Validates and processes Hysteria2-specific settings
-    /// Sets the core type to sing_box as required by Hysteria2
+    /// Pins Gecko profiles to Xray FinalMask while preserving legacy Hysteria2 core selection
     /// </summary>
     /// <param name="config">Current configuration</param>
     /// <param name="profileItem">Hysteria2 profile to add</param>
@@ -857,11 +878,42 @@ public static class ConfigHandler
         {
             return -1;
         }
-        profileItem.SetProtocolExtra(profileItem.GetProtocolExtra() with
+        var protocolExtra = profileItem.GetProtocolExtra();
+        var obfsType = Hysteria2ObfsHelper.NormalizeType(protocolExtra.HyObfsType);
+        if (protocolExtra.HyObfsType.IsNotEmpty() && obfsType.IsNullOrEmpty())
         {
-            SalamanderPass = profileItem.GetProtocolExtra().SalamanderPass?.TrimEx(),
-            HopInterval = profileItem.GetProtocolExtra().HopInterval?.TrimEx(),
+            return -1;
+        }
+
+        var obfsPassword = protocolExtra.SalamanderPass?.TrimEx();
+        if (obfsType.IsNotEmpty() && obfsPassword.IsNullOrEmpty())
+        {
+            return -1;
+        }
+
+        var isGecko = obfsType == Hysteria2ObfsHelper.Gecko
+            || Hysteria2ObfsHelper.IsGecko(protocolExtra);
+        var geckoMin = protocolExtra.GeckoMinPacketSize.ToInt();
+        var geckoMax = protocolExtra.GeckoMaxPacketSize.ToInt();
+        if (isGecko && (geckoMin <= 0 || geckoMin > geckoMax || geckoMax > 2048))
+        {
+            geckoMin = Hysteria2ObfsHelper.GeckoMinPacketSize;
+            geckoMax = Hysteria2ObfsHelper.GeckoMaxPacketSize;
+        }
+
+        profileItem.SetProtocolExtra(protocolExtra with
+        {
+            HyObfsType = isGecko ? Hysteria2ObfsHelper.Gecko : obfsType,
+            SalamanderPass = obfsPassword,
+            GeckoMinPacketSize = isGecko ? geckoMin.ToString() : null,
+            GeckoMaxPacketSize = isGecko ? geckoMax.ToString() : null,
+            HopInterval = protocolExtra.HopInterval?.TrimEx(),
         });
+
+        if (isGecko)
+        {
+            profileItem.CoreType = ECoreType.Xray;
+        }
 
         await AddServerCommon(config, profileItem, toFile);
 
@@ -871,7 +923,7 @@ public static class ConfigHandler
     /// <summary>
     /// Add or edit a TUIC server
     /// Validates and processes TUIC-specific settings
-    /// Sets the core type to sing_box as required by TUIC
+    /// Sets the core type to Mihomo for SG Client TUIC v5 compatibility
     /// </summary>
     /// <param name="config">Current configuration</param>
     /// <param name="profileItem">TUIC profile to add</param>
@@ -880,7 +932,7 @@ public static class ConfigHandler
     public static async Task<int> AddTuicServer(Config config, ProfileItem profileItem, bool toFile = true)
     {
         profileItem.ConfigType = EConfigType.TUIC;
-        profileItem.CoreType = ECoreType.sing_box;
+        profileItem.CoreType = ECoreType.mihomo;
 
         profileItem.Address = profileItem.Address.TrimEx();
         profileItem.Username = profileItem.Username.TrimEx();
@@ -893,7 +945,16 @@ public static class ConfigHandler
         {
             congestionControl = Global.TuicCongestionControls.FirstOrDefault()!;
         }
-        profileItem.SetProtocolExtra(profileItem.GetProtocolExtra() with { CongestionControl = congestionControl });
+        var udpRelayMode = profileItem.GetProtocolExtra().TuicUdpRelayMode;
+        if (udpRelayMode is not ("native" or "quic"))
+        {
+            udpRelayMode = "native";
+        }
+        profileItem.SetProtocolExtra(profileItem.GetProtocolExtra() with
+        {
+            CongestionControl = congestionControl,
+            TuicUdpRelayMode = udpRelayMode,
+        });
 
         if (profileItem.StreamSecurity.IsNullOrEmpty())
         {
@@ -975,7 +1036,7 @@ public static class ConfigHandler
     public static async Task<int> AddAnytlsServer(Config config, ProfileItem profileItem, bool toFile = true)
     {
         profileItem.ConfigType = EConfigType.Anytls;
-        profileItem.CoreType = ECoreType.sing_box;
+        profileItem.CoreType = ECoreType.mihomo;
 
         profileItem.Address = profileItem.Address.TrimEx();
         profileItem.Password = profileItem.Password.TrimEx();
@@ -1323,8 +1384,12 @@ public static class ConfigHandler
                && AreEqual(oTransport.KcpSeed, nTransport.KcpSeed)
                && (o.ConfigType == EConfigType.Trojan || o.StreamSecurity == n.StreamSecurity)
                && AreEqual(oProtocolExtra.Flow, nProtocolExtra.Flow)
+               && AreEqual(
+                   Hysteria2ObfsHelper.GetEffectiveType(oProtocolExtra),
+                   Hysteria2ObfsHelper.GetEffectiveType(nProtocolExtra))
                && AreEqual(oProtocolExtra.SalamanderPass, nProtocolExtra.SalamanderPass)
                && MieruBindingsEqual(oProtocolExtra.MieruBindings, nProtocolExtra.MieruBindings)
+               && AreEqual(oProtocolExtra.MieruProfile, nProtocolExtra.MieruProfile)
                && oProtocolExtra.MieruMtu == nProtocolExtra.MieruMtu
                && AreEqual(oProtocolExtra.MieruMultiplexing, nProtocolExtra.MieruMultiplexing)
                && AreEqual(oProtocolExtra.MieruHandshakeMode, nProtocolExtra.MieruHandshakeMode)
@@ -1372,6 +1437,31 @@ public static class ConfigHandler
             .Where(item => !item.IsSub)
             .ToListAsync();
         return profiles.FirstOrDefault(item => string.Equals(FmtHandler.GetShareUri(item), candidateUri, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// Finds an existing local Hysteria2 profile that represents the same authenticated
+    /// server endpoint. This is intentionally less strict than FindExactLocalProfile: it is
+    /// used only when an explicit Gecko share link is re-imported so a server-side switch
+    /// from legacy Salamander to Gecko updates the existing local profile instead of
+    /// creating a confusing duplicate beside it.
+    /// </summary>
+    public static async Task<ProfileItem?> FindSameLocalHysteria2Endpoint(ProfileItem? candidate)
+    {
+        if (candidate is null || candidate.ConfigType != EConfigType.Hysteria2
+            || candidate.Address.IsNullOrEmpty() || candidate.Port <= 0 || candidate.Password.IsNullOrEmpty())
+        {
+            return null;
+        }
+
+        var profiles = await SQLiteHelper.Instance.TableAsync<ProfileItem>()
+            .Where(item => !item.IsSub && item.ConfigType == EConfigType.Hysteria2)
+            .ToListAsync();
+
+        return profiles.FirstOrDefault(item =>
+            string.Equals(item.Address?.Trim(), candidate.Address.Trim(), StringComparison.OrdinalIgnoreCase)
+            && item.Port == candidate.Port
+            && string.Equals(item.Password, candidate.Password, StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -2312,6 +2402,7 @@ public static class ConfigHandler
         {
             return 0;
         }
+        await AmneziaWgManager.Instance.DeleteSubscriptionProfilesAsync(id);
         await SQLiteHelper.Instance.DeleteAsync(item);
         await RemoveServersViaSubid(config, id, false);
 

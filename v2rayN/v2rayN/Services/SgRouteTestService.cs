@@ -436,7 +436,7 @@ public sealed class SgRouteTestService
         }
         if (remainingBits > 0)
         {
-            var mask = (byte)(0xFF << (8 - remainingBits));
+            var mask = (byte)((0xFF << (8 - remainingBits)) & 0xFF);
             if ((addressBytes[wholeBytes] & mask) != (networkBytes[wholeBytes] & mask))
             {
                 matched = false;
@@ -480,8 +480,13 @@ public sealed class SgRouteTestService
                 Add(result, ref priority, RuleKind.Domain, ["geosite:ru-blocked"], item.BlockedAction);
                 Add(result, ref priority, RuleKind.Ip, ["geoip:ru-blocked"], item.BlockedAction);
             }
-            Add(result, ref priority, RuleKind.Domain, SgSmartRoutingHelper.GetRussiaDomainRules(item), item.RussiaAction);
-            Add(result, ref priority, RuleKind.Ip, SgSmartRoutingHelper.GetRussiaIpRules(item), item.RussiaAction);
+            var whiteListActive = SgSmartRoutingHelper.NormalizeRussiaScope(item.RussiaScope) == SgSmartRoutingHelper.RussiaScopeWhiteIp;
+            Add(result, ref priority, RuleKind.Domain,
+                whiteListActive ? SgRussiaRulesManager.Instance.GetWhiteDomains() : SgSmartRoutingHelper.GetRussiaDomainRules(item),
+                item.RussiaAction);
+            Add(result, ref priority, RuleKind.Ip,
+                whiteListActive ? SgRussiaRulesManager.Instance.GetWhiteIpCidrs() : SgSmartRoutingHelper.GetRussiaIpRules(item),
+                item.RussiaAction);
         }
 
         return Task.FromResult(new RuleBuildResult(result, string.Empty));
@@ -1243,7 +1248,7 @@ public sealed class SgRouteTestService
                 {
                     return true;
                 }
-                var mask = (byte)(0xFF << (8 - remainingBits));
+                var mask = (byte)((0xFF << (8 - remainingBits)) & 0xFF);
                 return (address[fullBytes] & mask) == (Network[fullBytes] & mask);
             }
         }

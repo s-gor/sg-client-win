@@ -25,6 +25,14 @@ public class AnytlsFmt : BaseFmt
         var query = Utils.ParseQueryString(parsedUrl.Query);
         ResolveUriQuery(query, ref item);
 
+        // SG099: use bundled Mihomo for AnyTLS on Windows. The parser pins the
+        // runtime choice so imported profiles do not depend on later defaults.
+        item.CoreType = ECoreType.mihomo;
+        if (item.StreamSecurity.IsNullOrEmpty())
+        {
+            item.StreamSecurity = Global.StreamSecurity;
+        }
+
         return item;
     }
 

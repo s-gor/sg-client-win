@@ -63,6 +63,7 @@ public partial class SgRoutingWindow : Window
         {
             SgSmartRoutingHelper.PresetGlobal => "Весь интернет через VPN",
             SgSmartRoutingHelper.PresetRussiaDirect => "Россия напрямую, остальное через VPN",
+            SgSmartRoutingHelper.PresetRussiaWhiteIpDirect => "Белый список РФ напрямую, остальное через VPN",
             SgSmartRoutingHelper.PresetBlockedOnly => "Только заблокированное через VPN",
             _ => "Пользовательская схема",
         };
@@ -160,6 +161,7 @@ public partial class SgRoutingWindow : Window
         {
             SgSmartRoutingHelper.RussiaScopeTld => "Создаётся: geosite:tld-ru",
             SgSmartRoutingHelper.RussiaScopeSitesAndIp => "Создаются: geosite:category-ru и geoip:ru",
+            SgSmartRoutingHelper.RussiaScopeWhiteIp => "Создаются: домены RU White List + точечные CIDR сервисов (без geoip:ru)",
             _ => "Российское правило выключено",
         };
     }
@@ -252,6 +254,20 @@ public partial class SgRoutingWindow : Window
 
         try
         {
+            if (SgSmartRoutingHelper.NormalizeRussiaScope(_working.RussiaScope) == SgSmartRoutingHelper.RussiaScopeWhiteIp)
+            {
+                if (!SgRussiaRulesManager.Instance.HasUsableWhiteList())
+                {
+                    var whiteProgress = new Progress<string>(text => SetInlineStatus(text, "SgWarningBrush"));
+                    var install = await SgRussiaRulesManager.Instance.EnsureRulesAsync(_config, false, whiteProgress);
+                    if (!install.Success || !SgRussiaRulesManager.Instance.HasUsableWhiteList())
+                    {
+                        SetInlineStatus(install.Message, "SgErrorBrush");
+                        return;
+                    }
+                }
+            }
+
             if (SgSmartRoutingHelper.RequiresCommunityRules(_working))
             {
                 var progress = new Progress<string>(text => SetInlineStatus(text, "SgWarningBrush"));
@@ -329,10 +345,16 @@ public partial class SgRoutingWindow : Window
 
     private void SetInlineStatus(string text, string brushKey)
     {
-        txtFooterStatus.Text = text;
-        txtFooterStatus.Foreground = (System.Windows.Media.Brush)FindResource(brushKey);
         txtProgress.Text = text;
         txtProgress.Foreground = (System.Windows.Media.Brush)FindResource(brushKey);
+        txtFooterStatus.Text = brushKey switch
+        {
+            "SgErrorBrush" => "Ошибка — подробности выше.",
+            "SgWarningBrush" => "Применение…",
+            "SgAccentBrush" => "Готово.",
+            _ => string.Empty,
+        };
+        txtFooterStatus.Foreground = (System.Windows.Media.Brush)FindResource(brushKey);
     }
 
 
@@ -351,7 +373,10 @@ public partial class SgRoutingWindow : Window
     {
         if (AmneziaWgManager.Instance.GetSelectedProfile() != null)
         {
-            return (true, "AmneziaWG переподключён; для него действует поддерживаемый набор IP/подсетей.");
+            var summary = SgAwgWhiteListRouteManager.Instance.GetLastSummary();
+            return SgAwgWhiteListRouteManager.IsRussiaWhiteListDirect(item)
+                ? (true, summary.Message.IsNotEmpty() ? summary.Message : "AmneziaWG переподключён; RU White List применён через AllowedIPs и временные direct host-routes.")
+                : (true, "AmneziaWG переподключён; для него действует выбранная маршрутизация.");
         }
 
         var path = Utils.GetBinConfigPath(Global.CoreConfigFileName);
@@ -471,8 +496,8 @@ public partial class SgRoutingWindow : Window
     private void RefreshEngineSupport()
     {
         txtEngineSupport.Text = AmneziaWgManager.Instance.SelectedProfileId.IsNotEmpty()
-            ? "AmneziaWG: в 043 работают общий маршрут и пользовательские IP/подсети «напрямую»/«через VPN». Домены, категории и блокировка появятся после общего DNS/TUN-модуля."
-            : "Xray и sing-box: категории и пользовательские правила компилируются полностью. AmneziaWG: текущий этап поддерживает только направление пользовательских IP/подсетей.";
+            ? "AmneziaWG: RU White List поддерживается — точечные CIDR исключаются из AllowedIPs, домены разрешаются при подключении и получают временные direct host-routes."
+            : "Xray, sing-box и Mihomo: Белый список РФ (домены + точечные CIDR), категории и пользовательские правила компилируются в рабочий конфиг.";
     }
 
     private void RefreshDiagnostic_Click(object sender, RoutedEventArgs e)
@@ -530,7 +555,11 @@ public partial class SgRoutingWindow : Window
                 .Select(line => line.Trim())
                 .FirstOrDefault(line => line.StartsWith("AllowedIPs", StringComparison.OrdinalIgnoreCase) && line.Contains('='));
             var value = allowed?.Split('=', 2)[1].Trim() ?? "не найдено";
-            return $"AmneziaWG · файл изменён {File.GetLastWriteTime(runtimePath):dd.MM.yyyy HH:mm:ss}\nAllowedIPs: {value}";
+            var whiteSummary = SgAwgWhiteListRouteManager.Instance.GetLastSummary();
+            var whiteLine = whiteSummary.UpdatedUtc == default
+                ? string.Empty
+                : $"\nRU White List: CIDR {whiteSummary.StaticCidrs}; DNS {whiteSummary.DomainsResolved}/{whiteSummary.DomainRules}; host-routes {whiteSummary.DynamicRoutesAdded}; active={whiteSummary.Active}";
+            return $"AmneziaWG · файл изменён {File.GetLastWriteTime(runtimePath):dd.MM.yyyy HH:mm:ss}\nAllowedIPs: {value}{whiteLine}";
         }
 
         var path = Utils.GetBinConfigPath(Global.CoreConfigFileName);

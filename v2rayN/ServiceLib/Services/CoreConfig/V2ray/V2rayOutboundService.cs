@@ -373,10 +373,12 @@ public partial class CoreConfigV2rayService
             var sni = _node.Sni.TrimEx();
             var useragent = _config.CoreBasicItem.DefUserAgent ?? string.Empty;
 
-            //if tls
-            if (_node.StreamSecurity == Global.StreamSecurity)
+            // Hysteria2 transport requires TLS. Profiles imported before 108 may
+            // have an empty StreamSecurity because the standard hysteria2:// URI
+            // does not include a security=tls parameter, so repair them here too.
+            if (_node.StreamSecurity == Global.StreamSecurity || _node.ConfigType == EConfigType.Hysteria2)
             {
-                streamSettings.security = _node.StreamSecurity;
+                streamSettings.security = Global.StreamSecurity;
 
                 TlsSettings4Ray tlsSettings = new()
                 {
@@ -573,12 +575,21 @@ public partial class CoreConfigV2rayService
                 case "hysteria":
                     var protocolExtra = _node.GetProtocolExtra();
                     var ports = protocolExtra?.Ports;
-                    int? upMbps = protocolExtra?.UpMbps is { } su and >= 0
-                        ? su
-                        : _config.HysteriaItem.UpMbps;
-                    int? downMbps = protocolExtra?.DownMbps is { } sd and >= 0
-                        ? sd
-                        : _config.HysteriaItem.DownMbps;
+                    var obfsType = Hysteria2ObfsHelper.GetEffectiveType(protocolExtra);
+                    var isGecko = obfsType == Hysteria2ObfsHelper.Gecko;
+                    // Gecko share URIs do not carry bandwidth. When those fields are
+                    // empty, do not inherit SG Client's legacy 100/100 defaults:
+                    // leave quicParams in BBR mode, matching the exported profile.
+                    int? upMbps = isGecko
+                        ? protocolExtra?.UpMbps
+                        : protocolExtra?.UpMbps is { } su and >= 0
+                            ? su
+                            : _config.HysteriaItem.UpMbps;
+                    int? downMbps = isGecko
+                        ? protocolExtra?.DownMbps
+                        : protocolExtra?.DownMbps is { } sd and >= 0
+                            ? sd
+                            : _config.HysteriaItem.DownMbps;
                     var hopInterval = !protocolExtra.HopInterval.IsNullOrEmpty()
                         ? protocolExtra.HopInterval
                         : (_config.HysteriaItem.HopInterval >= 5
@@ -609,12 +620,31 @@ public partial class CoreConfigV2rayService
                     hy2Finalmask.quicParams = quicParams;
                     if (!protocolExtra.SalamanderPass.IsNullOrEmpty())
                     {
+                        string? geckoPacketSize = null;
+                        if (isGecko)
+                        {
+                            var geckoMin = protocolExtra.GeckoMinPacketSize.ToInt();
+                            var geckoMax = protocolExtra.GeckoMaxPacketSize.ToInt();
+                            if (geckoMin <= 0 || geckoMin > geckoMax || geckoMax > 2048)
+                            {
+                                geckoMin = Hysteria2ObfsHelper.GeckoMinPacketSize;
+                                geckoMax = Hysteria2ObfsHelper.GeckoMaxPacketSize;
+                            }
+                            geckoPacketSize = $"{geckoMin}-{geckoMax}";
+                        }
+
                         hy2Finalmask.udp =
                             [
                                 new Mask4Ray
                                 {
+                                    // Xray calls both legacy Salamander and Gecko
+                                    // `salamander`; packetSize is the Gecko switch.
                                     type = "salamander",
-                                    settings = new MaskSettings4Ray { password = protocolExtra.SalamanderPass.TrimEx(), }
+                                    settings = new MaskSettings4Ray
+                                    {
+                                        password = protocolExtra.SalamanderPass.TrimEx(),
+                                        packetSize = geckoPacketSize,
+                                    }
                                 }
                             ];
                     }

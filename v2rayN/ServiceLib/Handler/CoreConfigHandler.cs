@@ -21,7 +21,8 @@ public static class CoreConfigHandler
                 _ => await GenerateClientCustomConfig(node, fileName)
             };
         }
-        else if (context.RunCoreType == ECoreType.mihomo && node.ConfigType == EConfigType.Mieru)
+        else if (context.RunCoreType == ECoreType.mihomo
+                 && node.ConfigType is EConfigType.Mieru or EConfigType.Anytls or EConfigType.TUIC)
         {
             result = new CoreConfigMihomoMieruService(context).GenerateClientConfigContent();
         }
@@ -136,7 +137,12 @@ public static class CoreConfigHandler
         var port = Utils.GetFreePort(initPort + testItem.QueueNum);
         testItem.Port = port;
 
-        if (context.RunCoreType == ECoreType.sing_box)
+        if (context.RunCoreType == ECoreType.mihomo
+            && context.Node.ConfigType is EConfigType.Mieru or EConfigType.Anytls or EConfigType.TUIC)
+        {
+            result = new CoreConfigMihomoMieruService(context).GenerateClientSpeedtestConfig(port);
+        }
+        else if (context.RunCoreType == ECoreType.sing_box)
         {
             result = new CoreConfigSingboxService(context).GenerateClientSpeedtestConfig(port);
         }

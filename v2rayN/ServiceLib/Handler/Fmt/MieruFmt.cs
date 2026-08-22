@@ -47,6 +47,7 @@ public class MieruFmt : BaseFmt
 
         var firstPort = GetFirstPort(bindings[0].Port);
         var profileName = First(query, "profile");
+        var fragmentName = SafeDecode(uri.Fragment.TrimStart('#'));
         var item = new ProfileItem
         {
             ConfigType = EConfigType.Mieru,
@@ -56,13 +57,16 @@ public class MieruFmt : BaseFmt
             Username = username,
             Password = password,
             Network = bindings[0].Protocol.ToLowerInvariant(),
-            Remarks = profileName.IsNotEmpty() ? profileName : $"Mieru · {uri.IdnHost}",
+            Remarks = fragmentName.IsNotEmpty()
+                ? fragmentName
+                : profileName.IsNotEmpty() ? profileName : $"Mieru · {uri.IdnHost}",
         };
 
         var mtu = int.TryParse(First(query, "mtu"), out var parsedMtu) ? parsedMtu : 0;
         item.SetProtocolExtra(item.GetProtocolExtra() with
         {
             MieruBindings = bindings,
+            MieruProfile = profileName.NullIfEmpty(),
             MieruMtu = mtu is >= 1280 and <= 1400 ? mtu : null,
             MieruMultiplexing = NormalizeMultiplexing(First(query, "multiplexing")),
             MieruHandshakeMode = First(query, "handshake-mode").NullIfEmpty(),
@@ -85,9 +89,12 @@ public class MieruFmt : BaseFmt
             ? extra.MieruBindings
             : [new MieruBindingItem { Port = item.Port.ToString(), Protocol = NormalizeProtocol(item.Network) ?? "TCP" }];
 
+        var profileName = extra.MieruProfile.IsNotEmpty()
+            ? extra.MieruProfile
+            : item.Remarks.IsNotEmpty() ? item.Remarks : "default";
         var query = new List<string>
         {
-            $"profile={Utils.UrlEncode(item.Remarks.IsNotEmpty() ? item.Remarks : "Mieru")}",
+            $"profile={Utils.UrlEncode(profileName)}",
         };
         if (extra.MieruMtu is > 0)
         {
@@ -112,7 +119,11 @@ public class MieruFmt : BaseFmt
         }
 
         var userInfo = $"{Utils.UrlEncode(item.Username)}:{Utils.UrlEncode(item.Password)}";
-        return $"mierus://{userInfo}@{GetIpv6(item.Address)}?{string.Join("&", query)}";
+        var fragment = item.Remarks.IsNotEmpty()
+                       && !string.Equals(item.Remarks, profileName, StringComparison.Ordinal)
+            ? $"#{Utils.UrlEncode(item.Remarks)}"
+            : string.Empty;
+        return $"mierus://{userInfo}@{GetIpv6(item.Address)}?{string.Join("&", query)}{fragment}";
     }
 
     private static Dictionary<string, List<string>> ParseRepeatedQuery(string query)

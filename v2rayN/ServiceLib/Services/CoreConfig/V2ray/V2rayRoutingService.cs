@@ -297,8 +297,15 @@ public partial class CoreConfigV2rayService
             // The two Russian presets are mutually exclusive:
             // tld-ru matches only Russian domain zones; category-ru already includes tld-ru
             // and also covers Russian services in other TLDs. Do not generate regex duplicates.
-            AddSgRayDomainRule(SgSmartRoutingHelper.GetRussiaDomainRules(item), item.RussiaAction);
-            AddSgRayIpRule(SgSmartRoutingHelper.GetRussiaIpRules(item), item.RussiaAction);
+            var whiteListActive = SgSmartRoutingHelper.NormalizeRussiaScope(item.RussiaScope) == SgSmartRoutingHelper.RussiaScopeWhiteIp;
+            var russiaDomains = whiteListActive
+                ? SgRussiaRulesManager.Instance.GetWhiteDomains()
+                : SgSmartRoutingHelper.GetRussiaDomainRules(item);
+            var russiaIps = whiteListActive
+                ? SgRussiaRulesManager.Instance.GetWhiteIpCidrs()
+                : SgSmartRoutingHelper.GetRussiaIpRules(item);
+            AddSgRayDomainRule(russiaDomains, item.RussiaAction);
+            AddSgRayIpRule(russiaIps, item.RussiaAction);
         }
 
         // Make the default action explicit in every SG Client mode. In TUN the

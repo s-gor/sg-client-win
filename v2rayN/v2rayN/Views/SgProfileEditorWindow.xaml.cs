@@ -1,3 +1,4 @@
+using ServiceLib.Helper;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -678,10 +679,15 @@ public partial class SgProfileEditorWindow
             new[]
             {
                 new EditorChoice("Выключена", string.Empty),
-                new EditorChoice("Salamander", "salamander"),
+                new EditorChoice("Salamander · legacy", Hysteria2ObfsHelper.Salamander),
+                new EditorChoice("Gecko · Xray", Hysteria2ObfsHelper.Gecko),
             },
-            protocolExtra.SalamanderPass.IsNotEmpty() ? "salamander" : string.Empty);
+            Hysteria2ObfsHelper.GetEffectiveType(protocolExtra) ?? string.Empty);
         AddText(disguiseWrap, "salamanderPass", "Пароль маскировки", protocolExtra.SalamanderPass);
+        AddInfo(
+            disguise.Panel,
+            "Gecko работает через Xray FinalMask; SG Client использует packetSize 512–1200 байт.",
+            "SgMutedBrush");
         AddText(disguiseWrap, "ports", "Диапазон портов", protocolExtra.Ports);
         AddText(disguiseWrap, "hopInterval", "Интервал смены портов, сек.", protocolExtra.HopInterval);
         obfsCombo.SelectionChanged += (_, _) => RefreshHysteriaObfsState();
@@ -815,9 +821,14 @@ public partial class SgProfileEditorWindow
 
         var mask = CreateCard(
             "Параметры AmneziaWG",
-            "Jc/Jmin/Jmax, S1–S4 и H1–H4 передаются в конфигурацию без упрощения.");
+            "AWG2 и AWG3 параметры передаются в конфигурацию без упрощения.");
         var maskWrap = AddFieldWrap(mask.Panel);
-        foreach (var key in new[] { "Jc", "Jmin", "Jmax", "S1", "S2", "S3", "S4", "H1", "H2", "H3", "H4" })
+        foreach (var key in new[]
+        {
+            "Jc", "Jmin", "Jmax", "S1", "S2", "S3", "S4", "H1", "H2", "H3", "H4",
+            "HeaderProtectionKey", "ContentPaddingAddition", "RekeyAfterTime", "RekeyTimeout",
+            "RejectAfterTime", "KeepaliveTimeout", "MaxHandshakeAttempts"
+        })
         {
             AddText(
                 maskWrap,
@@ -960,12 +971,22 @@ public partial class SgProfileEditorWindow
 
     private void RefreshHysteriaObfsState()
     {
-        var enabled = _combos.TryGetValue("obfs", out var combo)
-            && string.Equals(
-                combo.SelectedValue?.ToString(),
-                "salamander",
-                StringComparison.OrdinalIgnoreCase);
+        var value = _combos.TryGetValue("obfs", out var combo)
+            ? Hysteria2ObfsHelper.NormalizeType(combo.SelectedValue?.ToString())
+            : null;
+        var enabled = value.IsNotEmpty();
+        var gecko = value == Hysteria2ObfsHelper.Gecko;
+
         SetEnabled("salamanderPass", enabled);
+        if (_combos.TryGetValue("core", out var coreCombo))
+        {
+            if (gecko)
+            {
+                coreCombo.SelectedValue = nameof(ECoreType.Xray);
+            }
+            coreCombo.IsEnabled = !gecko;
+        }
+        RefreshHysteriaCoreState();
     }
 
     private void SetEnabled(string key, bool enabled)
@@ -1144,9 +1165,15 @@ public partial class SgProfileEditorWindow
             candidate.Network = nameof(ETransport.raw);
             candidate.StreamSecurity = Global.StreamSecurity;
 
-            var obfsEnabled = ComboValue("obfs") == "salamander";
+            var obfsType = Hysteria2ObfsHelper.NormalizeType(ComboValue("obfs"));
+            var obfsEnabled = obfsType.IsNotEmpty();
+            if (obfsType == Hysteria2ObfsHelper.Gecko)
+            {
+                candidate.CoreType = ECoreType.Xray;
+            }
             candidate.SetProtocolExtra(candidate.GetProtocolExtra() with
             {
+                HyObfsType = obfsType,
                 SalamanderPass = obfsEnabled
                     ? TextValue("salamanderPass").NullIfEmpty()
                     : null,
@@ -1454,10 +1481,10 @@ public partial class SgProfileEditorWindow
         }
 
         if (candidate.ConfigType == EConfigType.Hysteria2
-            && ComboValue("obfs") == "salamander"
+            && Hysteria2ObfsHelper.NormalizeType(ComboValue("obfs")).IsNotEmpty()
             && TextValue("salamanderPass").IsNullOrEmpty())
         {
-            SetStatus("Для маскировки Salamander требуется пароль.", "SgErrorBrush");
+            SetStatus("Для выбранной маскировки Hysteria2 требуется пароль.", "SgErrorBrush");
             return false;
         }
 
@@ -1757,7 +1784,12 @@ public partial class SgProfileEditorWindow
         content = SetIniValue(content, "Interface", "MTU", TextValue("awgMtu"));
         content = SetIniValue(content, "Interface", "PrivateKey", TextValue("awgPrivateKey"));
 
-        foreach (var key in new[] { "Jc", "Jmin", "Jmax", "S1", "S2", "S3", "S4", "H1", "H2", "H3", "H4" })
+        foreach (var key in new[]
+        {
+            "Jc", "Jmin", "Jmax", "S1", "S2", "S3", "S4", "H1", "H2", "H3", "H4",
+            "HeaderProtectionKey", "ContentPaddingAddition", "RekeyAfterTime", "RekeyTimeout",
+            "RejectAfterTime", "KeepaliveTimeout", "MaxHandshakeAttempts"
+        })
         {
             content = SetIniValue(
                 content,

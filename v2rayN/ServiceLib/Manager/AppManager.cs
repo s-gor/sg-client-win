@@ -336,6 +336,7 @@ public sealed class AppManager
                            ,a.Port
                            ,a.Network
                            ,a.StreamSecurity
+                           ,a.ProtoExtra
                            ,a.Subid
                            ,a.IsSub
                            ,b.remarks as subRemarks
@@ -784,6 +785,24 @@ public sealed class AppManager
 
     public ECoreType GetCoreType(ProfileItem profileItem, EConfigType eConfigType)
     {
+        // SG-Gateway's Gecko is Xray FinalMask salamander + packetSize. Enforce
+        // Xray as a final safety net even for profiles imported by SG Client
+        // 101-105 whose stored CoreType says sing_box. Legacy Salamander is untouched.
+        if (profileItem != null
+            && eConfigType == EConfigType.Hysteria2
+            && Hysteria2ObfsHelper.GetEffectiveType(profileItem.GetProtocolExtra()) == Hysteria2ObfsHelper.Gecko)
+        {
+            return ECoreType.Xray;
+        }
+
+        // SG099: AnyTLS and TUIC v5 use bundled Mihomo. Force this even for
+        // profiles persisted by 101-113 with CoreType=sing_box, so re-import is
+        // not required after upgrading.
+        if (profileItem != null && eConfigType is EConfigType.Anytls or EConfigType.TUIC)
+        {
+            return ECoreType.mihomo;
+        }
+
         if (profileItem?.CoreType != null)
         {
             return (ECoreType)profileItem.CoreType;

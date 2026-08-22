@@ -555,7 +555,8 @@ public class ProfilesViewModel : MyReactiveObject
                           SubRemarks = t.SubRemarks,
                           IsActive = awgSelectedId.IsNullOrEmpty() && t.IndexId == _config.IndexId,
                           IsAmneziaWG = false,
-                          ProtocolDisplay = GetProtocolDisplay(t.ConfigType, t.Network, t.StreamSecurity),
+                          ProtocolDisplay = GetProtocolDisplay(t.ConfigType, t.Network, t.StreamSecurity, t.ProtoExtra),
+                          TechnologyBadge = SgProfileDisplayHelper.GetTechnologyBadge(t.ConfigType, t.Network, t.StreamSecurity, t.ProtoExtra),
                           SourceDisplay = t.IsSub
                               ? (t.SubRemarks.IsNotEmpty() ? $"Подписка: {t.SubRemarks}" : "Подписка")
                               : "Локальный профиль",
@@ -576,6 +577,10 @@ public class ProfilesViewModel : MyReactiveObject
             ApplyCountryMetadata(item);
         }
 
+        var subscriptionNames = (await AppManager.Instance.SubItems() ?? [])
+            .Where(item => item.Id.IsNotEmpty())
+            .GroupBy(item => item.Id, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First().Remarks, StringComparer.OrdinalIgnoreCase);
         var awgProfiles = AmneziaWgManager.Instance.GetProfiles();
         for (var awgIndex = 0; awgIndex < awgProfiles.Count; awgIndex++)
         {
@@ -586,6 +591,7 @@ public class ProfilesViewModel : MyReactiveObject
             {
                 continue;
             }
+            var awgDelay = SgAwgLatencyStore.Instance.Get(profile.Id);
             var awgItem = new ProfileItemModel
             {
                 IndexId = profile.Id,
@@ -597,11 +603,23 @@ public class ProfilesViewModel : MyReactiveObject
                 Port = profile.EndpointPort,
                 Network = "udp",
                 StreamSecurity = string.Empty,
+                Subid = profile.Subid,
+                IsSub = profile.Subid.IsNotEmpty(),
+                SubRemarks = profile.Subid.IsNotEmpty()
+                    && subscriptionNames.TryGetValue(profile.Subid, out var subscriptionName)
+                        ? subscriptionName
+                        : string.Empty,
                 IsActive = string.Equals(profile.Id, awgSelectedId, StringComparison.OrdinalIgnoreCase),
                 IsAmneziaWG = true,
                 ProtocolDisplay = "AmneziaWG",
-                SourceDisplay = "Локальный профиль · AmneziaWG",
-                DelayVal = profile.EndpointPort > 0 ? $"UDP {profile.EndpointPort}" : "UDP",
+                SourceDisplay = profile.Subid.IsNotEmpty()
+                    ? (subscriptionNames.TryGetValue(profile.Subid, out var sourceName) && sourceName.IsNotEmpty()
+                        ? $"Подписка: {sourceName}"
+                        : "Подписка")
+                    : "Локальный профиль · AmneziaWG",
+                TechnologyBadge = AmneziaWgManager.GetProtocolBadge(profile.Protocol),
+                Delay = awgDelay,
+                DelayVal = SgLatencyTestService.GetDelayDisplay(awgDelay),
                 Sort = 1_000_000 + awgIndex
             };
             ApplyCountryMetadata(awgItem);
@@ -773,7 +791,7 @@ public class ProfilesViewModel : MyReactiveObject
         });
     }
 
-    private static string GetProtocolDisplay(EConfigType configType, string network, string streamSecurity)
+    private static string GetProtocolDisplay(EConfigType configType, string network, string streamSecurity, string? protoExtra = null)
     {
         if (configType == EConfigType.Mieru)
         {
@@ -781,7 +799,21 @@ public class ProfilesViewModel : MyReactiveObject
         }
         if (configType == EConfigType.Hysteria2)
         {
-            return "Hysteria2";
+            var extra = JsonUtils.Deserialize<ProtocolExtraItem>(protoExtra) ?? new ProtocolExtraItem();
+            return Hysteria2ObfsHelper.GetEffectiveType(extra) switch
+            {
+                Hysteria2ObfsHelper.Gecko => "Hysteria2 · Gecko",
+                Hysteria2ObfsHelper.Salamander => "Hysteria2 · Salamander",
+                _ => "Hysteria2",
+            };
+        }
+        if (configType == EConfigType.Anytls)
+        {
+            return "AnyTLS";
+        }
+        if (configType == EConfigType.TUIC)
+        {
+            return "TUIC v5";
         }
         if (configType == EConfigType.VLESS)
         {
@@ -1227,14 +1259,14 @@ public class ProfilesViewModel : MyReactiveObject
     public async Task TestLatencyAsync(IEnumerable<ProfileItemModel> profiles)
     {
         var candidates = profiles?
-            .Where(item => item != null && !item.IsAmneziaWG && item.IndexId.IsNotEmpty())
+            .Where(item => item != null && item.IndexId.IsNotEmpty())
             .GroupBy(item => item.IndexId, StringComparer.OrdinalIgnoreCase)
             .Select(group => group.First())
             .ToList() ?? [];
 
         if (candidates.Count == 0)
         {
-            NoticeManager.Instance.Enqueue("В текущем списке нет профилей Xray или sing-box для проверки задержки.");
+            NoticeManager.Instance.Enqueue("В текущем списке нет поддерживаемых профилей для проверки задержки.");
             return;
         }
 

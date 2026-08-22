@@ -283,6 +283,7 @@
                             <UniformGrid x:Name="presetOptions" Columns="2">
                                 <RadioButton GroupName="RoutingPreset" Tag="global" Style="{StaticResource PresetRadio}" Checked="PresetRadio_Checked" Content="Весь интернет через VPN" />
                                 <RadioButton GroupName="RoutingPreset" Tag="ru_except" Style="{StaticResource PresetRadio}" Checked="PresetRadio_Checked" Content="Россия напрямую, остальное через VPN" />
+                                <RadioButton GroupName="RoutingPreset" Tag="ru_white_ip" Style="{StaticResource PresetRadio}" Checked="PresetRadio_Checked" Content="Белый список РФ напрямую, остальное через VPN" />
                                 <RadioButton GroupName="RoutingPreset" Tag="ru_blocked" Style="{StaticResource PresetRadio}" Checked="PresetRadio_Checked" Content="Только заблокированное через VPN" />
                                 <RadioButton GroupName="RoutingPreset" Tag="custom" Style="{StaticResource PresetRadio}" Checked="PresetRadio_Checked" Content="Пользовательская схема" />
                             </UniformGrid>
@@ -306,11 +307,12 @@
                             <Border Margin="0,0,0,10" Padding="12" Background="{DynamicResource SgInputBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="1" CornerRadius="10">
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource RuleTitle}" Text="Российская маршрутизация" />
-                                    <TextBlock Style="{StaticResource RuleDescription}" Text="Выберите только один набор. category-ru уже включает tld-ru, ru.com, ru.net и российские сервисы в других доменных зонах." />
-                                    <UniformGrid x:Name="russiaScopeOptions" Columns="3" Margin="0,10,0,0">
+                                    <TextBlock Style="{StaticResource RuleDescription}" Text="Выберите один набор. Белый список РФ — домены разрешённых сервисов + только их точечные CIDR; общий geoip:ru в этот режим не входит." />
+                                    <UniformGrid x:Name="russiaScopeOptions" Columns="4" Margin="0,10,0,0">
                                         <RadioButton GroupName="RussiaScope" Tag="none" Style="{StaticResource SegmentRadio}" Checked="RussiaScopeRadio_Checked" Content="Выключено" />
                                         <RadioButton GroupName="RussiaScope" Tag="tld" Style="{StaticResource SegmentRadio}" Checked="RussiaScopeRadio_Checked" Content="Только доменные зоны" ToolTip="geosite:tld-ru" />
                                         <RadioButton GroupName="RussiaScope" Tag="sites_ip" Style="{StaticResource SegmentRadio}" Checked="RussiaScopeRadio_Checked" Content="Сайты и IP" ToolTip="geosite:category-ru + geoip:ru" />
+                                        <RadioButton GroupName="RussiaScope" Tag="white_ip" Style="{StaticResource SegmentRadio}" Checked="RussiaScopeRadio_Checked" Content="Белый список" ToolTip="GrimbirdUsers/ru-routing-dat · category-ru-whitelist + гранулярные ru-* CIDR; без geoip:ru" />
                                     </UniformGrid>
                                     <Grid Margin="0,10,0,0">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="3*" /></Grid.ColumnDefinitions>
@@ -388,8 +390,12 @@
 
             <Border x:Name="routingFooter" Grid.Row="3" Padding="18,10" Background="{DynamicResource SgHeaderBrush}" BorderBrush="{DynamicResource SgBorderBrush}" BorderThickness="0,1,0,0" CornerRadius="0,0,15,15">
                 <Grid>
-                    <TextBlock x:Name="txtFooterStatus" VerticalAlignment="Center" FontSize="11.5" Foreground="{DynamicResource SgMutedBrush}" Text="Изменения будут применены после нажатия кнопки справа." />
-                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="txtFooterStatus" Grid.Column="0" Margin="0,0,16,0" VerticalAlignment="Center" FontSize="11.5" Foreground="{DynamicResource SgMutedBrush}" Text="Изменения будут применены после нажатия кнопки справа." TextTrimming="CharacterEllipsis" />
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal">
                         <Button Width="104" Height="38" Click="Cancel_Click" Style="{StaticResource SgMaterialOutlinedButton}" Content="Отмена" />
                         <Button x:Name="btnSave" Width="150" Height="38" Margin="10,0,0,0" Click="Save_Click" Style="{StaticResource SgMaterialRaisedButton}" Content="Применить" />
                     </StackPanel>

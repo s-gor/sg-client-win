@@ -1,4 +1,4 @@
-﻿namespace v2rayN.Views;
+namespace v2rayN.Views;
 
 public partial class SgAwgTextImportWindow : Window
 {
@@ -18,6 +18,7 @@ public partial class SgAwgTextImportWindow : Window
     {
         _sourceFileName = sourceFileName.IsNotEmpty() ? sourceFileName! : "AmneziaWG.conf";
         InitializeComponent();
+        SgWindowSizing.AttachCompact(this);
         SourceInitialized += (_, _) => WindowsUtils.SetSgBorderlessFrame(this);
         Owner = Application.Current.MainWindow;
         WindowsUtils.SetDarkBorder(this, SgThemeManager.Current == SgThemeManager.Light ? nameof(ETheme.Light) : nameof(ETheme.Dark));

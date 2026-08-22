@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using ServiceLib.Common;
 using ServiceLib.Enums;
 using ServiceLib.Helper;
+using ServiceLib.Handler.Fmt;
 using ServiceLib.Manager;
 using ServiceLib.Models;
 using ServiceLib.Services.CoreConfig;
@@ -28,6 +29,120 @@ public class CoreConfigSingboxServiceTests
         singboxConfig.Should().NotBeNull();
         singboxConfig!.outbounds.Should().Contain(o => o.tag == Global.ProxyTag && o.type == "socks");
         singboxConfig.inbounds.Should().Contain(i => i.type == nameof(EInboundProtocol.mixed));
+    }
+
+    [Fact]
+    public void GenerateClientConfigContent_ExactAnyTlsLink_ShouldEmitTlsUtlsAndPort9443()
+    {
+        const string uri =
+            "anytls://Et1aL5Cms0WroQxD_5O7C3PRRvNib_FATk614w@infosec.opik.net:9443?security=tls&sni=infosec.opik.net&fp=firefox&type=tcp#Shany%20%C2%B7%20AnyTLS";
+        var node = FmtHandler.ResolveConfig(uri, out var msg);
+        node.Should().NotBeNull(msg);
+
+        var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+        var context = CoreConfigTestFactory.CreateContext(config, node!, ECoreType.sing_box);
+
+        var result = new CoreConfigSingboxService(context).GenerateClientConfigContent();
+
+        result.Success.Should().BeTrue($"ret msg: {result.Msg}");
+        var cfg = JsonUtils.Deserialize<SingboxConfig>(result.Data!.ToString())!;
+        var proxy = cfg.outbounds.First(o => o.tag == Global.ProxyTag);
+        proxy.type.Should().Be("anytls");
+        proxy.server.Should().Be("infosec.opik.net");
+        proxy.server_port.Should().Be(9443);
+        proxy.password.Should().Be("Et1aL5Cms0WroQxD_5O7C3PRRvNib_FATk614w");
+        proxy.tls.Should().NotBeNull();
+        proxy.tls!.enabled.Should().BeTrue();
+        proxy.tls.server_name.Should().Be("infosec.opik.net");
+        proxy.tls.utls.Should().NotBeNull();
+        proxy.tls.utls!.enabled.Should().BeTrue();
+        proxy.tls.utls.fingerprint.Should().Be("firefox");
+    }
+
+    [Fact]
+    public void GenerateClientConfigContent_ExactTuicV5Link_ShouldEmitTlsBbrH3AndPort10443()
+    {
+        const string uri =
+            "tuic://ac5d2a30-c473-4ddd-8b0a-410a3d138526:UqrhT6qg3ogiFxxPAEJzUYMwZ6NsWkib@infosec.opik.net:10443?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=infosec.opik.net#Shany%20%C2%B7%20TUIC%20v5";
+        var node = FmtHandler.ResolveConfig(uri, out var msg);
+        node.Should().NotBeNull(msg);
+
+        var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+        var context = CoreConfigTestFactory.CreateContext(config, node!, ECoreType.sing_box);
+
+        var result = new CoreConfigSingboxService(context).GenerateClientConfigContent();
+
+        result.Success.Should().BeTrue($"ret msg: {result.Msg}");
+        var cfg = JsonUtils.Deserialize<SingboxConfig>(result.Data!.ToString())!;
+        var proxy = cfg.outbounds.First(o => o.tag == Global.ProxyTag);
+        proxy.type.Should().Be("tuic");
+        proxy.server.Should().Be("infosec.opik.net");
+        proxy.server_port.Should().Be(10443);
+        proxy.uuid.Should().Be("ac5d2a30-c473-4ddd-8b0a-410a3d138526");
+        proxy.password.Should().Be("UqrhT6qg3ogiFxxPAEJzUYMwZ6NsWkib");
+        proxy.congestion_control.Should().Be("bbr");
+        proxy.tls.Should().NotBeNull();
+        proxy.tls!.enabled.Should().BeTrue();
+        proxy.tls.server_name.Should().Be("infosec.opik.net");
+        proxy.tls.alpn.Should().Contain("h3");
+    }
+
+    [Fact]
+    public void GenerateClientConfigContent_Hysteria2Gecko_ShouldEmitGeckoWithOfficialPaddingDefaults()
+    {
+        var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+        var node = CoreConfigTestFactory.CreateHysteria2Node(ECoreType.sing_box);
+        node.StreamSecurity = string.Empty;
+        node.Sni = "hy2.example.com";
+        node.SetProtocolExtra(node.GetProtocolExtra() with
+        {
+            HyObfsType = Hysteria2ObfsHelper.Gecko,
+            SalamanderPass = "mask-password",
+        });
+        var context = CoreConfigTestFactory.CreateContext(config, node, ECoreType.sing_box);
+
+        var result = new CoreConfigSingboxService(context).GenerateClientConfigContent();
+
+        result.Success.Should().BeTrue($"ret msg: {result.Msg}");
+        var cfg = JsonUtils.Deserialize<SingboxConfig>(result.Data!.ToString())!;
+        var proxy = cfg.outbounds.First(o => o.tag == Global.ProxyTag);
+        proxy.type.Should().Be("hysteria2");
+        proxy.obfs.Should().NotBeNull();
+        proxy.obfs!.type.Should().Be(Hysteria2ObfsHelper.Gecko);
+        proxy.obfs.password.Should().Be("mask-password");
+        proxy.obfs.min_packet_size.Should().Be(Hysteria2ObfsHelper.GeckoMinPacketSize);
+        proxy.obfs.max_packet_size.Should().Be(Hysteria2ObfsHelper.GeckoMaxPacketSize);
+        proxy.up_mbps.Should().BeNull();
+        proxy.down_mbps.Should().BeNull();
+        proxy.tls.Should().NotBeNull();
+        proxy.tls!.enabled.Should().BeTrue();
+        proxy.tls.server_name.Should().Be("hy2.example.com");
+        cfg.route.default_domain_resolver.Should().NotBeNull();
+        result.Data!.ToString().Should().NotContain("\"independent_cache\"");
+    }
+
+    [Fact]
+    public void GenerateClientConfigContent_LegacyHysteria2Salamander_ShouldRemainCompatible()
+    {
+        var config = CoreConfigTestFactory.CreateConfig(ECoreType.sing_box);
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+        var node = CoreConfigTestFactory.CreateHysteria2Node(ECoreType.sing_box);
+        node.SetProtocolExtra(node.GetProtocolExtra() with { SalamanderPass = "legacy-mask", });
+        var context = CoreConfigTestFactory.CreateContext(config, node, ECoreType.sing_box);
+
+        var result = new CoreConfigSingboxService(context).GenerateClientConfigContent();
+
+        result.Success.Should().BeTrue($"ret msg: {result.Msg}");
+        var cfg = JsonUtils.Deserialize<SingboxConfig>(result.Data!.ToString())!;
+        var proxy = cfg.outbounds.First(o => o.tag == Global.ProxyTag);
+        proxy.obfs.Should().NotBeNull();
+        proxy.obfs!.type.Should().Be(Hysteria2ObfsHelper.Salamander);
+        proxy.obfs.password.Should().Be("legacy-mask");
+        proxy.obfs.min_packet_size.Should().BeNull();
+        proxy.obfs.max_packet_size.Should().BeNull();
     }
 
     [Fact]

@@ -75,7 +75,7 @@ public partial class StatusBarView
             this.OneWayBind(ViewModel, vm => vm.CanUseSystemProxyMode, v => v.menuSystemProxy.IsEnabled).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.LocalProxyTrayActionText, v => v.menuLocalProxy.Header).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.IsLocalProxyModeActive, v => v.menuLocalProxy.IsChecked).DisposeWith(disposables);
-            this.OneWayBind(ViewModel, vm => vm.CanUseSystemProxyMode, v => v.menuLocalProxy.IsEnabled).DisposeWith(disposables);
+            this.OneWayBind(ViewModel, vm => vm.CanUseLocalProxyMode, v => v.menuLocalProxy.IsEnabled).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.CanDisconnectAll, v => v.menuDisconnectAll.IsEnabled).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.ToggleTunModeCmd, v => v.btnToggleTunMode).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.ToggleSystemProxyModeCmd, v => v.btnToggleSystemProxyMode).DisposeWith(disposables);
@@ -126,18 +126,8 @@ public partial class StatusBarView
 
     private void DisconnectAll_Click(object sender, RoutedEventArgs e)
     {
-        if (!_disconnectConfirmationPending)
-        {
-            _disconnectConfirmationPending = true;
-            txtDisconnectAllButtonText.Text = "Нажмите ещё раз";
-            btnDisconnectAll.SetResourceReference(Control.BackgroundProperty, "SgWarningSoftBrush");
-            btnDisconnectAll.SetResourceReference(Control.BorderBrushProperty, "SgWarningBrush");
-            btnDisconnectAll.SetResourceReference(Control.ForegroundProperty, "SgTextBrush");
-            _disconnectConfirmTimer.Stop();
-            _disconnectConfirmTimer.Start();
-            return;
-        }
-
+        // SG_RECOVERY_109: emergency stop must be immediate. A second-click
+        // confirmation made the only escape hatch unreliable during hangs.
         ResetDisconnectConfirmation();
         ViewModel?.DisconnectAllCmd.Execute().Subscribe();
     }

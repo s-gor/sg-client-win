@@ -151,6 +151,110 @@ public class FmtHandlerTests
     }
 
     [Fact]
+    public void ResolveConfig_Hysteria2Gecko_ShouldImportAndPinXray()
+    {
+        const string uri =
+            "hysteria2://auth-password@hy2.example.com:443/?obfs=gecko&obfs-password=mask-password#Gecko";
+
+        var resolved = FmtHandler.ResolveConfig(uri, out var msg);
+
+        resolved.Should().NotBeNull(msg);
+        resolved!.ConfigType.Should().Be(EConfigType.Hysteria2);
+        resolved.CoreType.Should().Be(ECoreType.Xray);
+        resolved.GetProtocolExtra().HyObfsType.Should().Be(Hysteria2ObfsHelper.Gecko);
+        resolved.GetProtocolExtra().SalamanderPass.Should().Be("mask-password");
+    }
+
+    [Fact]
+    public void ResolveConfig_ExactSgGatewayGeckoLink_ShouldPreserveTlsObfsAndBbrSemantics()
+    {
+        const string uri =
+            "hysteria2://wy1CDHjWv_jIgY0sucpu_WgIWR0YSaRh@infosec.opik.net:8446/?sni=infosec.opik.net&insecure=0&obfs=gecko&obfs-password=3k4HsopGTbu1jYidTOWGkRlkZgSRnrv8#Shany%20%C2%B7%20Hysteria%202";
+
+        var resolved = FmtHandler.ResolveConfig(uri, out var msg);
+
+        resolved.Should().NotBeNull(msg);
+        resolved!.ConfigType.Should().Be(EConfigType.Hysteria2);
+        resolved.CoreType.Should().Be(ECoreType.Xray);
+        resolved.Address.Should().Be("infosec.opik.net");
+        resolved.Port.Should().Be(8446);
+        resolved.Password.Should().Be("wy1CDHjWv_jIgY0sucpu_WgIWR0YSaRh");
+        resolved.StreamSecurity.Should().Be(Global.StreamSecurity);
+        resolved.Sni.Should().Be("infosec.opik.net");
+        resolved.GetAllowInsecure().Should().BeFalse();
+        resolved.Remarks.Should().Be("Shany · Hysteria 2");
+        var extra = resolved.GetProtocolExtra();
+        Hysteria2ObfsHelper.GetEffectiveType(extra).Should().Be(Hysteria2ObfsHelper.Gecko);
+        extra.SalamanderPass.Should().Be("3k4HsopGTbu1jYidTOWGkRlkZgSRnrv8");
+        extra.GeckoMinPacketSize.Should().Be("512");
+        extra.GeckoMaxPacketSize.Should().Be("1200");
+        extra.UpMbps.Should().BeNull();
+        extra.DownMbps.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetShareUriAndResolveConfig_Hysteria2Gecko_ShouldRoundTripObfsType()
+    {
+        var source = new ProfileItem
+        {
+            ConfigType = EConfigType.Hysteria2,
+            CoreType = ECoreType.Xray,
+            Remarks = "gecko demo",
+            Address = "hy2.example.com",
+            Port = 443,
+            Password = "auth-password",
+            StreamSecurity = Global.StreamSecurity,
+        };
+        source.SetProtocolExtra(new ProtocolExtraItem
+        {
+            HyObfsType = Hysteria2ObfsHelper.Gecko,
+            SalamanderPass = "mask-password",
+        });
+
+        var resolved = ExportThenImport(source);
+
+        resolved.CoreType.Should().Be(ECoreType.Xray);
+        resolved.GetProtocolExtra().HyObfsType.Should().Be(Hysteria2ObfsHelper.Gecko);
+        resolved.GetProtocolExtra().SalamanderPass.Should().Be("mask-password");
+    }
+
+    [Fact]
+    public void GetShareUriAndResolveConfig_LegacyHysteria2ObfsPassword_ShouldStaySalamander()
+    {
+        var source = new ProfileItem
+        {
+            ConfigType = EConfigType.Hysteria2,
+            CoreType = ECoreType.sing_box,
+            Remarks = "legacy salamander",
+            Address = "hy2.example.com",
+            Port = 443,
+            Password = "auth-password",
+            StreamSecurity = Global.StreamSecurity,
+        };
+        source.SetProtocolExtra(new ProtocolExtraItem { SalamanderPass = "legacy-mask", });
+
+        var uri = FmtHandler.GetShareUri(source);
+        uri.Should().Contain("obfs=salamander");
+
+        var resolved = FmtHandler.ResolveConfig(uri!, out var msg);
+        resolved.Should().NotBeNull(msg);
+        Hysteria2ObfsHelper.GetEffectiveType(resolved!.GetProtocolExtra()).Should()
+            .Be(Hysteria2ObfsHelper.Salamander);
+    }
+
+    [Fact]
+    public void ResolveConfig_Hysteria2UnknownObfs_ShouldRejectInsteadOfFallingBackToSalamander()
+    {
+        const string uri =
+            "hysteria2://auth-password@hy2.example.com:443/?obfs=future-obfs&obfs-password=mask-password";
+
+        var resolved = FmtHandler.ResolveConfig(uri, out var msg);
+
+        resolved.Should().BeNull();
+        msg.Should().Contain("Unsupported Hysteria2 obfs type");
+    }
+
+    [Fact]
     public void ResolveConfig_UnsupportedProtocol_ShouldReturnNull()
     {
         var resolved = FmtHandler.ResolveConfig("not-a-share-uri", out var msg);
@@ -167,6 +271,50 @@ public class FmtHandlerTests
         var uri = FmtHandler.GetShareUri(item);
 
         uri.Should().BeNull();
+    }
+
+    [Fact]
+    public void ResolveConfig_ExactAnyTlsLink_ShouldPreserveMihomoTlsEndpoint()
+    {
+        const string uri =
+            "anytls://Et1aL5Cms0WroQxD_5O7C3PRRvNib_FATk614w@infosec.opik.net:9443?security=tls&sni=infosec.opik.net&fp=firefox&type=tcp#Shany%20%C2%B7%20AnyTLS";
+
+        var resolved = FmtHandler.ResolveConfig(uri, out var msg);
+
+        resolved.Should().NotBeNull(msg);
+        resolved!.ConfigType.Should().Be(EConfigType.Anytls);
+        resolved.CoreType.Should().Be(ECoreType.mihomo);
+        resolved.Address.Should().Be("infosec.opik.net");
+        resolved.Port.Should().Be(9443);
+        resolved.Password.Should().Be("Et1aL5Cms0WroQxD_5O7C3PRRvNib_FATk614w");
+        resolved.StreamSecurity.Should().Be(Global.StreamSecurity);
+        resolved.Sni.Should().Be("infosec.opik.net");
+        resolved.Fingerprint.Should().Be("firefox");
+        resolved.Network.Should().Be(nameof(ETransport.raw));
+        resolved.Remarks.Should().Be("Shany · AnyTLS");
+    }
+
+    [Fact]
+    public void ResolveConfig_ExactTuicV5Link_ShouldPreserveMihomoTlsEndpoint()
+    {
+        const string uri =
+            "tuic://ac5d2a30-c473-4ddd-8b0a-410a3d138526:UqrhT6qg3ogiFxxPAEJzUYMwZ6NsWkib@infosec.opik.net:10443?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=infosec.opik.net#Shany%20%C2%B7%20TUIC%20v5";
+
+        var resolved = FmtHandler.ResolveConfig(uri, out var msg);
+
+        resolved.Should().NotBeNull(msg);
+        resolved!.ConfigType.Should().Be(EConfigType.TUIC);
+        resolved.CoreType.Should().Be(ECoreType.mihomo);
+        resolved.Address.Should().Be("infosec.opik.net");
+        resolved.Port.Should().Be(10443);
+        resolved.Username.Should().Be("ac5d2a30-c473-4ddd-8b0a-410a3d138526");
+        resolved.Password.Should().Be("UqrhT6qg3ogiFxxPAEJzUYMwZ6NsWkib");
+        resolved.StreamSecurity.Should().Be(Global.StreamSecurity);
+        resolved.Sni.Should().Be("infosec.opik.net");
+        resolved.Alpn.Should().Be("h3");
+        resolved.GetProtocolExtra().CongestionControl.Should().Be("bbr");
+        resolved.GetProtocolExtra().TuicUdpRelayMode.Should().Be("native");
+        resolved.Remarks.Should().Be("Shany · TUIC v5");
     }
 
     private static ProfileItem ExportThenImport(ProfileItem source)

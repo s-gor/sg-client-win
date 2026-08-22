@@ -3,8 +3,8 @@ using ServiceLib.Helper;
 namespace ServiceLib.Services.CoreConfig;
 
 /// <summary>
-/// Generates a native Mihomo configuration for an imported Mieru profile.
-/// The generated config keeps SG Client ports, TUN mode, DNS and smart routing.
+/// Generates a native Mihomo configuration for SG Client profiles handled by Mihomo.
+/// Supports Mieru, AnyTLS and TUIC v5 while keeping SG Client ports, TUN mode, DNS and smart routing.
 /// </summary>
 public class CoreConfigMihomoMieruService(CoreConfigContext context)
 {
@@ -18,8 +18,14 @@ public class CoreConfigMihomoMieruService(CoreConfigContext context)
             ? extra.MieruBindings
             : [new MieruBindingItem { Port = node.Port.ToString(), Protocol = NormalizeProtocol(node.Network) }];
 
-        if (node.Address.IsNullOrEmpty() || node.Username.IsNullOrEmpty() || node.Password.IsNullOrEmpty()
-            || bindings.Count == 0)
+        var valid = node.ConfigType switch
+        {
+            EConfigType.Mieru => node.Address.IsNotEmpty() && node.Username.IsNotEmpty() && node.Password.IsNotEmpty() && bindings.Count > 0,
+            EConfigType.Anytls => node.Address.IsNotEmpty() && node.Port is > 0 and <= 65535 && node.Password.IsNotEmpty(),
+            EConfigType.TUIC => node.Address.IsNotEmpty() && node.Port is > 0 and <= 65535 && node.Username.IsNotEmpty() && node.Password.IsNotEmpty(),
+            _ => false,
+        };
+        if (!valid)
         {
             return new RetResult { Msg = ResUI.CheckServerSettings };
         }
@@ -82,7 +88,100 @@ public class CoreConfigMihomoMieruService(CoreConfigContext context)
         }
     }
 
+    public RetResult GenerateClientSpeedtestConfig(int port)
+    {
+        if (port is <= 0 or > 65535)
+        {
+            return new RetResult { Msg = ResUI.CheckServerSettings };
+        }
+
+        var node = context.Node;
+        var extra = node.GetProtocolExtra();
+        var bindings = extra.MieruBindings is { Count: > 0 }
+            ? extra.MieruBindings
+            : [new MieruBindingItem { Port = node.Port.ToString(), Protocol = NormalizeProtocol(node.Network) }];
+
+        var valid = node.ConfigType switch
+        {
+            EConfigType.Mieru => node.Address.IsNotEmpty() && node.Username.IsNotEmpty() && node.Password.IsNotEmpty() && bindings.Count > 0,
+            EConfigType.Anytls => node.Address.IsNotEmpty() && node.Port is > 0 and <= 65535 && node.Password.IsNotEmpty(),
+            EConfigType.TUIC => node.Address.IsNotEmpty() && node.Port is > 0 and <= 65535 && node.Username.IsNotEmpty() && node.Password.IsNotEmpty(),
+            _ => false,
+        };
+        if (!valid)
+        {
+            return new RetResult { Msg = ResUI.CheckServerSettings };
+        }
+
+        try
+        {
+            var config = context.AppConfig;
+            var proxies = BuildProxies(node, extra, bindings);
+            var proxyNames = proxies
+                .Select(proxy => proxy["name"]?.ToString() ?? string.Empty)
+                .Where(name => name.IsNotEmpty())
+                .ToList();
+            if (proxyNames.Count == 0)
+            {
+                return new RetResult { Msg = ResUI.CheckServerSettings };
+            }
+
+            // Latency testing must measure this profile itself, not the user's
+            // current routing policy. Keep the temporary Mihomo instance local,
+            // route every probe through SG-PROXY and do not expose a controller
+            // or TUN interface that could conflict with the running client.
+            var root = new Dictionary<string, object>
+            {
+                ["mixed-port"] = port,
+                ["allow-lan"] = false,
+                ["bind-address"] = Global.Loopback,
+                ["mode"] = "rule",
+                ["log-level"] = "warning",
+                ["ipv6"] = config.ClashUIItem.EnableIPv6,
+                ["unified-delay"] = true,
+                ["tcp-concurrent"] = true,
+                ["proxies"] = proxies,
+                ["proxy-groups"] = new List<Dictionary<string, object>>
+                {
+                    new()
+                    {
+                        ["name"] = ProxyGroupName,
+                        ["type"] = "select",
+                        ["proxies"] = proxyNames,
+                    }
+                },
+                ["dns"] = BuildSpeedtestDns(config.SimpleDNSItem, config.ClashUIItem.EnableIPv6),
+                ["rules"] = new List<string> { $"MATCH,{ProxyGroupName}" },
+            };
+
+            return new RetResult
+            {
+                Success = true,
+                Msg = string.Format(ResUI.SuccessfulConfiguration, node.GetSummary()),
+                Data = YamlUtils.ToYaml(root),
+            };
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog(nameof(CoreConfigMihomoMieruService), ex);
+            return new RetResult { Msg = ResUI.FailedGenDefaultConfiguration };
+        }
+    }
+
     private static List<Dictionary<string, object>> BuildProxies(
+        ProfileItem node,
+        ProtocolExtraItem extra,
+        IReadOnlyList<MieruBindingItem> bindings)
+    {
+        return node.ConfigType switch
+        {
+            EConfigType.Anytls => [BuildAnyTlsProxy(node)],
+            EConfigType.TUIC => [BuildTuicProxy(node, extra)],
+            _ => BuildMieruProxies(node, extra, bindings),
+        };
+    }
+
+    private static List<Dictionary<string, object>> BuildMieruProxies(
         ProfileItem node,
         ProtocolExtraItem extra,
         IReadOnlyList<MieruBindingItem> bindings)
@@ -126,6 +225,52 @@ public class CoreConfigMihomoMieruService(CoreConfigContext context)
         return result;
     }
 
+    private static Dictionary<string, object> BuildAnyTlsProxy(ProfileItem node)
+    {
+        var proxy = BuildTlsProxyBase(node, "AnyTLS", "anytls");
+        proxy["password"] = node.Password;
+        proxy["udp"] = true;
+        if (node.Fingerprint.IsNotEmpty())
+        {
+            proxy["client-fingerprint"] = node.Fingerprint;
+        }
+        return proxy;
+    }
+
+    private static Dictionary<string, object> BuildTuicProxy(ProfileItem node, ProtocolExtraItem extra)
+    {
+        var proxy = BuildTlsProxyBase(node, "TUIC v5", "tuic");
+        proxy["uuid"] = node.Username;
+        proxy["password"] = node.Password;
+        proxy["udp-relay-mode"] = extra.TuicUdpRelayMode is "quic" ? "quic" : "native";
+        proxy["congestion-controller"] = extra.CongestionControl is "cubic" or "new_reno" or "bbr"
+            ? extra.CongestionControl
+            : "bbr";
+        return proxy;
+    }
+
+    private static Dictionary<string, object> BuildTlsProxyBase(ProfileItem node, string fallbackName, string type)
+    {
+        var proxy = new Dictionary<string, object>
+        {
+            ["name"] = node.Remarks.IsNotEmpty() ? node.Remarks : fallbackName,
+            ["type"] = type,
+            ["server"] = node.Address,
+            ["port"] = node.Port,
+            ["skip-cert-verify"] = node.GetAllowInsecure(),
+        };
+        if (node.Sni.IsNotEmpty())
+        {
+            proxy["sni"] = node.Sni;
+        }
+        var alpn = node.GetAlpn();
+        if (alpn is { Count: > 0 })
+        {
+            proxy["alpn"] = alpn;
+        }
+        return proxy;
+    }
+
     private static Dictionary<string, object> BuildProxyGroup(List<string> proxyNames)
     {
         var group = new Dictionary<string, object>
@@ -141,6 +286,20 @@ public class CoreConfigMihomoMieruService(CoreConfigContext context)
             group["lazy"] = true;
         }
         return group;
+    }
+
+    private static Dictionary<string, object> BuildSpeedtestDns(SimpleDNSItem dns, bool ipv6)
+    {
+        var remote = ParseDnsList(dns?.RemoteDNS, Global.DomainRemoteDNSAddress.First());
+        var bootstrap = ParseDnsList(dns?.BootstrapDNS, "1.1.1.1,8.8.8.8");
+        return new Dictionary<string, object>
+        {
+            ["enable"] = true,
+            ["ipv6"] = ipv6,
+            ["enhanced-mode"] = "redir-host",
+            ["nameserver"] = remote,
+            ["proxy-server-nameserver"] = bootstrap,
+        };
     }
 
     private static Dictionary<string, object> BuildDns(SimpleDNSItem dns, bool ipv6)
@@ -178,12 +337,15 @@ public class CoreConfigMihomoMieruService(CoreConfigContext context)
         var rules = new List<string>();
 
         AddLocalNetworkRules(rules, Target(smart.LocalNetworkAction));
-        AddDomainRules(rules, smart.CustomBlockDomains, "REJECT");
-        AddIpRules(rules, smart.CustomBlockIps, "REJECT");
-        AddDomainRules(rules, smart.CustomProxyDomains, ProxyGroupName);
-        AddIpRules(rules, smart.CustomProxyIps, ProxyGroupName);
-        AddDomainRules(rules, smart.CustomDirectDomains, "DIRECT");
-        AddIpRules(rules, smart.CustomDirectIps, "DIRECT");
+        if (smart.Preset == SgSmartRoutingHelper.PresetCustom)
+        {
+            AddDomainRules(rules, smart.CustomBlockDomains, "REJECT");
+            AddIpRules(rules, smart.CustomBlockIps, "REJECT");
+            AddDomainRules(rules, smart.CustomProxyDomains, ProxyGroupName);
+            AddIpRules(rules, smart.CustomProxyIps, ProxyGroupName);
+            AddDomainRules(rules, smart.CustomDirectDomains, "DIRECT");
+            AddIpRules(rules, smart.CustomDirectIps, "DIRECT");
+        }
 
         var russiaTarget = Target(smart.RussiaAction);
         switch (SgSmartRoutingHelper.NormalizeRussiaScope(smart.RussiaScope))
@@ -194,6 +356,10 @@ public class CoreConfigMihomoMieruService(CoreConfigContext context)
             case SgSmartRoutingHelper.RussiaScopeSitesAndIp:
                 rules.Add($"GEOSITE,category-ru,{russiaTarget}");
                 rules.Add($"GEOIP,RU,{russiaTarget},no-resolve");
+                break;
+            case SgSmartRoutingHelper.RussiaScopeWhiteIp:
+                AddDomainRules(rules, SgRussiaRulesManager.Instance.GetWhiteDomains(), russiaTarget);
+                AddIpRules(rules, SgRussiaRulesManager.Instance.GetWhiteIpCidrs(), russiaTarget);
                 break;
         }
 

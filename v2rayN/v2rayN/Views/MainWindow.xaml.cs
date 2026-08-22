@@ -92,7 +92,7 @@ public partial class MainWindow
                 .DisposeWith(disposables);
         });
 
-        Title = "SG-Client — 086";
+        Title = "SG Client — 099F";
 
         if (_config.UiItem.AutoHideStartup)
         {
@@ -707,21 +707,22 @@ public partial class MainWindow
         }
 
         ShowHideWindow(true);
-        await ImportScannedContentAsync(result, "AmneziaWG.conf");
+        await ImportScannedContentAsync(result, "Экран");
     }
 
     private async Task ScanImageTaskAsync()
     {
-        if (UI.OpenFileDialog(out var fileName, "PNG|*.png|All|*.*") != true || fileName.IsNullOrEmpty())
+        if (UI.OpenFileDialog(out var fileName, "Изображения|*.png;*.jpg;*.jpeg;*.bmp;*.gif|Все файлы|*.*") != true || fileName.IsNullOrEmpty())
         {
             return;
         }
 
         var result = QRCodeUtils.ParseBarcode(fileName);
-        await ImportScannedContentAsync(result, "AmneziaWG.conf");
+        await ImportScannedContentAsync(result, Path.GetFileName(fileName));
     }
 
-    private async Task ImportScannedContentAsync(string? result, string sourceFileName)
+    // SG_QR_IMPORT_097: decode first, review second, import only after confirmation.
+    private async Task ImportScannedContentAsync(string? result, string sourceName)
     {
         if (result.IsNullOrEmpty())
         {
@@ -729,17 +730,29 @@ public partial class MainWindow
             return;
         }
 
-        if (AmneziaWgManager.LooksLikeWireGuardConfig(result)
-            && AmneziaWgManager.IsAmneziaConfig(result))
+        var review = new SgQrImportWindow(result, sourceName) { Owner = this };
+        if (review.ShowDialog() != true || ViewModel == null)
         {
-            await OpenAwgTextImportAsync(result, sourceFileName);
             return;
         }
 
-        if (ViewModel != null)
+        // The existing strict importer remains authoritative for profiles,
+        // subscriptions and AmneziaWG. The QR window only previews/validates.
+        await ViewModel.AddServerViaClipboardAsync(review.DecodedContent);
+    }
+
+    private async void ImportQrFromClipboard_Click(object sender, RoutedEventArgs e)
+    {
+        importPopup.IsOpen = false;
+        var bytes = WindowsUtils.GetClipboardImagePng();
+        if (bytes is not { Length: > 0 })
         {
-            await ViewModel.AddScanResultAsync(result);
+            await DelegateSnackMsg("В буфере обмена нет изображения с QR-кодом.");
+            return;
         }
+
+        var result = QRCodeUtils.ParseBarcode(bytes);
+        await ImportScannedContentAsync(result, "Буфер обмена");
     }
 
     public void ShowHideWindow(bool? blShow)

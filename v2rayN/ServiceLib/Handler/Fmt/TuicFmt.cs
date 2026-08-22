@@ -32,8 +32,21 @@ public class TuicFmt : BaseFmt
         ResolveUriQuery(query, ref item);
         item.SetProtocolExtra(item.GetProtocolExtra() with
         {
-            CongestionControl = GetQueryValue(query, "congestion_control")
+            CongestionControl = GetQueryValue(query, "congestion_control"),
+            TuicUdpRelayMode = GetQueryValue(query, "udp_relay_mode", "native")
         });
+
+        // SG099: TUIC v5 is handled by bundled Mihomo. TLS is intrinsic to the
+        // protocol, so keep TLS/h3 defaults even when the URI omits security=.
+        item.CoreType = ECoreType.mihomo;
+        if (item.StreamSecurity.IsNullOrEmpty())
+        {
+            item.StreamSecurity = Global.StreamSecurity;
+        }
+        if (item.Alpn.IsNullOrEmpty())
+        {
+            item.Alpn = "h3";
+        }
 
         return item;
     }
@@ -57,6 +70,10 @@ public class TuicFmt : BaseFmt
         if (!item.GetProtocolExtra().CongestionControl.IsNullOrEmpty())
         {
             dicQuery.Add("congestion_control", item.GetProtocolExtra().CongestionControl);
+        }
+        if (!item.GetProtocolExtra().TuicUdpRelayMode.IsNullOrEmpty())
+        {
+            dicQuery.Add("udp_relay_mode", item.GetProtocolExtra().TuicUdpRelayMode);
         }
 
         return ToUri(EConfigType.TUIC, item.Address, item.Port, $"{item.Username ?? ""}:{item.Password}", dicQuery, remark);

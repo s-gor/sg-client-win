@@ -1420,11 +1420,14 @@ public partial class SgConnectionsWindow
         var routingTitle = settings.Preset switch
         {
             SgSmartRoutingHelper.PresetRussiaDirect => "Россия напрямую",
+            SgSmartRoutingHelper.PresetRussiaWhiteIpDirect => "Белый список РФ напрямую",
             SgSmartRoutingHelper.PresetBlockedOnly => "Только блокировки",
             SgSmartRoutingHelper.PresetCustom when settings.RussiaScope == SgSmartRoutingHelper.RussiaScopeTld
                 => "Пользовательская · доменные зоны РФ",
             SgSmartRoutingHelper.PresetCustom when settings.RussiaScope == SgSmartRoutingHelper.RussiaScopeSitesAndIp
                 => "Пользовательская · сайты и IP РФ",
+            SgSmartRoutingHelper.PresetCustom when settings.RussiaScope == SgSmartRoutingHelper.RussiaScopeWhiteIp
+                => "Пользовательская · Белый список РФ",
             SgSmartRoutingHelper.PresetCustom => "Пользовательская",
             _ => "Весь интернет",
         };

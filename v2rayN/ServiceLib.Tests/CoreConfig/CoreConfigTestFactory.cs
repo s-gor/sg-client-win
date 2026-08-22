@@ -130,6 +130,24 @@ internal static class CoreConfigTestFactory
         };
     }
 
+    public static ProfileItem CreateHysteria2Node(ECoreType coreType, string indexId = "node-hy2-1",
+        string remarks = "demo-hy2")
+    {
+        return new ProfileItem
+        {
+            IndexId = indexId,
+            ConfigType = EConfigType.Hysteria2,
+            CoreType = coreType,
+            Remarks = remarks,
+            Address = "hy2.example.com",
+            Port = 443,
+            Password = "auth-password",
+            Network = string.Empty,
+            StreamSecurity = Global.StreamSecurity,
+            Subid = string.Empty,
+        };
+    }
+
     public static ProfileItem CreateMieruNode(string indexId = "node-mieru-1", string remarks = "demo-mieru")
     {
         var node = new ProfileItem

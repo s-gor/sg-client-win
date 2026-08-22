@@ -23,6 +23,7 @@ public sealed class SgLatencyTestService
     private static readonly TimeSpan ProfileTimeout = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan IpInfoTimeout = TimeSpan.FromSeconds(6);
     private static readonly TimeSpan CoreStopTimeout = TimeSpan.FromSeconds(6);
+    private static readonly TimeSpan LocalProxyReadyTimeout = TimeSpan.FromSeconds(5);
     private const int MaxReliableBatchSize = 64;
 
     private readonly Config _config;
@@ -86,22 +87,24 @@ public sealed class SgLatencyTestService
 
         try
         {
-            var validItems = await PrepareItemsAsync(profiles, cts.Token);
+            var awgProfiles = profiles.Where(item => item.IsAmneziaWG).ToList();
+            var regularProfiles = profiles.Where(item => !item.IsAmneziaWG).ToList();
+            var validItems = await PrepareItemsAsync(regularProfiles, cts.Token);
 
-            // Mieru is executed by Mihomo and does not use the Xray/sing-box
-            // temporary SOCKS speed-test configuration. Test its reachable TCP
-            // endpoint directly, so large mixed subscriptions can still finish
-            // with a deterministic result for every profile.
-            var mieruItems = validItems
-                .Where(item => item.ConfigType == EConfigType.Mieru)
+            // Mihomo-backed protocols need their own real profile test. A direct
+            // TCP connect is wrong for UDP-only Mieru and does not exercise TUIC's
+            // QUIC transport. Start a temporary local Mihomo instance per profile
+            // and measure through its SOCKS listener instead.
+            var mihomoItems = validItems
+                .Where(item => item.CoreType == ECoreType.mihomo)
                 .ToList();
-            if (mieruItems.Count > 0)
+            if (mihomoItems.Count > 0)
             {
-                await RunMieruLatencyAsync(mieruItems, cts.Token);
+                await RunMihomoLatencyAsync(mihomoItems, cts.Token);
             }
 
             var coreItems = validItems
-                .Where(item => item.ConfigType != EConfigType.Mieru)
+                .Where(item => item.CoreType != ECoreType.mihomo)
                 .ToList();
             var configuredPageSize = _config.SpeedTestItem.SpeedTestPageSize ?? MaxReliableBatchSize;
             var pageSize = Math.Max(1, Math.Min(coreItems.Count, Math.Min(configuredPageSize, MaxReliableBatchSize)));
@@ -113,6 +116,14 @@ public sealed class SgLatencyTestService
                     cts.Token.ThrowIfCancellationRequested();
                     await RunBatchWithFallbackAsync(batch.ToList(), cts.Token);
                 }
+            }
+
+            // AWG needs a real short-lived Windows tunnel and is inherently slower than the
+            // regular core-based probes. Run it after the normal profiles so Xray/Mihomo rows
+            // receive their results immediately instead of remaining visually blocked behind AWG.
+            if (awgProfiles.Count > 0)
+            {
+                await RunAmneziaWgLatencyAsync(awgProfiles, cts.Token);
             }
         }
         catch (OperationCanceledException) when (cts.IsCancellationRequested)
@@ -191,18 +202,83 @@ public sealed class SgLatencyTestService
         return result;
     }
 
-    private async Task RunMieruLatencyAsync(
+    private async Task RunAmneziaWgLatencyAsync(
+        IReadOnlyCollection<ProfileItemModel> profiles,
+        CancellationToken cancellationToken)
+    {
+        var probe = new SgAmneziaWgLatencyProbe();
+        foreach (var model in profiles)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await _update(new SgLatencyTestUpdate(model.IndexId, TestingText, null, null, null, false));
+
+            var profile = AmneziaWgManager.Instance.GetProfile(model.IndexId);
+            if (profile is null)
+            {
+                await FinalizeAsync(model.IndexId, SgLatencyOutcome.Error);
+                continue;
+            }
+
+            try
+            {
+                var result = await probe.MeasureAsync(profile, cancellationToken);
+                if (!result.IsSuccess && result.CanRetry)
+                {
+                    Logging.SaveLog(
+                        $"SG AWG RTT transient startup failure; retrying once: profile={profile.Name}; "
+                        + $"protocol={profile.Protocol}; message={result.Message}");
+                    await _update(new SgLatencyTestUpdate(model.IndexId, TestingText, null, null, null, false));
+                    // The probe cleanup already includes the Windows/Wintun settle window.
+                    // Keep only a tiny scheduler gap here; the second attempt gets the extended
+                    // readiness windows and is used only after a transient startup failure.
+                    await Task.Delay(150, cancellationToken);
+                    result = await probe.MeasureAsync(profile, cancellationToken, extendedWait: true);
+                }
+
+                if (result.IsSuccess)
+                {
+                    await FinalizeAsync(
+                        model.IndexId,
+                        SgLatencyOutcome.Available,
+                        result.DelayMilliseconds);
+                }
+                else
+                {
+                    Logging.SaveLog(
+                        $"SG AWG RTT result: profile={profile.Name}; protocol={profile.Protocol}; "
+                        + $"unavailable={result.IsUnavailable}; message={result.Message}");
+                    await FinalizeAsync(
+                        model.IndexId,
+                        result.IsUnavailable ? SgLatencyOutcome.Unavailable : SgLatencyOutcome.Error);
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                await FinalizeAsync(model.IndexId, SgLatencyOutcome.Cancelled);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logging.SaveLog($"SG AWG RTT failed: {model.IndexId}", ex);
+                await FinalizeAsync(model.IndexId, SgLatencyOutcome.Error);
+            }
+        }
+    }
+
+    private async Task RunMihomoLatencyAsync(
         IReadOnlyCollection<ServerTestItem> items,
         CancellationToken cancellationToken)
     {
-        var concurrency = Math.Clamp(_config.SpeedTestItem.MixedConcurrencyCount, 1, 16);
+        // Each Mihomo probe has an isolated data directory, but CoreManager still
+        // owns a shared Windows job. Serialize startup/stop to keep that lifecycle deterministic.
+        const int concurrency = 1;
         using var gate = new SemaphoreSlim(concurrency, concurrency);
         var tasks = items.Select(async item =>
         {
             await gate.WaitAsync(cancellationToken);
             try
             {
-                await TestMieruEndpointAsync(item, cancellationToken);
+                await TestMihomoProfileAsync(item, cancellationToken);
             }
             finally
             {
@@ -212,60 +288,91 @@ public sealed class SgLatencyTestService
         await Task.WhenAll(tasks);
     }
 
-    private async Task TestMieruEndpointAsync(ServerTestItem item, CancellationToken cancellationToken)
+    private async Task TestMihomoProfileAsync(ServerTestItem item, CancellationToken cancellationToken)
     {
+        ProcessService? processService = null;
         try
         {
-            var binding = item.Profile.GetProtocolExtra().MieruBindings?
-                .FirstOrDefault(value => string.Equals(value.Protocol, "TCP", StringComparison.OrdinalIgnoreCase));
-            if (binding is null || !TryGetFirstPort(binding.Port, out var port) || item.Address.IsNullOrEmpty())
+            processService = await CoreManager.Instance
+                .LoadCoreConfigSpeedtest(item)
+                .WaitAsync(CoreStartTimeout, cancellationToken);
+            if (processService is null)
             {
-                // A UDP-only Mieru endpoint cannot be measured reliably with a
-                // connection handshake, so leave it explicit instead of showing
-                // a false error or keeping the row in "Проверяется…".
-                await FinalizeAsync(item.IndexId, SgLatencyOutcome.NotTested);
+                await FinalizeAsync(item.IndexId, SgLatencyOutcome.Error);
                 return;
             }
 
-            using var client = new TcpClient();
-            var stopwatch = Stopwatch.StartNew();
-            await client.ConnectAsync(item.Address, port, cancellationToken)
-                .AsTask()
-                .WaitAsync(ProfileTimeout, cancellationToken);
-            stopwatch.Stop();
+            if (!await WaitForLocalProxyAsync(item.Port, processService, cancellationToken))
+            {
+                await FinalizeAsync(item.IndexId, SgLatencyOutcome.Error);
+                return;
+            }
 
-            var elapsed = Math.Max(1, (int)Math.Round(stopwatch.Elapsed.TotalMilliseconds));
-            await FinalizeAsync(item.IndexId, SgLatencyOutcome.Available, elapsed);
+            await TestProfileAsync(item, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             await FinalizeAsync(item.IndexId, SgLatencyOutcome.Cancelled);
         }
-        catch (TimeoutException)
+        catch (TimeoutException ex)
         {
-            await FinalizeAsync(item.IndexId, SgLatencyOutcome.Unavailable);
-        }
-        catch (SocketException)
-        {
+            Logging.SaveLog($"SG Mihomo latency start timeout: {item.IndexId}", ex);
             await FinalizeAsync(item.IndexId, SgLatencyOutcome.Unavailable);
         }
         catch (Exception ex)
         {
-            Logging.SaveLog($"SG Mieru latency failed: {item.IndexId}", ex);
+            Logging.SaveLog($"SG Mihomo latency failed: {item.IndexId}", ex);
             await FinalizeAsync(item.IndexId, SgLatencyOutcome.Error);
+        }
+        finally
+        {
+            if (processService is not null)
+            {
+                try
+                {
+                    await processService.StopAsync().WaitAsync(CoreStopTimeout);
+                }
+                catch (Exception ex)
+                {
+                    Logging.SaveLog($"SG Mihomo latency core stop failed: {item.IndexId}", ex);
+                }
+            }
         }
     }
 
-    private static bool TryGetFirstPort(string? value, out int port)
+    private static async Task<bool> WaitForLocalProxyAsync(
+        int port,
+        ProcessService processService,
+        CancellationToken cancellationToken)
     {
-        port = 0;
-        if (value.IsNullOrEmpty())
+        var deadline = Stopwatch.StartNew();
+        while (deadline.Elapsed < LocalProxyReadyTimeout)
         {
-            return false;
+            cancellationToken.ThrowIfCancellationRequested();
+            if (processService.HasExited)
+            {
+                return false;
+            }
+
+            using var client = new TcpClient();
+            try
+            {
+                await client.ConnectAsync(Global.Loopback, port, cancellationToken)
+                    .AsTask()
+                    .WaitAsync(TimeSpan.FromMilliseconds(500), cancellationToken);
+                return true;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
+            }
         }
 
-        var first = value!.Split('-', 2, StringSplitOptions.TrimEntries)[0];
-        return int.TryParse(first, out port) && port is > 0 and <= 65535;
+        return false;
     }
 
     private async Task RunBatchWithFallbackAsync(List<ServerTestItem> batch, CancellationToken cancellationToken)
@@ -435,7 +542,14 @@ public sealed class SgLatencyTestService
             SgLatencyOutcome.Cancelled => CancelledDelay,
             _ => NotTestedDelay,
         };
-        ProfileExManager.Instance.SetTestDelay(indexId, persistedDelay);
+        if (AmneziaWgManager.IsAwgProfileId(indexId))
+        {
+            SgAwgLatencyStore.Instance.Set(indexId, persistedDelay);
+        }
+        else
+        {
+            ProfileExManager.Instance.SetTestDelay(indexId, persistedDelay);
+        }
 
         var display = GetDelayDisplay(persistedDelay);
         await _update(new SgLatencyTestUpdate(

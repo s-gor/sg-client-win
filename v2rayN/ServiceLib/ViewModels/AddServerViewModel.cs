@@ -27,6 +27,9 @@ public class AddServerViewModel : MyReactiveObject
     public bool AllowInsecureCertFetch { get; set; }
 
     [Reactive]
+    public string HyObfsType { get; set; }
+
+    [Reactive]
     public string SalamanderPass { get; set; }
 
     [Reactive]
@@ -289,6 +292,7 @@ public class AddServerViewModel : MyReactiveObject
         Ports = protocolExtra.Ports ?? string.Empty;
         AlterId = int.TryParse(protocolExtra.AlterId, out var result) ? result : 0;
         Flow = protocolExtra.Flow ?? string.Empty;
+        HyObfsType = Hysteria2ObfsHelper.GetEffectiveType(protocolExtra) ?? string.Empty;
         SalamanderPass = protocolExtra.SalamanderPass ?? string.Empty;
         UpMbps = protocolExtra.UpMbps;
         DownMbps = protocolExtra.DownMbps;
@@ -390,6 +394,7 @@ public class AddServerViewModel : MyReactiveObject
             Ports = Ports.NullIfEmpty(),
             AlterId = AlterId > 0 ? AlterId.ToString() : null,
             Flow = Flow.NullIfEmpty(),
+            HyObfsType = Hysteria2ObfsHelper.NormalizeType(HyObfsType),
             SalamanderPass = SalamanderPass.NullIfEmpty(),
             UpMbps = UpMbps,
             DownMbps = DownMbps,

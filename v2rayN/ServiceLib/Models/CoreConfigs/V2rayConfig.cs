@@ -511,6 +511,10 @@ public class MaskSettings4Ray
 
     public string? password { get; set; }
 
+    // Xray FinalMask Gecko: non-empty packetSize enables Gecko on the
+    // salamander UDP mask. SG-Gateway uses 512-1200.
+    public string? packetSize { get; set; }
+
     // fragment
     public string? packets { get; set; }
 

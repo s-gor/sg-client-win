@@ -28,7 +28,7 @@ public partial class SgSubscriptionsWindow : Window
 
         foreach (var item in items.OrderBy(t => t.Sort))
         {
-            var profiles = await AppManager.Instance.ProfileItems(item.Id) ?? [];
+            var profileCount = await GetSubscriptionProfileCountAsync(item.Id);
             _subscriptions.Add(new SgSubscriptionEntry
             {
                 Id = item.Id,
@@ -37,7 +37,7 @@ public partial class SgSubscriptionsWindow : Window
                 UrlDisplay = BuildSafeUrlDisplay(item.Url),
                 StateText = item.Enabled ? "ВКЛЮЧЕНА" : "ОТКЛЮЧЕНА",
                 StateBrush = (Brush)FindResource(item.Enabled ? "SgAccentBrush" : "SgMutedBrush"),
-                ProfileCountText = GetProfileCountText(profiles.Count),
+                ProfileCountText = GetProfileCountText(profileCount),
                 LastUpdateText = item.UpdateTime > 0
                     ? $"Обновлена: {DateTimeOffset.FromUnixTimeSeconds(item.UpdateTime).LocalDateTime:dd.MM.yyyy HH:mm}"
                     : "Ещё не обновлялась",
@@ -155,16 +155,24 @@ public partial class SgSubscriptionsWindow : Window
             "Удалить",
             async () =>
             {
-                await ConfigHandler.DeleteSubItem(_config, id);
-                await ConfigHandler.SaveConfig(_config);
-                AppEvents.SubscriptionsRefreshRequested.Publish();
-                AppEvents.ProfilesRefreshRequested.Publish();
-                if (_editingId == id)
+                try
                 {
-                    ClearEditor();
+                    await ConfigHandler.DeleteSubItem(_config, id);
+                    await ConfigHandler.SaveConfig(_config);
+                    AppEvents.SubscriptionsRefreshRequested.Publish();
+                    AppEvents.ProfilesRefreshRequested.Publish();
+                    if (_editingId == id)
+                    {
+                        ClearEditor();
+                    }
+                    await RefreshSubscriptionsAsync();
+                    SetStatus("Подписка удалена.", "SgMutedBrush");
                 }
-                await RefreshSubscriptionsAsync();
-                SetStatus("Подписка удалена.", "SgMutedBrush");
+                catch (Exception ex)
+                {
+                    Logging.SaveLog("SgSubscriptionsWindow.Delete", ex);
+                    SetStatus($"Не удалось удалить подписку: {ex.Message}", "SgErrorBrush");
+                }
             });
     }
 
@@ -245,7 +253,7 @@ public partial class SgSubscriptionsWindow : Window
         }
 
         SetBusy(true);
-        var before = (await AppManager.Instance.ProfileItems(id))?.Count ?? 0;
+        var before = await GetSubscriptionProfileCountAsync(id);
         var succeeded = false;
         var mode = useVpn ? "через VPN" : "напрямую";
         SetStatus($"Обновляется «{item.Remarks}» {mode}…", "SgAccentBrush");
@@ -266,7 +274,7 @@ public partial class SgSubscriptionsWindow : Window
                     await Task.CompletedTask;
                 });
 
-            var after = (await AppManager.Instance.ProfileItems(id))?.Count ?? 0;
+            var after = await GetSubscriptionProfileCountAsync(id);
             if (succeeded)
             {
                 item.UpdateTime = DateTimeOffset.Now.ToUnixTimeSeconds();
@@ -294,6 +302,14 @@ public partial class SgSubscriptionsWindow : Window
                 SetBusy(false);
             }
         }
+    }
+
+    private static async Task<int> GetSubscriptionProfileCountAsync(string subid)
+    {
+        var regularCount = (await AppManager.Instance.ProfileItems(subid))?.Count ?? 0;
+        var awgCount = AmneziaWgManager.Instance.GetProfiles().Count(profile =>
+            string.Equals(profile.Subid, subid, StringComparison.OrdinalIgnoreCase));
+        return regularCount + awgCount;
     }
 
     private void SetBusy(bool busy)

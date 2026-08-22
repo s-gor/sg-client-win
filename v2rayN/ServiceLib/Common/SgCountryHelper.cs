@@ -51,6 +51,13 @@ public static class SgCountryHelper
         @"^[\s\p{Cf}]*sg-(?:admin|client|panel|node|awg)(?:[/\s-]|$)",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
+    // Some subscription generators append a build timestamp such as
+    // [260813-173649.515] to every node name. It is transport metadata, not
+    // a useful profile label. Strip only this exact terminal shape for UI.
+    private static readonly Regex GeneratedTimestampSuffixRegex = new(
+        @"\s*\[\d{6}-\d{6}\.\d{3}\]\s*$",
+        RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
     private static readonly IReadOnlyDictionary<char, char> CountryLetterMap =
         new Dictionary<char, char>
         {
@@ -111,24 +118,22 @@ public static class SgCountryHelper
     public static string CleanRemarks(string? remarks, string? countryCode)
     {
         var original = remarks?.Trim() ?? string.Empty;
-        var code = ResolveCode(countryCode, original);
         if (original.Length == 0)
         {
             return "Без названия";
         }
-        if (code.Length != 2)
-        {
-            return original;
-        }
 
-        if (TryReadLeadingCountryMarker(original, out var markerCode, out var markerLength)
+        var cleaned = original;
+        var code = ResolveCode(countryCode, original);
+        if (code.Length == 2
+            && TryReadLeadingCountryMarker(original, out var markerCode, out var markerLength)
             && string.Equals(markerCode, code, StringComparison.OrdinalIgnoreCase))
         {
-            var cleaned = original[markerLength..].TrimStart();
-            return cleaned.Length > 0 ? cleaned : original;
+            cleaned = original[markerLength..].TrimStart();
         }
 
-        return original;
+        cleaned = GeneratedTimestampSuffixRegex.Replace(cleaned, string.Empty).TrimEnd();
+        return cleaned.Length > 0 ? cleaned : "Без названия";
     }
 
     public static bool IsLegacySgBrandPrefix(string? remarks) =>

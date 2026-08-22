@@ -17,7 +17,7 @@ public class ProfileItemModel : ReactiveObject
     [Reactive]
     public string CountrySource { get; set; } = string.Empty;
     public string ResolvedCountryCode => SgCountryHelper.ResolveCode(CountryCode, Remarks);
-    public string DisplayRemarks => SgCountryHelper.CleanRemarks(Remarks, ResolvedCountryCode);
+    public string DisplayRemarks => SgProfileDisplayHelper.CleanDisplayName(Remarks, ResolvedCountryCode, ConfigType);
     public string CountryBadge => ResolvedCountryCode.Length == 2 ? ResolvedCountryCode : "—";
     public string CountryFlagUri => $"pack://application:,,,/Assets/Flags/{(ResolvedCountryCode.Length == 2 ? ResolvedCountryCode : "ZZ")}.png";
     public string CountryName => SgCountryHelper.GetRussianName(ResolvedCountryCode);
@@ -40,6 +40,7 @@ public class ProfileItemModel : ReactiveObject
     public int Port { get; set; }
     public string Network { get; set; }
     public string StreamSecurity { get; set; }
+    public string ProtoExtra { get; set; } = string.Empty;
     public string Subid { get; set; }
     public bool IsSub { get; set; }
     public string SubRemarks { get; set; }
@@ -50,6 +51,7 @@ public class ProfileItemModel : ReactiveObject
     public bool IsAmneziaWG { get; set; }
     public string ProtocolDisplay { get; set; } = string.Empty;
     public string SourceDisplay { get; set; } = "Локальный профиль";
+    public string TechnologyBadge { get; set; } = string.Empty;
 
     [Reactive]
     public int Delay { get; set; }

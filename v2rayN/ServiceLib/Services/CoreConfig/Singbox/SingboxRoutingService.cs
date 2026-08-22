@@ -301,8 +301,15 @@ public partial class CoreConfigSingboxService
                 AddSgSboxDomainRule(["geosite:ru-blocked"], item.BlockedAction);
                 AddSgSboxIpRule(["geoip:ru-blocked"], item.BlockedAction);
             }
-            AddSgSboxDomainRule(SgSmartRoutingHelper.GetRussiaDomainRules(item), item.RussiaAction);
-            AddSgSboxIpRule(SgSmartRoutingHelper.GetRussiaIpRules(item), item.RussiaAction);
+            var whiteListActive = SgSmartRoutingHelper.NormalizeRussiaScope(item.RussiaScope) == SgSmartRoutingHelper.RussiaScopeWhiteIp;
+            var russiaDomains = whiteListActive
+                ? SgRussiaRulesManager.Instance.GetWhiteDomains()
+                : SgSmartRoutingHelper.GetRussiaDomainRules(item);
+            var russiaIps = whiteListActive
+                ? SgRussiaRulesManager.Instance.GetWhiteIpCidrs()
+                : SgSmartRoutingHelper.GetRussiaIpRules(item);
+            AddSgSboxDomainRule(russiaDomains, item.RussiaAction);
+            AddSgSboxIpRule(russiaIps, item.RussiaAction);
         }
 
         _coreConfig.route.final = item.DefaultAction == SgSmartRoutingHelper.ActionDirect

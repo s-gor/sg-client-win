@@ -9,6 +9,7 @@ public partial class SgReserveProfileWindow : Window
     public SgReserveProfileWindow()
     {
         InitializeComponent();
+        SgWindowSizing.AttachCompact(this);
         SourceInitialized += (_, _) => WindowsUtils.SetSgBorderlessFrame(this);
         _config.SgQuickSettingsItem ??= new SgQuickSettingsItem();
         chkAutoFailover.IsChecked = _config.SgQuickSettingsItem.AutoFailoverEnabled;

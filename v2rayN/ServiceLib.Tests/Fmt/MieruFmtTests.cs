@@ -39,6 +39,7 @@ public class MieruFmtTests
         extra.MieruBindings[0].Protocol.Should().Be("TCP");
         extra.MieruBindings[1].Port.Should().Be("2999");
         extra.MieruBindings[1].Protocol.Should().Be("UDP");
+        extra.MieruProfile.Should().Be("Paris Mieru");
         extra.MieruMtu.Should().Be(1400);
         extra.MieruMultiplexing.Should().Be("MULTIPLEXING_HIGH");
         extra.MieruHandshakeMode.Should().Be("HANDSHAKE_STANDARD");
@@ -78,4 +79,40 @@ public class MieruFmtTests
         item.Should().BeNull();
         message.Should().Contain("port").And.Contain("protocol");
     }
+    [Fact]
+    public void Resolve_FragmentShouldOverrideTechnicalProfileAsRemarks()
+    {
+        const string uri =
+            "mierus://Sergey-2:2HV0IEESoV_s0e9_YJ_F17wtmNLTup@63.179.86.212"
+            + "?profile=default&port=2099&protocol=TCP"
+            + "&multiplexing=MULTIPLEXING_LOW&handshake-mode=HANDSHAKE_STANDARD#Sergey";
+
+        var item = MieruFmt.Resolve(uri, out var message);
+
+        item.Should().NotBeNull(message);
+        item!.Remarks.Should().Be("Sergey");
+        item.GetProtocolExtra().MieruProfile.Should().Be("default");
+    }
+
+    [Fact]
+    public void GetShareUri_ShouldPreserveMieruProfileAndHumanFriendlyFragment()
+    {
+        const string uri =
+            "mierus://Sergey-2:pass@63.179.86.212"
+            + "?profile=default&port=2099&protocol=TCP#Sergey";
+
+        var first = MieruFmt.Resolve(uri, out var firstMessage);
+        first.Should().NotBeNull(firstMessage);
+
+        var exported = MieruFmt.ToUri(first);
+
+        exported.Should().Contain("profile=default");
+        exported.Should().EndWith("#Sergey");
+
+        var second = MieruFmt.Resolve(exported!, out var secondMessage);
+        second.Should().NotBeNull(secondMessage);
+        second!.Remarks.Should().Be("Sergey");
+        second.GetProtocolExtra().MieruProfile.Should().Be("default");
+    }
+
 }
