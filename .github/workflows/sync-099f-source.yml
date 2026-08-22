@@ -1,18 +1,16 @@
 name: Temporary 099F source sync
 
 on:
-  push:
+  pull_request:
     branches:
-      - release/099f-publication
-    paths:
-      - 'release-sync/READY'
+      - main
 
 permissions:
   contents: write
 
 jobs:
   apply-patch:
-    if: github.event.head_commit.message == 'chore: stage 099F source patch'
+    if: github.event.pull_request.head.ref == 'release/099f-publication'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -22,7 +20,18 @@ jobs:
           ref: release/099f-publication
           fetch-depth: 0
 
+      - name: Check staging sentinel
+        id: staged
+        shell: bash
+        run: |
+          if [ -f release-sync/READY ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Reassemble and verify exact patch
+        if: steps.staged.outputs.ready == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -33,6 +42,7 @@ jobs:
           echo "bf3cc9f771f85a659d7a979b7c7c823925223dbafbd47e6b9c5739b275303e2a  /tmp/sg-096-to-099f.patch" | sha256sum -c -
 
       - name: Apply exact 096 to 099F patch
+        if: steps.staged.outputs.ready == 'true'
         shell: bash
         run: |
           set -euo pipefail
