@@ -28,7 +28,7 @@ jobs:
           set -euo pipefail
           cat release-sync/part*.b64 > /tmp/sg-099f-overlay.b64
           base64 --decode /tmp/sg-099f-overlay.b64 > /tmp/sg-099f-overlay.tar.gz
-          echo "5280d5456b26e8611b241602edae7fdeab3e1fe452acbbd192a0249026d0d9c7  /tmp/sg-099f-overlay.tar.gz" | sha256sum -c -
+          echo "a509246c9f7ee10aa92a06191d7e9a75957ebecda97d3a90daf1bf4d342cdff3  /tmp/sg-099f-overlay.tar.gz" | sha256sum -c -
 
       - name: Apply exact 099F source overlay
         shell: bash
