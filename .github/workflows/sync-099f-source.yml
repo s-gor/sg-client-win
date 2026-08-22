@@ -1,0 +1,58 @@
+name: Temporary 099F source sync
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'release-sync/**'
+      - '.github/workflows/sync-099f-source.yml'
+  push:
+    branches:
+      - release/099f-publication
+    paths:
+      - 'release-sync/READY'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-patch:
+    if: github.event_name == 'pull_request' || github.event.head_commit.message == 'chore: stage 099F source patch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout publication branch
+        uses: actions/checkout@v6
+        with:
+          ref: release/099f-publication
+          fetch-depth: 0
+
+      - name: Reassemble and verify exact patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat release-sync/part*.b64 > /tmp/sg-096-to-099f.patch.xz.b64
+          base64 --decode /tmp/sg-096-to-099f.patch.xz.b64 > /tmp/sg-096-to-099f.patch.xz
+          echo "168dfeaff9900f73e3e5c3f2975b4628352b42a854b71fef44a985cffab3a121  /tmp/sg-096-to-099f.patch.xz" | sha256sum -c -
+          xz -dc /tmp/sg-096-to-099f.patch.xz > /tmp/sg-096-to-099f.patch
+          echo "bf3cc9f771f85a659d7a979b7c7c823925223dbafbd47e6b9c5739b275303e2a  /tmp/sg-096-to-099f.patch" | sha256sum -c -
+
+      - name: Reset source to public 096 baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout origin/main -- v2rayN
+
+      - name: Apply exact 096 to 099F patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply --index --whitespace=nowarn /tmp/sg-096-to-099f.patch
+          rm -rf release-sync
+          rm -f .github/workflows/sync-099f-source.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: sync exact SG Client 099F source"
+          git push origin HEAD:release/099f-publication
