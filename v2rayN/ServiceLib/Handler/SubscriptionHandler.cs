@@ -204,8 +204,81 @@ public static class SubscriptionHandler
 
         await updateFunc?.Invoke(false, $"{hashCode}{ResUI.MsgStartParsingSubscription}");
 
-        // Add servers to configuration
-        var ret = await ConfigHandler.AddBatchServers(config, result, id, true);
+        SgSubscriptionEnvelope envelope;
+        try
+        {
+            envelope = SgSubscriptionParser.Parse(result);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("Parse SG native subscription", ex);
+            await updateFunc?.Invoke(false, $"{hashCode}{ResUI.MsgFailedImportSubscription}: {ex.Message}");
+            return false;
+        }
+
+        var regularCount = 0;
+        var awgCount = 0;
+        if (envelope.IsSgEnvelope)
+        {
+            if (envelope.UriPayload.IsNotEmpty())
+            {
+                regularCount = Math.Max(
+                    await ConfigHandler.AddBatchServers(config, envelope.UriPayload, id, true),
+                    0);
+            }
+            else
+            {
+                await ConfigHandler.RemoveServersViaSubid(config, id, true);
+            }
+
+            try
+            {
+                var awgItems = envelope.ConfigRecords
+                    .Select(record => new AwgSubscriptionProfileInput
+                    {
+                        SourceKey = record.SourceKey,
+                        Name = record.DisplayName,
+                        Content = record.Content
+                    })
+                    .ToList();
+                awgCount = await AmneziaWgManager.Instance.SyncSubscriptionProfilesAsync(id, awgItems);
+            }
+            catch (Exception ex)
+            {
+                Logging.SaveLog("Import SG native AmneziaWG subscription records", ex);
+                await updateFunc?.Invoke(false, $"{hashCode}{ResUI.MsgFailedImportSubscription}: {ex.Message}");
+                return false;
+            }
+
+            Logging.SaveLog($"SG native subscription imported: subid={id}; URI={regularCount}; AWG={awgCount}; total={regularCount + awgCount}");
+        }
+        else
+        {
+            regularCount = Math.Max(await ConfigHandler.AddBatchServers(config, result, id, true), 0);
+            if (regularCount > 0)
+            {
+                try
+                {
+                    // A bare/compatible subscription owns no SG-CONFIG records.
+                    // Remove AWG records left from an earlier native URL for the
+                    // same subscription id only after the regular update succeeds.
+                    await AmneziaWgManager.Instance.SyncSubscriptionProfilesAsync(
+                        id,
+                        Array.Empty<AwgSubscriptionProfileInput>());
+                }
+                catch (Exception ex)
+                {
+                    Logging.SaveLog("Remove stale SG native AmneziaWG records after compatible subscription update", ex);
+                    await updateFunc?.Invoke(false, $"{hashCode}{ResUI.MsgFailedImportSubscription}: {ex.Message}");
+                    return false;
+                }
+            }
+
+            Logging.SaveLog($"Compatible subscription imported: subid={id}; URI={regularCount}; AWG=0; total={regularCount}");
+        }
+
+        var ret = regularCount + awgCount;
+
         if (ret <= 0)
         {
             Logging.SaveLog("FailedImportSubscription");
@@ -251,7 +324,8 @@ public static class SubscriptionHandler
         }
 
         var text = value.Trim().TrimStart('\uFEFF', '\u200B');
-        if (text.StartsWith('{') || text.StartsWith('['))
+        if (text.StartsWith("# SG-SUBSCRIPTION/1", StringComparison.Ordinal)
+            || text.StartsWith('{') || text.StartsWith('['))
         {
             return true;
         }
@@ -272,6 +346,7 @@ public static class SubscriptionHandler
             || text.Contains("tuic://", StringComparison.OrdinalIgnoreCase)
             || text.Contains("wireguard://", StringComparison.OrdinalIgnoreCase)
             || text.Contains("anytls://", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("mierus://", StringComparison.OrdinalIgnoreCase)
             || text.Contains("naive+https://", StringComparison.OrdinalIgnoreCase)
             || text.Contains("naive+quic://", StringComparison.OrdinalIgnoreCase);
     }

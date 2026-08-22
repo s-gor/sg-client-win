@@ -156,7 +156,8 @@ public class SgQuickSettingsItem
     public bool AutoRecoverTun { get; set; } = true;
     public bool AllowLocalNetwork { get; set; } = true;
     public bool DnsThroughTun { get; set; } = true;
-    public bool KillSwitchEnabled { get; set; }
+    public bool KillSwitchEnabled { get; set; } = true;
+    public bool KillSwitchDefaultOnMigrationCompleted { get; set; }
     public List<string> SplitTunnelApplications { get; set; } = [];
     public List<string> SplitTunnelAddresses { get; set; } = [];
     public bool AutoFailoverEnabled { get; set; }

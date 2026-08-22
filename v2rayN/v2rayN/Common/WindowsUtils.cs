@@ -39,6 +39,35 @@ internal static partial class WindowsUtils
         }
     }
 
+    // SG_QR_CLIPBOARD_IMAGE_097: read an image without changing clipboard contents.
+    public static byte[]? GetClipboardImagePng()
+    {
+        try
+        {
+            if (!Clipboard.ContainsImage())
+            {
+                return null;
+            }
+
+            var image = Clipboard.GetImage();
+            if (image == null)
+            {
+                return null;
+            }
+
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(image));
+            using var stream = new MemoryStream();
+            encoder.Save(stream);
+            return stream.ToArray();
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("Read QR image from clipboard", ex);
+            return null;
+        }
+    }
+
     [LibraryImport("dwmapi.dll")]
     public static partial int DwmSetWindowAttribute(nint hwnd, DWMWINDOWATTRIBUTE attribute, ref int attributeValue, uint attributeSize);
 

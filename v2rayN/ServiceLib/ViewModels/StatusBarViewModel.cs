@@ -189,6 +189,9 @@ public class StatusBarViewModel : MyReactiveObject
     public bool CanUseSystemProxyMode { get; set; }
 
     [Reactive]
+    public bool CanUseLocalProxyMode { get; set; }
+
+    [Reactive]
     public bool CanDisconnectAll { get; set; }
 
     [Reactive]
@@ -362,7 +365,7 @@ public class StatusBarViewModel : MyReactiveObject
             try
             {
                 var isActive = GetConnectionModeKey() == "system-proxy"
-                    && TunUiState == ETunUiState.On;
+                    && TunUiState != ETunUiState.Off;
                 await ApplyConnectionModeAsync(
                     isActive ? "off" : "system-proxy");
             }
@@ -379,7 +382,7 @@ public class StatusBarViewModel : MyReactiveObject
             try
             {
                 var isActive = GetConnectionModeKey() == "local-proxy"
-                    && TunUiState == ETunUiState.On;
+                    && TunUiState != ETunUiState.Off;
                 await ApplyConnectionModeAsync(
                     isActive ? "off" : "local-proxy");
             }
@@ -774,6 +777,12 @@ public class StatusBarViewModel : MyReactiveObject
                 "Неизвестный режим подключения.");
         }
 
+        if (mode == "off")
+        {
+            TunOperationCoordinator.CancelCurrentAndPending("connection mode off");
+            AmneziaWgManager.Instance.CancelPendingConnect();
+        }
+
         if (mode != "tun"
             && mode != "off"
             && AmneziaWgManager.Instance.GetSelectedProfile() != null)
@@ -812,6 +821,14 @@ public class StatusBarViewModel : MyReactiveObject
 
             if (mode == "off")
             {
+                // A cancelled proxy start may have been inside a non-cancellable
+                // Windows proxy API call when Off was pressed. Sweep once more
+                // after engine cleanup so that a late completion cannot leave
+                // the system proxy enabled.
+                _config.SystemProxyItem.SysProxyType = ESysProxyType.ForcedClear;
+                SetSystemProxySelectedSilently(ESysProxyType.ForcedClear);
+                await ChangeSystemProxyAsync(ESysProxyType.ForcedClear, true);
+                await ConfigHandler.SaveConfig(_config);
                 ReportConnectionOff();
                 AppEvents.ProfilesRefreshRequested.Publish();
                 return;
@@ -824,14 +841,12 @@ public class StatusBarViewModel : MyReactiveObject
                     "Главное окно ещё не готово к запуску прокси.");
             }
 
-            await MainWindowViewModel.Instance.Reload();
-            if (!CoreManager.Instance.IsCoreRunning)
-            {
-                throw new InvalidOperationException(
-                    MainWindowViewModel.Instance.LastProxyStartError
-                        .NullIfEmpty()
-                        ?? "Локальное ядро не запустилось.");
-            }
+            // Start through the same event path as TUN. Do not keep this
+            // ReactiveCommand executing for the whole network handshake:
+            // while the async Reload runs, the active mode button must remain
+            // available so the user can turn it off immediately.
+            AppEvents.ReloadRequested.Publish();
+            return;
         }
         catch (Exception ex)
         {
@@ -871,6 +886,12 @@ public class StatusBarViewModel : MyReactiveObject
     private async Task DisconnectAllAsync()
     {
         var errors = new List<Exception>();
+
+        // SG_RECOVERY_109: this is an emergency escape hatch. Cancel the
+        // connection operation first so a stale connect cannot finish later
+        // and resurrect the tunnel after cleanup.
+        TunOperationCoordinator.CancelCurrentAndPending("disconnect all");
+        AmneziaWgManager.Instance.CancelPendingConnect();
 
         ProfilesViewModel.Instance?.ServerSpeedtestStop();
         TunUiState = ETunUiState.Stopping;
@@ -919,6 +940,22 @@ public class StatusBarViewModel : MyReactiveObject
         {
             errors.Add(ex);
             Logging.SaveLog("Disconnect all: stop engines", ex);
+        }
+
+        // Final proxy sweep after core cancellation. This closes the race with
+        // a start operation that was already inside the Windows proxy API when
+        // the emergency stop was pressed.
+        try
+        {
+            _config.SystemProxyItem.SysProxyType = ESysProxyType.ForcedClear;
+            SetSystemProxySelectedSilently(ESysProxyType.ForcedClear);
+            await ChangeSystemProxyAsync(ESysProxyType.ForcedClear, true);
+            await ConfigHandler.SaveConfig(_config);
+        }
+        catch (Exception ex)
+        {
+            errors.Add(ex);
+            Logging.SaveLog("Disconnect all: final proxy cleanup", ex);
         }
 
         try
@@ -1097,6 +1134,7 @@ public class StatusBarViewModel : MyReactiveObject
         try
         {
             await using var operation = await TunOperationCoordinator.EnterAsync(enabled ? "enable TUN" : "disable TUN");
+            operation.ThrowIfCancellationRequested();
             ApplyTunState(enabled ? ETunUiState.Starting : ETunUiState.Stopping);
             if (!enabled && SgKillSwitchManager.Instance.IsEmergencyBlockActive)
             {
@@ -1107,22 +1145,13 @@ public class StatusBarViewModel : MyReactiveObject
             {
                 if (Utils.IsWindows())
                 {
-                    // Preserve the requested ON state before restarting elevated.
-                    _config.TunModeItem.EnableTun = true;
-                    EnableTun = true;
+                    // SG Client must never elevate itself automatically. Keep the
+                    // normal unelevated process and reject TUN until the user
+                    // explicitly chooses to restart with administrator rights.
+                    _config.TunModeItem.EnableTun = false;
+                    EnableTun = false;
                     await ConfigHandler.SaveConfig(_config);
-
-                    if (ProcUtils.RebootAsAdmin())
-                    {
-                        await AppManager.Instance.AppExitAsync(true);
-                    }
-                    else
-                    {
-                        _config.TunModeItem.EnableTun = false;
-                        EnableTun = false;
-                        await ConfigHandler.SaveConfig(_config);
-                        ReportTunError("Не удалось перезапустить SG Client с правами администратора.");
-                    }
+                    ReportTunError("TUN требует прав администратора. Автоматический перезапуск отключён.");
                     return;
                 }
 
@@ -1193,6 +1222,7 @@ public class StatusBarViewModel : MyReactiveObject
             }
             else
             {
+                operation.ThrowIfCancellationRequested();
                 AppEvents.ProfilesRefreshRequested.Publish();
                 AppEvents.ReloadRequested.Publish();
             }
@@ -1201,6 +1231,11 @@ public class StatusBarViewModel : MyReactiveObject
             {
                 await _updateView.Invoke(EViewAction.DispatcherRefreshIcon, null);
             }
+        }
+        catch (OperationCanceledException)
+        {
+            Logging.SaveLog("Set TUN state cancelled by recovery stop");
+            return;
         }
         catch (Exception ex)
         {
@@ -1232,9 +1267,13 @@ public class StatusBarViewModel : MyReactiveObject
     {
         var errors = new List<Exception>();
 
+        // A failed AmneziaWG handshake may still own its manager gate.
+        // Cancel it before waiting for the disconnect path.
+        AmneziaWgManager.Instance.CancelPendingConnect();
+
         try
         {
-            await CoreManager.Instance.CoreStop().WaitAsync(TimeSpan.FromSeconds(15));
+            await CoreManager.Instance.CoreStop().WaitAsync(TimeSpan.FromSeconds(8));
         }
         catch (Exception ex)
         {
@@ -1257,12 +1296,22 @@ public class StatusBarViewModel : MyReactiveObject
 
         try
         {
-            await AmneziaWgManager.Instance.DisconnectAllAsync().WaitAsync(TimeSpan.FromSeconds(55));
+            await AmneziaWgManager.Instance.DisconnectAllAsync()
+                .WaitAsync(TimeSpan.FromSeconds(18));
         }
         catch (Exception ex)
         {
-            errors.Add(ex);
             Logging.SaveLog("Stop AmneziaWG TUN engine", ex);
+            try
+            {
+                await AmneziaWgManager.Instance.ForceDisconnectAllAsync()
+                    .WaitAsync(TimeSpan.FromSeconds(12));
+            }
+            catch (Exception forceEx)
+            {
+                errors.Add(forceEx);
+                Logging.SaveLog("Force stop AmneziaWG TUN engine", forceEx);
+            }
         }
 
         if (errors.Count > 0)
@@ -1303,9 +1352,11 @@ public class StatusBarViewModel : MyReactiveObject
                 _healthFailureCount = 0;
                 string? reserveProfileId = null;
                 var confirmedFailure = false;
+                var watchdogGeneration = TunOperationCoordinator.Generation;
 
                 await using (var operation = await TunOperationCoordinator.EnterAsync("watchdog emergency cleanup"))
                 {
+                    operation.ThrowIfCancellationRequested();
                     if (!_config.TunModeItem.EnableTun || TunBusy)
                     {
                         continue;
@@ -1320,6 +1371,11 @@ public class StatusBarViewModel : MyReactiveObject
                     try
                     {
                         await StopAllTunEnginesAsync();
+                        operation.ThrowIfCancellationRequested();
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
                     }
                     catch (Exception cleanupEx)
                     {
@@ -1339,7 +1395,8 @@ public class StatusBarViewModel : MyReactiveObject
                     }
                 }
 
-                if (!confirmedFailure)
+                if (!confirmedFailure
+                    || watchdogGeneration != TunOperationCoordinator.Generation)
                 {
                     continue;
                 }
@@ -1546,11 +1603,14 @@ public class StatusBarViewModel : MyReactiveObject
         QuickRoutingSummary = smartRouting.Preset switch
         {
             SgSmartRoutingHelper.PresetRussiaDirect => "Россия напрямую",
+            SgSmartRoutingHelper.PresetRussiaWhiteIpDirect => "Белый список РФ напрямую",
             SgSmartRoutingHelper.PresetBlockedOnly => "Только блокировки",
             SgSmartRoutingHelper.PresetCustom when smartRouting.RussiaScope == SgSmartRoutingHelper.RussiaScopeTld
                 => "Доменные зоны РФ",
             SgSmartRoutingHelper.PresetCustom when smartRouting.RussiaScope == SgSmartRoutingHelper.RussiaScopeSitesAndIp
                 => "Сайты и IP РФ",
+            SgSmartRoutingHelper.PresetCustom when smartRouting.RussiaScope == SgSmartRoutingHelper.RussiaScopeWhiteIp
+                => "Белый список РФ",
             SgSmartRoutingHelper.PresetCustom => "Пользовательская",
             _ => "Весь интернет",
         };
@@ -1802,7 +1862,8 @@ public class StatusBarViewModel : MyReactiveObject
             ? "Системный прокси включается…"
             : "Локальный прокси включается…";
         TunButtonText = "ПРОКСИ ВКЛЮЧАЕТСЯ…";
-        TunTrayActionText = TunStatusText;
+        // SG_TRAY_MODE_FIX_097: this menu item belongs only to TUN.
+        TunTrayActionText = "Включить TUN";
         TunDetailText = "Запускается ядро и проверяется локальный HTTP/SOCKS-порт.";
         UpdateTrafficDisplays(_trafficStatistics.SetIdle());
         RefreshModeButtons();
@@ -1829,7 +1890,8 @@ public class StatusBarViewModel : MyReactiveObject
             ? "Системный прокси работает"
             : "Локальный прокси работает";
         TunButtonText = "ОТКЛЮЧИТЬ ПРОКСИ";
-        TunTrayActionText = "Отключить прокси";
+        // SG_TRAY_MODE_FIX_097: proxy modes have their own independent tray items.
+        TunTrayActionText = "Включить TUN";
         TunDetailText = mode == "system-proxy"
             ? "Браузеры и приложения Windows используют локальный смешанный HTTP/SOCKS-порт."
             : "Ядро работает на локальном HTTP/SOCKS-порту без изменения настроек Windows.";
@@ -1940,12 +2002,18 @@ public class StatusBarViewModel : MyReactiveObject
         var awgSelected = AmneziaWgManager.Instance.GetSelectedProfile() != null;
         var hasSelectedProfile = ProfileNameDisplay.IsNotEmpty()
             && !string.Equals(ProfileNameDisplay, "Профиль не выбран", StringComparison.Ordinal);
-        CanUseTunMode = IsTunModeActive || (!TunBusy && hasSelectedProfile);
+        CanUseTunMode = IsTunModeActive
+            || (TunBusy && mode == "tun")
+            || (!TunBusy && hasSelectedProfile);
         CanUseSystemProxyMode = IsSystemProxyModeActive
+            || (TunBusy && mode == "system-proxy")
             || (!TunBusy && hasSelectedProfile && !awgSelected);
-        CanDisconnectAll = TunBusy
-            || !string.Equals(ConnectionModeKey, "off", StringComparison.OrdinalIgnoreCase)
-            || SgKillSwitchManager.Instance.IsEmergencyBlockActive;
+        CanUseLocalProxyMode = IsLocalProxyModeActive
+            || (TunBusy && mode == "local-proxy")
+            || (!TunBusy && hasSelectedProfile && !awgSelected);
+        // SG_RECOVERY_109: the emergency stop is deliberately always
+        // available, including stale/error states where UI flags can lie.
+        CanDisconnectAll = true;
         SystemProxyModeToolTip = awgSelected && !IsSystemProxyModeActive
             ? "Недоступно для AmneziaWG: этот протокол работает только через TUN."
             : IsSystemProxyModeActive

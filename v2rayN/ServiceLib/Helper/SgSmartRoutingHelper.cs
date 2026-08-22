@@ -4,12 +4,14 @@ public static class SgSmartRoutingHelper
 {
     public const string PresetGlobal = "global";
     public const string PresetRussiaDirect = "ru_except";
+    public const string PresetRussiaWhiteIpDirect = "ru_white_ip";
     public const string PresetBlockedOnly = "ru_blocked";
     public const string PresetCustom = "custom";
 
     public const string RussiaScopeNone = "none";
     public const string RussiaScopeTld = "tld";
     public const string RussiaScopeSitesAndIp = "sites_ip";
+    public const string RussiaScopeWhiteIp = "white_ip";
 
     public const string ActionNone = "none";
     public const string ActionDirect = "direct";
@@ -20,6 +22,7 @@ public static class SgSmartRoutingHelper
     [
         PresetGlobal,
         PresetRussiaDirect,
+        PresetRussiaWhiteIpDirect,
         PresetBlockedOnly,
         PresetCustom,
     ];
@@ -29,6 +32,7 @@ public static class SgSmartRoutingHelper
         RussiaScopeNone,
         RussiaScopeTld,
         RussiaScopeSitesAndIp,
+        RussiaScopeWhiteIp,
     ];
 
     private static readonly HashSet<string> Actions =
@@ -113,6 +117,13 @@ public static class SgSmartRoutingHelper
             case PresetRussiaDirect:
                 item.DefaultAction = ActionProxy;
                 item.RussiaScope = RussiaScopeSitesAndIp;
+                item.RussiaAction = ActionDirect;
+                item.BlockedAction = ActionProxy;
+                item.AdsAction = ActionProxy;
+                break;
+            case PresetRussiaWhiteIpDirect:
+                item.DefaultAction = ActionProxy;
+                item.RussiaScope = RussiaScopeWhiteIp;
                 item.RussiaAction = ActionDirect;
                 item.BlockedAction = ActionProxy;
                 item.AdsAction = ActionProxy;
@@ -226,6 +237,7 @@ public static class SgSmartRoutingHelper
         {
             RussiaScopeTld => "Только российские доменные зоны",
             RussiaScopeSitesAndIp => "Российские сайты и IP",
+            RussiaScopeWhiteIp => "Белый список РФ",
             _ => "Выключено",
         };
     }

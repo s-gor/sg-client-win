@@ -11,6 +11,55 @@ namespace ServiceLib.Tests.CoreConfig.V2ray;
 public class CoreConfigV2rayServiceTests
 {
     [Fact]
+    public void GenerateClientConfigContent_Hysteria2Gecko_ShouldMatchSgGatewayFinalMask()
+    {
+        var config = CoreConfigTestFactory.CreateConfig(ECoreType.Xray);
+        CoreConfigTestFactory.BindAppManagerConfig(config);
+        var node = CoreConfigTestFactory.CreateHysteria2Node(ECoreType.Xray);
+        node.Address = "infosec.opik.net";
+        node.Port = 8446;
+        node.Password = "wy1CDHjWv_jIgY0sucpu_WgIWR0YSaRh";
+        // Simulate a profile imported by 101-107: the standard URI had no
+        // security=tls query, so StreamSecurity could be persisted empty.
+        node.StreamSecurity = string.Empty;
+        node.Sni = "infosec.opik.net";
+        node.AllowInsecure = Global.StringFalse;
+        node.SetProtocolExtra(node.GetProtocolExtra() with
+        {
+            HyObfsType = Hysteria2ObfsHelper.Gecko,
+            SalamanderPass = "3k4HsopGTbu1jYidTOWGkRlkZgSRnrv8",
+            GeckoMinPacketSize = "512",
+            GeckoMaxPacketSize = "1200",
+            UpMbps = null,
+            DownMbps = null,
+        });
+        var context = CoreConfigTestFactory.CreateContext(config, node, ECoreType.Xray);
+
+        var result = new CoreConfigV2rayService(context).GenerateClientConfigContent();
+
+        result.Success.Should().BeTrue($"ret msg: {result.Msg}");
+        var cfg = JsonUtils.Deserialize<V2rayConfig>(result.Data!.ToString())!;
+        var proxy = cfg.outbounds.First(o => o.tag == Global.ProxyTag);
+        proxy.protocol.Should().Be("hysteria");
+        proxy.streamSettings.Should().NotBeNull();
+        proxy.streamSettings!.network.Should().Be("hysteria");
+        proxy.streamSettings.security.Should().Be(Global.StreamSecurity);
+        proxy.streamSettings.tlsSettings.Should().NotBeNull();
+        proxy.streamSettings.tlsSettings!.serverName.Should().Be("infosec.opik.net");
+        proxy.streamSettings.tlsSettings.allowInsecure.Should().BeFalse();
+        var finalmask = JsonUtils.Deserialize<Finalmask4Ray>(JsonUtils.Serialize(proxy.streamSettings.finalmask))!;
+        finalmask.quicParams.Should().NotBeNull();
+        finalmask.quicParams!.congestion.Should().Be("bbr");
+        finalmask.quicParams.brutalUp.Should().BeNull();
+        finalmask.quicParams.brutalDown.Should().BeNull();
+        finalmask.udp.Should().ContainSingle();
+        finalmask.udp![0].type.Should().Be("salamander");
+        finalmask.udp[0].settings.Should().NotBeNull();
+        finalmask.udp[0].settings!.password.Should().Be("3k4HsopGTbu1jYidTOWGkRlkZgSRnrv8");
+        finalmask.udp[0].settings!.packetSize.Should().Be("512-1200");
+    }
+
+    [Fact]
     public void GenerateClientConfigContent_ShouldGenerateBasicProxyConfig()
     {
         var config = CoreConfigTestFactory.CreateConfig(ECoreType.Xray);

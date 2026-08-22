@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
+	<!-- SG Client uses TUN/AWG and other system-level networking operations.
+	     Ask Windows for elevation at process start so a normal double-click
+	     shows the standard UAC prompt instead of requiring right-click > Run as administrator. -->
+	<trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+		<security>
+			<requestedPrivileges>
+				<requestedExecutionLevel level="requireAdministrator" uiAccess="false" />
+			</requestedPrivileges>
+		</security>
+	</trustInfo>
+
 	<!-- Enable themes for Windows common controls and dialogs (Windows XP and later) -->
 	<dependency>
 		<dependentAssembly>

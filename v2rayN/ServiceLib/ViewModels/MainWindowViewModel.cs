@@ -481,6 +481,31 @@ public class MainWindowViewModel : MyReactiveObject
                 return;
             }
 
+            // An explicit Gecko link for the same authenticated Hysteria2 endpoint is an
+            // update of that local server profile, not a second independent profile. Keep
+            // unrelated legacy Salamander profiles untouched; only an actual Gecko import
+            // opts the matching endpoint into the new mode.
+            if (directProfile.ConfigType == EConfigType.Hysteria2
+                && Hysteria2ObfsHelper.GetEffectiveType(directProfile.GetProtocolExtra()) == Hysteria2ObfsHelper.Gecko)
+            {
+                var previousHysteria = await ConfigHandler.FindSameLocalHysteria2Endpoint(directProfile);
+                if (previousHysteria != null)
+                {
+                    directProfile.IndexId = previousHysteria.IndexId;
+                    var updateResult = await ConfigHandler.AddServer(_config, directProfile);
+                    if (updateResult == 0)
+                    {
+                        RefreshSubscriptions();
+                        await RefreshServers();
+                        AppEvents.ProfilesRefreshRequested.Publish();
+                        ProfilesViewModel.Instance?.RequestRevealProfile(directProfile.IndexId);
+                        NoticeManager.Instance.Enqueue(
+                            $"Hysteria2 обновлён: {directProfile.Remarks.NullIfEmpty() ?? directProfile.Address} · Gecko");
+                        return;
+                    }
+                }
+            }
+
             // A single share link has already been parsed by the protocol-specific
             // importer. Save that exact ProfileItem directly. Sending the original
             // long XHTTP/VLESS URI through the generic batch importer a second time
@@ -887,6 +912,8 @@ public class MainWindowViewModel : MyReactiveObject
         try
         {
             await using var operation = await TunOperationCoordinator.EnterAsync("reload selected TUN profile");
+            var operationToken = operation.Token;
+            operation.ThrowIfCancellationRequested();
             SetReloadEnabled(false);
 
             if (!_config.TunModeItem.EnableTun)
@@ -895,17 +922,21 @@ public class MainWindowViewModel : MyReactiveObject
                     _config.SgQuickSettingsItem?.ConnectionMode ?? "off";
 
                 await CoreManager.Instance.CoreStop()
-                    .WaitAsync(TimeSpan.FromSeconds(15));
+                    .WaitAsync(TimeSpan.FromSeconds(15), operationToken);
                 if (Utils.IsWindows())
                 {
                     await WindowsUtils.RemoveTunDevice()
-                        .WaitAsync(TimeSpan.FromSeconds(15));
+                        .WaitAsync(TimeSpan.FromSeconds(15), operationToken);
                 }
 
                 try
                 {
                     await AmneziaWgManager.Instance.DisconnectAllAsync()
-                        .WaitAsync(TimeSpan.FromSeconds(55));
+                        .WaitAsync(TimeSpan.FromSeconds(55), operationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -920,7 +951,7 @@ public class MainWindowViewModel : MyReactiveObject
                 _config.SystemProxyItem.SysProxyType =
                     ESysProxyType.ForcedClear;
                 await SysProxyHandler.UpdateSysProxy(_config, false)
-                    .WaitAsync(TimeSpan.FromSeconds(10));
+                    .WaitAsync(TimeSpan.FromSeconds(10), operationToken);
 
                 if (connectionMode is not ("system-proxy" or "local-proxy"))
                 {
@@ -975,9 +1006,10 @@ public class MainWindowViewModel : MyReactiveObject
                     {
                         await LoadCore(
                                 proxyBuild.MainResult.Context,
-                                proxyBuild.PreSocksResult?.Context)
-                            .WaitAsync(TimeSpan.FromSeconds(35));
-                    }).WaitAsync(TimeSpan.FromSeconds(45));
+                                proxyBuild.PreSocksResult?.Context,
+                                operationToken)
+                            .WaitAsync(TimeSpan.FromSeconds(35), operationToken);
+                    }).WaitAsync(TimeSpan.FromSeconds(45), operationToken);
 
                     if (!CoreManager.Instance.IsCoreRunning)
                     {
@@ -989,7 +1021,8 @@ public class MainWindowViewModel : MyReactiveObject
                         EInboundProtocol.socks);
                     if (!await WaitForLocalHttpProxyAsync(
                             mixedPort,
-                            TimeSpan.FromSeconds(15)))
+                            TimeSpan.FromSeconds(15),
+                            operationToken))
                     {
                         throw new InvalidOperationException(
                             $"Локальный смешанный HTTP/SOCKS-порт 127.0.0.1:{mixedPort} "
@@ -1022,11 +1055,16 @@ public class MainWindowViewModel : MyReactiveObject
 
                     await ConfigHandler.SaveConfig(_config);
                     LastProxyStartError = null;
+                    operation.ThrowIfCancellationRequested();
                     StatusBarViewModel.Instance.ReportProxyRunning(
                         connectionMode);
                     AppEvents.ProfilesRefreshRequested.Publish();
                     AppEvents.TestServerRequested.Publish();
                     return;
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -1036,7 +1074,7 @@ public class MainWindowViewModel : MyReactiveObject
                     try
                     {
                         await CoreManager.Instance.CoreStop()
-                            .WaitAsync(TimeSpan.FromSeconds(15));
+                            .WaitAsync(TimeSpan.FromSeconds(15), operationToken);
                     }
                     catch (Exception cleanupEx)
                     {
@@ -1063,16 +1101,18 @@ public class MainWindowViewModel : MyReactiveObject
             if (awgProfile != null)
             {
                 StatusBarViewModel.Instance.ReportTunStarting();
-                await CoreManager.Instance.CoreStop().WaitAsync(TimeSpan.FromSeconds(15));
+                await CoreManager.Instance.CoreStop().WaitAsync(TimeSpan.FromSeconds(15), operationToken);
                 if (Utils.IsWindows())
                 {
-                    await WindowsUtils.RemoveTunDevice().WaitAsync(TimeSpan.FromSeconds(15));
+                    await WindowsUtils.RemoveTunDevice().WaitAsync(TimeSpan.FromSeconds(15), operationToken);
                 }
-                await SysProxyHandler.UpdateSysProxy(_config, false).WaitAsync(TimeSpan.FromSeconds(10));
+                await SysProxyHandler.UpdateSysProxy(_config, false).WaitAsync(TimeSpan.FromSeconds(10), operationToken);
 
                 try
                 {
-                    var result = await AmneziaWgManager.Instance.ConnectAsync(awgProfile).WaitAsync(TimeSpan.FromSeconds(75));
+                    var result = await AmneziaWgManager.Instance
+                        .ConnectAsync(awgProfile, operationToken)
+                        .WaitAsync(TimeSpan.FromSeconds(60), operationToken);
                     if (!result.Success || result.LastHandshake == null)
                     {
                         await FailTunStartAsync(result.Message.IsNullOrEmpty()
@@ -1080,9 +1120,14 @@ public class MainWindowViewModel : MyReactiveObject
                             : result.Message);
                         return;
                     }
+                    operation.ThrowIfCancellationRequested();
                     StatusBarViewModel.Instance.ReportAwgRunning(awgProfile, result.LastHandshake.Value);
                     AppEvents.ProfilesRefreshRequested.Publish();
                     return;
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -1094,7 +1139,11 @@ public class MainWindowViewModel : MyReactiveObject
 
             try
             {
-                await AmneziaWgManager.Instance.DisconnectAllAsync().WaitAsync(TimeSpan.FromSeconds(55));
+                await AmneziaWgManager.Instance.DisconnectAllAsync().WaitAsync(TimeSpan.FromSeconds(55), operationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -1125,16 +1174,17 @@ public class MainWindowViewModel : MyReactiveObject
 
             await Task.Run(async () =>
             {
-                await LoadCore(allResult.MainResult.Context, allResult.PreSocksResult?.Context).WaitAsync(TimeSpan.FromSeconds(35));
-                await SysProxyHandler.UpdateSysProxy(_config, false).WaitAsync(TimeSpan.FromSeconds(10));
-                await Task.Delay(1000);
-            }).WaitAsync(TimeSpan.FromSeconds(50));
+                await LoadCore(allResult.MainResult.Context, allResult.PreSocksResult?.Context, operationToken).WaitAsync(TimeSpan.FromSeconds(35), operationToken);
+                await SysProxyHandler.UpdateSysProxy(_config, false).WaitAsync(TimeSpan.FromSeconds(10), operationToken);
+                await Task.Delay(1000, operationToken);
+            }).WaitAsync(TimeSpan.FromSeconds(50), operationToken);
             if (!CoreManager.Instance.IsCoreRunning)
             {
                 await FailTunStartAsync("Ядро завершилось сразу после запуска.");
                 return;
             }
 
+            operation.ThrowIfCancellationRequested();
             StatusBarViewModel.Instance.ReportTunRunning();
             AppEvents.ProfilesRefreshRequested.Publish();
             AppEvents.TestServerRequested.Publish();
@@ -1147,26 +1197,43 @@ public class MainWindowViewModel : MyReactiveObject
 
             ReloadResult(showClashUI);
         }
+        catch (OperationCanceledException)
+        {
+            // Emergency DisconnectAll owns cleanup and the final UI state.
+            // Do not report a second error and never queue a stale reload.
+            _hasNextReloadJob = false;
+            Logging.SaveLog("Connection start cancelled by recovery stop");
+            if ((_config.SgQuickSettingsItem?.ConnectionMode ?? "off") == "off")
+            {
+                StatusBarViewModel.Instance.ReportConnectionOff();
+            }
+        }
         catch (TimeoutException ex)
         {
             Logging.SaveLog("TUN operation timeout", ex);
-            await FailTunStartAsync("Операция TUN не завершилась вовремя. Выполнен безопасный откат.");
+            await FailTunStartAsync("Операция подключения не завершилась вовремя. Выполнен безопасный откат.");
         }
         finally
         {
             SetReloadEnabled(true);
             _reloadSemaphore.Release();
-            if (_hasNextReloadJob)
+            if (_hasNextReloadJob
+                && (_config.SgQuickSettingsItem?.ConnectionMode ?? "off") != "off")
             {
                 _hasNextReloadJob = false;
                 await Reload();
+            }
+            else
+            {
+                _hasNextReloadJob = false;
             }
         }
     }
 
     private static async Task<bool> WaitForLocalHttpProxyAsync(
         int port,
-        TimeSpan timeout)
+        TimeSpan timeout,
+        CancellationToken cancellationToken = default)
     {
         if (port is <= 0 or > 65535)
         {
@@ -1181,11 +1248,13 @@ public class MainWindowViewModel : MyReactiveObject
 
         while (DateTime.UtcNow < deadline)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             try
             {
                 using var client = new TcpClient();
-                using var attempt = new CancellationTokenSource(
-                    TimeSpan.FromSeconds(2));
+                using var attempt = CancellationTokenSource.CreateLinkedTokenSource(
+                    cancellationToken);
+                attempt.CancelAfter(TimeSpan.FromSeconds(2));
                 await client.ConnectAsync(
                     IPAddress.Loopback,
                     port,
@@ -1212,7 +1281,7 @@ public class MainWindowViewModel : MyReactiveObject
             {
             }
 
-            await Task.Delay(250);
+            await Task.Delay(250, cancellationToken);
         }
 
         return false;
@@ -1280,9 +1349,12 @@ public class MainWindowViewModel : MyReactiveObject
         RxSchedulers.MainThreadScheduler.Schedule(() => BlReloadEnabled = enabled);
     }
 
-    private async Task LoadCore(CoreConfigContext? mainContext, CoreConfigContext? preContext)
+    private async Task LoadCore(
+        CoreConfigContext? mainContext,
+        CoreConfigContext? preContext,
+        CancellationToken cancellationToken = default)
     {
-        await CoreManager.Instance.LoadCore(mainContext, preContext);
+        await CoreManager.Instance.LoadCore(mainContext, preContext, cancellationToken);
     }
 
     #endregion core job

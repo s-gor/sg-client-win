@@ -17,7 +17,8 @@ public partial class CoreConfigSingboxService
             GenDnsRules();
 
             _coreConfig.dns ??= new Dns4Sbox();
-            _coreConfig.dns.independent_cache = true;
+            // sing-box 1.14 deprecates independent_cache because the DNS cache
+            // is transport-aware by default. Do not emit the legacy option.
 
             // SG Client exposes this as a direct quick setting. When enabled,
             // all ordinary DNS queries use the remote DNS server through the

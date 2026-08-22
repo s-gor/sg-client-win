@@ -4,6 +4,7 @@ public record ProtocolExtraItem
 {
     public bool? Uot { get; init; }
     public string? CongestionControl { get; init; }
+    public string? TuicUdpRelayMode { get; init; }
 
     // vmess
     public string? AlterId { get; init; }
@@ -26,7 +27,13 @@ public record ProtocolExtraItem
     public int? WgMtu { get; init; }
 
     // hysteria2
+    // Null keeps the legacy meaning: Salamander when SalamanderPass is present.
+    public string? HyObfsType { get; init; }
     public string? SalamanderPass { get; init; }
+    // Upstream v2rayN Gecko representation. Keeping these explicit packet-size
+    // fields makes imported profiles compatible with the official Gecko path.
+    public string? GeckoMinPacketSize { get; init; }
+    public string? GeckoMaxPacketSize { get; init; }
     public int? UpMbps { get; init; }
     public int? DownMbps { get; init; }
     public string? Ports { get; init; }
@@ -38,6 +45,7 @@ public record ProtocolExtraItem
 
     // mieru (mihomo)
     public List<MieruBindingItem>? MieruBindings { get; init; }
+    public string? MieruProfile { get; init; }
     public int? MieruMtu { get; init; }
     public string? MieruMultiplexing { get; init; }
     public string? MieruHandshakeMode { get; init; }

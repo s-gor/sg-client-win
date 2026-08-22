@@ -215,20 +215,40 @@ public partial class CoreConfigSingboxService
                     {
                         outbound.password = _node.Password;
 
-                        if (!protocolExtra.SalamanderPass.IsNullOrEmpty())
+                        var obfsType = Hysteria2ObfsHelper.GetEffectiveType(protocolExtra);
+                        var isGecko = obfsType == Hysteria2ObfsHelper.Gecko;
+                        if (obfsType.IsNotEmpty())
                         {
                             outbound.obfs = new()
                             {
-                                type = "salamander",
-                                password = protocolExtra.SalamanderPass.TrimEx(),
+                                type = isGecko ? Hysteria2ObfsHelper.Gecko : Hysteria2ObfsHelper.Salamander,
+                                password = protocolExtra.SalamanderPass!.TrimEx(),
                             };
+                            if (isGecko)
+                            {
+                                var geckoMin = protocolExtra.GeckoMinPacketSize.ToInt();
+                                var geckoMax = protocolExtra.GeckoMaxPacketSize.ToInt();
+                                outbound.obfs.min_packet_size = geckoMin > 0
+                                    ? geckoMin
+                                    : Hysteria2ObfsHelper.GeckoMinPacketSize;
+                                outbound.obfs.max_packet_size = geckoMax > 0
+                                    ? geckoMax
+                                    : Hysteria2ObfsHelper.GeckoMaxPacketSize;
+                            }
                         }
-                        int? upMbps = protocolExtra?.UpMbps is { } su and >= 0
-                            ? su
-                            : _config.HysteriaItem.UpMbps;
-                        int? downMbps = protocolExtra?.DownMbps is { } sd and >= 0
-                            ? sd
-                            : _config.HysteriaItem.DownMbps;
+                        // A Gecko share URI does not carry bandwidth. Preserve that
+                        // omission for both fresh imports and SG Client 101-104 Gecko
+                        // profiles instead of silently enabling legacy global Brutal.
+                        int? upMbps = isGecko
+                            ? protocolExtra?.UpMbps
+                            : protocolExtra?.UpMbps is { } su and >= 0
+                                ? su
+                                : _config.HysteriaItem.UpMbps;
+                        int? downMbps = isGecko
+                            ? protocolExtra?.DownMbps
+                            : protocolExtra?.DownMbps is { } sd and >= 0
+                                ? sd
+                                : _config.HysteriaItem.DownMbps;
                         outbound.up_mbps = upMbps > 0 ? upMbps : null;
                         outbound.down_mbps = downMbps > 0 ? downMbps : null;
                         var ports = protocolExtra?.Ports?.IsNullOrEmpty() == false ? protocolExtra.Ports : null;
@@ -366,7 +386,8 @@ public partial class CoreConfigSingboxService
     {
         try
         {
-            if (_node.StreamSecurity is not (Global.StreamSecurityReality or Global.StreamSecurity))
+            if (_node.ConfigType != EConfigType.Hysteria2
+                && _node.StreamSecurity is not (Global.StreamSecurityReality or Global.StreamSecurity))
             {
                 return;
             }
@@ -413,7 +434,7 @@ public partial class CoreConfigSingboxService
                     fingerprint = _node.Fingerprint.IsNullOrEmpty() ? _config.CoreBasicItem.DefFingerprint : _node.Fingerprint
                 };
             }
-            if (_node.StreamSecurity == Global.StreamSecurity)
+            if (_node.StreamSecurity == Global.StreamSecurity || _node.ConfigType == EConfigType.Hysteria2)
             {
                 var certs = CertPemManager.ParsePemChain(_node.Cert);
                 if (certs.Count > 0)

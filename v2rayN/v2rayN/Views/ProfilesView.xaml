@@ -502,14 +502,8 @@
                                 LineHeight="20"
                                 FontWeight="SemiBold"
                                 Foreground="{DynamicResource SgTextBrush}"
-                                ToolTip="{Binding CountryToolTip}">
-                                <TextBlock.Text>
-                                    <MultiBinding Converter="{StaticResource ProfileDisplayRemarksConverter}">
-                                        <Binding Path="CountryCode" />
-                                        <Binding Path="Remarks" />
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                            </TextBlock>
+                                ToolTip="{Binding CountryToolTip}"
+                                Text="{Binding DisplayRemarks}" />
                             <TextBlock
                                 Margin="0,2,0,0"
                                 TextTrimming="CharacterEllipsis"
@@ -528,9 +522,27 @@
                         <StackPanel Grid.Column="2" Margin="8,0,0,0" HorizontalAlignment="Right" VerticalAlignment="Center">
                             <TextBlock
                                 HorizontalAlignment="Right"
-                                FontSize="11.5"
-                                FontWeight="SemiBold"
+                                FontSize="10.5"
+                                FontWeight="Bold"
                                 Foreground="{DynamicResource SgTextBrush}"
+                                Text="{Binding TechnologyBadge}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding TechnologyBadge}" Value="">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock
+                                Margin="0,3,0,0"
+                                HorizontalAlignment="Right"
+                                FontSize="10"
+                                FontWeight="SemiBold"
+                                Foreground="{DynamicResource SgMutedBrush}"
                                 Text="{Binding DelayVal}" />
                             <TextBlock Margin="0,5,0,0" HorizontalAlignment="Right" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource SgMutedBrush}" Text="ВЫБРАН">
                                 <TextBlock.Style>

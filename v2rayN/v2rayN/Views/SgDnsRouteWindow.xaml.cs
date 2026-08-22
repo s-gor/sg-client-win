@@ -10,6 +10,7 @@ public partial class SgDnsRouteWindow : Window
     public SgDnsRouteWindow()
     {
         InitializeComponent();
+        SgWindowSizing.AttachCompact(this);
         _config = AppManager.Instance.Config;
         _config.SgQuickSettingsItem ??= new SgQuickSettingsItem();
 

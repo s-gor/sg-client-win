@@ -62,8 +62,12 @@ public class CoreManager
 
     /// <param name="mainContext">Resolved main context (with pre-socks ports already merged if applicable).</param>
     /// <param name="preContext">Optional pre-socks context passed to <see cref="CoreStartPreService"/>.</param>
-    public async Task LoadCore(CoreConfigContext? mainContext, CoreConfigContext? preContext)
+    public async Task LoadCore(
+        CoreConfigContext? mainContext,
+        CoreConfigContext? preContext,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (mainContext == null)
         {
             await UpdateFunc(false, ResUI.CheckServerSettings);
@@ -74,6 +78,7 @@ public class CoreManager
         var fileName = Utils.GetBinConfigPath(Global.CoreConfigFileName);
         Logging.SaveLog($"Core config generation begins: core={mainContext.RunCoreType}; profile={node.GetSummary()}; path={fileName}");
         var result = await CoreConfigHandler.GenerateClientConfig(mainContext, fileName);
+        cancellationToken.ThrowIfCancellationRequested();
         Logging.SaveLog($"Core config generation completed: success={result.Success}; exists={File.Exists(fileName)}; path={fileName}; message={result.Msg}");
         if (result.Success != true)
         {
@@ -85,21 +90,33 @@ public class CoreManager
         {
             return;
         }
+        if (!await ValidateGeneratedSingboxConfig(mainContext, fileName))
+        {
+            return;
+        }
+        if (!await ValidateGeneratedMihomoConfig(mainContext, fileName))
+        {
+            return;
+        }
 
+        cancellationToken.ThrowIfCancellationRequested();
         await UpdateFunc(false, $"{node.GetSummary()}");
         await UpdateFunc(false, $"{Utils.GetRuntimeInfo()}");
         await UpdateFunc(false, string.Format(ResUI.StartService, DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss")));
         await CoreStop();
-        await Task.Delay(100);
+        cancellationToken.ThrowIfCancellationRequested();
+        await Task.Delay(100, cancellationToken);
 
         if (Utils.IsWindows() && _config.TunModeItem.EnableTun)
         {
-            await Task.Delay(100);
-            await WindowsUtils.RemoveTunDevice();
+            await Task.Delay(100, cancellationToken);
+            await WindowsUtils.RemoveTunDevice().WaitAsync(cancellationToken);
         }
 
-        await CoreStart(mainContext);
-        await CoreStartPreService(preContext);
+        cancellationToken.ThrowIfCancellationRequested();
+        await CoreStart(mainContext, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        await CoreStartPreService(preContext, cancellationToken);
 
         AppManager.Instance.RunningCoreType = preContext?.RunCoreType ?? mainContext.RunCoreType;
 
@@ -147,49 +164,149 @@ public class CoreManager
 
         var coreType = context.RunCoreType;
         var coreInfo = CoreInfoManager.Instance.GetCoreInfo(coreType);
-        return await RunProcess(coreInfo, fileName, true, false);
+        string? cleanupDirectory = null;
+        if (coreType == ECoreType.mihomo && coreInfo is not null)
+        {
+            // A latency probe may run while the real Mihomo core is active. Give
+            // every temporary test process its own data directory so cache/state
+            // files cannot collide with the live VPN session or another probe.
+            cleanupDirectory = Path.Combine(
+                Utils.GetTempPath(),
+                $"SGMihomoTest-{Utils.GetGuid(false)}");
+            Directory.CreateDirectory(cleanupDirectory);
+            coreInfo = new CoreInfo
+            {
+                CoreType = coreInfo.CoreType,
+                CoreExes = coreInfo.CoreExes?.ToList(),
+                Arguments = $"-f {{0}} -d {cleanupDirectory.AppendQuotes()}",
+                Url = coreInfo.Url,
+                AbsolutePath = coreInfo.AbsolutePath,
+                Environment = new Dictionary<string, string?>(coreInfo.Environment),
+            };
+        }
+
+        var processService = await RunProcess(
+            coreInfo,
+            fileName,
+            true,
+            false,
+            cleanupDirectory: cleanupDirectory);
+        if (processService is null && cleanupDirectory.IsNotEmpty())
+        {
+            try
+            {
+                if (Directory.Exists(cleanupDirectory))
+                {
+                    Directory.Delete(cleanupDirectory, recursive: true);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logging.SaveLog($"Mihomo speedtest temp cleanup failed: {cleanupDirectory}", ex);
+            }
+        }
+        return processService;
     }
 
     public async Task CoreStop()
     {
-        try
+        // SG_RECOVERY_109: detach references first so UI/state checks cannot
+        // continue treating a dying core as healthy while cleanup is running.
+        var mainService = _processService;
+        var preService = _processPreService;
+        _processService = null;
+        _processPreService = null;
+
+        if (_linuxSudo)
         {
-            if (_linuxSudo)
+            try
             {
-                await CoreAdminManager.Instance.KillProcessAsLinuxSudo();
+                await CoreAdminManager.Instance.KillProcessAsLinuxSudo()
+                    .WaitAsync(TimeSpan.FromSeconds(5));
+            }
+            catch (Exception ex)
+            {
+                Logging.SaveLog("Stop Linux sudo core", ex);
+            }
+            finally
+            {
                 _linuxSudo = false;
             }
+        }
 
-            if (_processService != null)
+        if (preService != null)
+        {
+            try
             {
-                await _processService.StopAsync();
-                _processService.Dispose();
-                _processService = null;
+                await preService.StopAsync(TimeSpan.FromSeconds(3));
             }
+            catch (Exception ex)
+            {
+                Logging.SaveLog("Stop pre-core process", ex);
+            }
+        }
 
-            if (_processPreService != null)
+        if (mainService != null)
+        {
+            try
             {
-                await _processPreService.StopAsync();
-                _processPreService.Dispose();
-                _processPreService = null;
+                await mainService.StopAsync(TimeSpan.FromSeconds(3));
             }
+            catch (Exception ex)
+            {
+                Logging.SaveLog("Stop main core process", ex);
+            }
+        }
+
+        try
+        {
+            preService?.Dispose();
         }
         catch (Exception ex)
         {
-            Logging.SaveLog(_tag, ex);
+            Logging.SaveLog("Dispose pre-core process", ex);
+        }
+
+        try
+        {
+            mainService?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("Dispose main core process", ex);
+        }
+
+        // WindowsJobService is created with JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE.
+        // Closing it is the last-resort kill for every descendant attached
+        // to this SG Client core session, even if the direct Process kill
+        // path failed or a helper survived its parent.
+        if (Utils.IsWindows())
+        {
+            try
+            {
+                _processJob?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Logging.SaveLog("Dispose Windows core job", ex);
+            }
+            finally
+            {
+                _processJob = null;
+            }
         }
     }
 
     #region Private
 
-    private async Task CoreStart(CoreConfigContext context)
+    private async Task CoreStart(CoreConfigContext context, CancellationToken cancellationToken = default)
     {
         var node = context.Node;
         var coreType = AppManager.Instance.GetCoreType(node, node.ConfigType);
         var coreInfo = CoreInfoManager.Instance.GetCoreInfo(coreType);
 
         var displayLog = node.ConfigType != EConfigType.Custom || node.DisplayLog;
-        var proc = await RunProcess(coreInfo, Global.CoreConfigFileName, displayLog, true);
+        var proc = await RunProcess(coreInfo, Global.CoreConfigFileName, displayLog, true, cancellationToken);
         if (proc is null)
         {
             return;
@@ -197,7 +314,7 @@ public class CoreManager
         _processService = proc;
     }
 
-    private async Task CoreStartPreService(CoreConfigContext? preContext)
+    private async Task CoreStartPreService(CoreConfigContext? preContext, CancellationToken cancellationToken = default)
     {
         if (_processService is { HasExited: false } && preContext != null)
         {
@@ -207,13 +324,287 @@ public class CoreManager
             if (result.Success)
             {
                 var coreInfo = CoreInfoManager.Instance.GetCoreInfo(preCoreType);
-                var proc = await RunProcess(coreInfo, Global.CorePreConfigFileName, true, true);
+                var proc = await RunProcess(coreInfo, Global.CorePreConfigFileName, true, true, cancellationToken);
                 if (proc is null)
                 {
                     return;
                 }
                 _processPreService = proc;
             }
+        }
+    }
+
+    private async Task<bool> ValidateGeneratedMihomoConfig(CoreConfigContext context, string configPath)
+    {
+        if (context.RunCoreType != ECoreType.mihomo)
+        {
+            return true;
+        }
+
+        var coreInfo = CoreInfoManager.Instance.GetCoreInfo(ECoreType.mihomo);
+        var executable = CoreInfoManager.Instance.GetCoreExecFile(coreInfo, out var message);
+        if (executable.IsNullOrEmpty() || coreInfo is null)
+        {
+            await UpdateFunc(true, message);
+            return false;
+        }
+
+        var reportPath = Utils.GetBinConfigPath("mihomo-config-test.log");
+        Process? process = null;
+        try
+        {
+            Logging.SaveLog($"Mihomo config check begins: config={configPath}");
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = executable,
+                WorkingDirectory = Utils.GetBinConfigPath(),
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8,
+                CreateNoWindow = true,
+            };
+            startInfo.ArgumentList.Add("-t");
+            startInfo.ArgumentList.Add("-f");
+            startInfo.ArgumentList.Add(configPath);
+            startInfo.ArgumentList.Add("-d");
+            startInfo.ArgumentList.Add(Utils.GetBinPath(""));
+
+            foreach (var pair in coreInfo.Environment)
+            {
+                if (pair.Value is not null)
+                {
+                    startInfo.Environment[pair.Key] = string.Format(pair.Value, configPath);
+                }
+            }
+
+            process = new Process { StartInfo = startInfo };
+            if (!process.Start())
+            {
+                await File.WriteAllTextAsync(reportPath,
+                    "Mihomo config check could not start." + Environment.NewLine,
+                    new UTF8Encoding(false));
+                await UpdateFunc(true, "Не удалось запустить проверку конфигурации Mihomo. Подробности: binConfigs\\mihomo-config-test.log");
+                return false;
+            }
+
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+            var timedOut = false;
+            using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
+            {
+                try
+                {
+                    await process.WaitForExitAsync(timeout.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    timedOut = true;
+                    try
+                    {
+                        process.Kill(entireProcessTree: true);
+                        await process.WaitForExitAsync();
+                    }
+                    catch (Exception killException)
+                    {
+                        Logging.SaveLog(_tag, killException);
+                    }
+                }
+            }
+
+            var stdout = await stdoutTask;
+            var stderr = await stderrTask;
+            int? exitCode = timedOut ? null : process.ExitCode;
+            var report = new StringBuilder()
+                .AppendLine("SG Client Mihomo config check")
+                .AppendLine($"Config: {configPath}")
+                .AppendLine($"ExitCode: {(exitCode?.ToString() ?? "TIMEOUT")}")
+                .AppendLine("--- STDOUT ---")
+                .AppendLine(stdout)
+                .AppendLine("--- STDERR ---")
+                .AppendLine(stderr)
+                .ToString();
+            await File.WriteAllTextAsync(reportPath, report, new UTF8Encoding(false));
+
+            if (timedOut)
+            {
+                await UpdateFunc(true, "Проверка конфигурации Mihomo превысила 20 секунд. Подробности: binConfigs\\mihomo-config-test.log");
+                return false;
+            }
+            if (exitCode != 0)
+            {
+                var output = string.Join(Environment.NewLine,
+                    new[] { stderr, stdout }.Where(value => !string.IsNullOrWhiteSpace(value))).Trim();
+                var summary = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                    .FirstOrDefault()?.Trim();
+                if (summary.IsNullOrEmpty())
+                {
+                    summary = $"exit code {exitCode}";
+                }
+                await UpdateFunc(true,
+                    $"Конфигурация Mihomo отклонена: {summary}{Environment.NewLine}" +
+                    "Подробности: binConfigs\\mihomo-config-test.log");
+                return false;
+            }
+
+            Logging.SaveLog($"Mihomo config check completed: exitCode=0; report={reportPath}");
+            await UpdateFunc(false, "Проверка конфигурации Mihomo: OK");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog(_tag, ex);
+            try
+            {
+                await File.WriteAllTextAsync(reportPath, ex.ToString(), new UTF8Encoding(false));
+            }
+            catch (Exception reportException)
+            {
+                Logging.SaveLog(_tag, reportException);
+            }
+            await UpdateFunc(true, $"Ошибка проверки конфигурации Mihomo: {ex.Message}. Подробности: binConfigs\\mihomo-config-test.log");
+            return false;
+        }
+        finally
+        {
+            process?.Dispose();
+        }
+    }
+
+    private async Task<bool> ValidateGeneratedSingboxConfig(CoreConfigContext context, string configPath)
+    {
+        if (context.RunCoreType != ECoreType.sing_box)
+        {
+            return true;
+        }
+
+        var coreInfo = CoreInfoManager.Instance.GetCoreInfo(ECoreType.sing_box);
+        var executable = CoreInfoManager.Instance.GetCoreExecFile(coreInfo, out var message);
+        if (executable.IsNullOrEmpty() || coreInfo is null)
+        {
+            await UpdateFunc(true, message);
+            return false;
+        }
+
+        var reportPath = Utils.GetBinConfigPath("singbox-config-test.log");
+        Process? process = null;
+        try
+        {
+            Logging.SaveLog($"sing-box config check begins: config={configPath}");
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = executable,
+                WorkingDirectory = Utils.GetBinConfigPath(),
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8,
+                CreateNoWindow = true,
+            };
+            startInfo.ArgumentList.Add("check");
+            startInfo.ArgumentList.Add("-c");
+            startInfo.ArgumentList.Add(configPath);
+
+            foreach (var pair in coreInfo.Environment)
+            {
+                if (pair.Value is not null)
+                {
+                    startInfo.Environment[pair.Key] = string.Format(pair.Value, configPath);
+                }
+            }
+
+            process = new Process { StartInfo = startInfo };
+            if (!process.Start())
+            {
+                await File.WriteAllTextAsync(reportPath,
+                    "sing-box config check could not start." + Environment.NewLine,
+                    new UTF8Encoding(false));
+                await UpdateFunc(true, "Не удалось запустить проверку конфигурации sing-box. Подробности: binConfigs\\singbox-config-test.log");
+                return false;
+            }
+
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+            var timedOut = false;
+            using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
+            {
+                try
+                {
+                    await process.WaitForExitAsync(timeout.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    timedOut = true;
+                    try
+                    {
+                        process.Kill(entireProcessTree: true);
+                        await process.WaitForExitAsync();
+                    }
+                    catch (Exception killException)
+                    {
+                        Logging.SaveLog(_tag, killException);
+                    }
+                }
+            }
+
+            var stdout = await stdoutTask;
+            var stderr = await stderrTask;
+            int? exitCode = timedOut ? null : process.ExitCode;
+            var report = new StringBuilder()
+                .AppendLine("SG Client sing-box config check")
+                .AppendLine($"Config: {configPath}")
+                .AppendLine($"ExitCode: {(exitCode?.ToString() ?? "TIMEOUT")}")
+                .AppendLine("--- STDOUT ---")
+                .AppendLine(stdout)
+                .AppendLine("--- STDERR ---")
+                .AppendLine(stderr)
+                .ToString();
+            await File.WriteAllTextAsync(reportPath, report, new UTF8Encoding(false));
+
+            if (timedOut)
+            {
+                await UpdateFunc(true, "Проверка конфигурации sing-box превысила 20 секунд. Подробности: binConfigs\\singbox-config-test.log");
+                return false;
+            }
+            if (exitCode != 0)
+            {
+                var output = string.Join(Environment.NewLine,
+                    new[] { stderr, stdout }.Where(value => !string.IsNullOrWhiteSpace(value))).Trim();
+                var summary = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                    .FirstOrDefault()?.Trim();
+                if (summary.IsNullOrEmpty())
+                {
+                    summary = $"exit code {exitCode}";
+                }
+                await UpdateFunc(true,
+                    $"Конфигурация sing-box отклонена: {summary}{Environment.NewLine}" +
+                    "Подробности: binConfigs\\singbox-config-test.log");
+                return false;
+            }
+
+            Logging.SaveLog($"sing-box config check completed: exitCode=0; report={reportPath}");
+            await UpdateFunc(false, "Проверка конфигурации sing-box: OK");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog(_tag, ex);
+            try
+            {
+                await File.WriteAllTextAsync(reportPath, ex.ToString(), new UTF8Encoding(false));
+            }
+            catch (Exception reportException)
+            {
+                Logging.SaveLog(_tag, reportException);
+            }
+            await UpdateFunc(true, $"Ошибка проверки конфигурации sing-box: {ex.Message}. Подробности: binConfigs\\singbox-config-test.log");
+            return false;
+        }
+        finally
+        {
+            process?.Dispose();
         }
     }
 
@@ -481,8 +872,15 @@ public class CoreManager
 
     #region Process
 
-    private async Task<ProcessService?> RunProcess(CoreInfo? coreInfo, string configPath, bool displayLog, bool mayNeedSudo)
+    private async Task<ProcessService?> RunProcess(
+        CoreInfo? coreInfo,
+        string configPath,
+        bool displayLog,
+        bool mayNeedSudo,
+        CancellationToken cancellationToken = default,
+        string? cleanupDirectory = null)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var fileName = CoreInfoManager.Instance.GetCoreExecFile(coreInfo, out var msg);
         if (fileName.IsNullOrEmpty())
         {
@@ -499,10 +897,22 @@ public class CoreManager
             {
                 _linuxSudo = true;
                 await CoreAdminManager.Instance.Init(_config, _updateFunc);
-                return await CoreAdminManager.Instance.RunProcessAsLinuxSudo(fileName, coreInfo, configPath);
+                var sudoProcess = await CoreAdminManager.Instance.RunProcessAsLinuxSudo(fileName, coreInfo, configPath);
+                cancellationToken.ThrowIfCancellationRequested();
+                return sudoProcess;
             }
 
-            return await RunProcessNormal(fileName, coreInfo, configPath, displayLog);
+            return await RunProcessNormal(
+                fileName,
+                coreInfo,
+                configPath,
+                displayLog,
+                cancellationToken,
+                cleanupDirectory);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -512,8 +922,15 @@ public class CoreManager
         }
     }
 
-    private async Task<ProcessService?> RunProcessNormal(string fileName, CoreInfo? coreInfo, string configPath, bool displayLog)
+    private async Task<ProcessService?> RunProcessNormal(
+        string fileName,
+        CoreInfo? coreInfo,
+        string configPath,
+        bool displayLog,
+        CancellationToken cancellationToken = default,
+        string? cleanupDirectory = null)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var environmentVars = new Dictionary<string, string>();
         foreach (var kv in coreInfo.Environment)
         {
@@ -527,20 +944,44 @@ public class CoreManager
             displayLog: displayLog,
             redirectInput: false,
             environmentVars: environmentVars,
-            updateFunc: _updateFunc
+            updateFunc: _updateFunc,
+            cleanupDirectory: cleanupDirectory
         );
 
-        await procService.StartAsync();
-
-        await Task.Delay(100);
-
-        if (procService is null or { HasExited: true })
+        try
         {
-            throw new Exception(ResUI.FailedToRunCore);
-        }
-        AddProcessJob(procService.Handle);
+            await procService.StartAsync();
+            cancellationToken.ThrowIfCancellationRequested();
 
-        return procService;
+            // SG_RECOVERY_113: keep the proven 108 startup order. In particular,
+            // do not place a freshly-started core into the Windows Job Object
+            // before it has completed its initial 100 ms startup window. Some
+            // sing-box transports initialize helpers during this phase. Emergency
+            // cancellation is still safe because the catch path below kills the
+            // complete process tree even before Job assignment.
+            await Task.Delay(100, cancellationToken);
+
+            if (procService is { HasExited: true })
+            {
+                throw new Exception(ResUI.FailedToRunCore);
+            }
+
+            AddProcessJob(procService.Handle);
+            cancellationToken.ThrowIfCancellationRequested();
+            return procService;
+        }
+        catch (OperationCanceledException)
+        {
+            try
+            {
+                await procService.StopAsync(TimeSpan.FromSeconds(2));
+            }
+            catch
+            {
+            }
+            procService.Dispose();
+            throw;
+        }
     }
 
     private void AddProcessJob(nint processHandle)

@@ -472,9 +472,28 @@ public partial class ProfilesView
     private void UpdateProfileCount()
     {
         var visible = _profilesView?.Cast<object>().Count() ?? 0;
-        txtProfileCount.Text = visible == 0 && ViewModel.ProfileItems.Count > 0
+        var sourceTotal = GetSelectedSourceProfileCount();
+        txtProfileCount.Text = visible == 0 && sourceTotal > 0
             ? "Нет совпадений — измените фильтры"
-            : $"Показано: {visible} из {ViewModel.ProfileItems.Count}";
+            : $"Показано: {visible} из {sourceTotal}";
+    }
+
+    private int GetSelectedSourceProfileCount()
+    {
+        var subscription = cmbSubscriptionFilter.SelectedValue?.ToString() ?? "all";
+        if (string.Equals(subscription, "all", StringComparison.OrdinalIgnoreCase))
+        {
+            return ViewModel.ProfileItems.Count;
+        }
+
+        if (string.Equals(subscription, "local", StringComparison.OrdinalIgnoreCase))
+        {
+            return ViewModel.ProfileItems.Count(item => !item.IsSub);
+        }
+
+        return ViewModel.ProfileItems.Count(item =>
+            item.IsSub
+            && string.Equals(item.Subid, subscription, StringComparison.OrdinalIgnoreCase));
     }
 
     private void ViewModel_SpeedTestCompleted()

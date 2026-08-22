@@ -1,4 +1,4 @@
-<base:WindowBase xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:base="clr-namespace:v2rayN.Base" xmlns:d="http://schemas.microsoft.com/expression/blend/2009" xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework" xmlns:view="clr-namespace:v2rayN.Views" xmlns:vms="clr-namespace:ServiceLib.ViewModels;assembly=ServiceLib" x:Class="v2rayN.Views.MainWindow" Title="SG Client — 096" Width="1730" Height="1182" MinWidth="1730" MinHeight="1182" x:TypeArguments="vms:MainWindowViewModel" Background="{DynamicResource SgBackgroundBrush}" Icon="/Resources/v2rayN.ico" ResizeMode="CanResize" ShowInTaskbar="True" WindowStartupLocation="CenterScreen" WindowStyle="None" TextOptions.TextFormattingMode="Display" mc:Ignorable="d">
+<base:WindowBase xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:base="clr-namespace:v2rayN.Base" xmlns:d="http://schemas.microsoft.com/expression/blend/2009" xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework" xmlns:view="clr-namespace:v2rayN.Views" xmlns:vms="clr-namespace:ServiceLib.ViewModels;assembly=ServiceLib" x:Class="v2rayN.Views.MainWindow" Title="SG Client — 099F" Width="1730" Height="1182" x:TypeArguments="vms:MainWindowViewModel" Background="{DynamicResource SgBackgroundBrush}" Icon="/Resources/v2rayN.ico" ResizeMode="CanResize" ShowInTaskbar="True" WindowStartupLocation="CenterScreen" WindowStyle="None" TextOptions.TextFormattingMode="Display" mc:Ignorable="d">
 
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="58" CornerRadius="0" GlassFrameThickness="0" ResizeBorderThickness="7" UseAeroCaptionButtons="False"/>
@@ -116,7 +116,7 @@
                             </Grid>
                             <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" FontSize="19" FontWeight="SemiBold" Foreground="{DynamicResource SgTextBrush}" Text="SG Client" />
                             <Border Margin="10,1,0,0" Padding="7,2" VerticalAlignment="Center" Background="{DynamicResource SgAccentSoftBrush}" BorderBrush="{DynamicResource SgAccentBorderBrush}" BorderThickness="1" CornerRadius="8">
-                                <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource SgAccentBrush}" Text="096" />
+                                <TextBlock FontSize="9" FontWeight="Bold" Foreground="{DynamicResource SgAccentBrush}" Text="099F" />
                             </Border>
                         </StackPanel>
 
@@ -193,6 +193,9 @@
                                     <Button x:Name="menuAddServerViaImage" Click="ImportAction_Click" Style="{StaticResource PopupMenuButton}">
                                         <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Margin="0,0,10,0" Foreground="{DynamicResource SgAccentBrush}" Kind="ImageOutline"/><TextBlock VerticalAlignment="Center" Text="Выбрать изображение с QR"/></StackPanel>
                                     </Button>
+                                    <Button x:Name="menuAddServerViaClipboardImage" Click="ImportQrFromClipboard_Click" Style="{StaticResource PopupMenuButton}">
+                                        <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Margin="0,0,10,0" Foreground="{DynamicResource SgAccentBrush}" Kind="ImageOutline"/><TextBlock VerticalAlignment="Center" Text="QR из изображения в буфере"/></StackPanel>
+                                    </Button>
                                     <Button x:Name="menuImportFromFile" Click="ImportFromFile_Click" Style="{StaticResource PopupMenuButton}">
                                         <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Margin="0,0,10,0" Foreground="{DynamicResource SgAccentBrush}" Kind="FileImportOutline"/><TextBlock VerticalAlignment="Center" Text="Импортировать файл"/></StackPanel>
                                     </Button>
@@ -236,6 +239,9 @@
 
                     <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" Cursor="SizeWE" ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" ShowsPreview="True" ToolTip="Изменить ширину списка профилей"/>
 
+                    <!-- LOG_SCROLL_UI_FIX2: keep the log controls fixed in the right pane.
+                         Only the main status area may scroll when the screen is short;
+                         the compact log remains a separate, bounded region below it. -->
                     <Grid Grid.Column="2">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
@@ -244,7 +250,14 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <view:StatusBarView Grid.Row="0"/>
+                        <ScrollViewer
+                            Grid.Row="0"
+                            HorizontalScrollBarVisibility="Disabled"
+                            VerticalScrollBarVisibility="Auto"
+                            CanContentScroll="False"
+                            PanningMode="VerticalOnly">
+                            <view:StatusBarView MinHeight="520"/>
+                        </ScrollViewer>
 
                         <Grid Grid.Row="2">
                             <Grid.ColumnDefinitions>

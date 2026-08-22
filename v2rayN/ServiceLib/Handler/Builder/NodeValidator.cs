@@ -70,7 +70,7 @@ public class NodeValidator
         }
         else if (coreType is ECoreType.mihomo)
         {
-            if (item.ConfigType != EConfigType.Mieru)
+            if (item.ConfigType is not (EConfigType.Mieru or EConfigType.Anytls or EConfigType.TUIC))
             {
                 v.Error(string.Format(ResUI.MsgCoreNotSupportProtocol, nameof(ECoreType.mihomo), item.ConfigType));
             }

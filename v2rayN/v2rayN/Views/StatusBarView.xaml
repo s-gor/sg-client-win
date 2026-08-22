@@ -516,7 +516,7 @@
                             </StackPanel>
                         </Button>
 
-                        <Button x:Name="btnToggleLocalProxyMode" Grid.Row="2" Grid.Column="0" IsEnabled="{Binding CanUseSystemProxyMode}" ToolTip="Включить локальный HTTP/SOCKS-прокси без изменения системных настроек Windows">
+                        <Button x:Name="btnToggleLocalProxyMode" Grid.Row="2" Grid.Column="0" IsEnabled="{Binding CanUseLocalProxyMode}" ToolTip="Включить локальный HTTP/SOCKS-прокси без изменения системных настроек Windows">
                             <Button.Style>
                                 <Style TargetType="Button" BasedOn="{StaticResource SgModeButton}">
                                     <Style.Triggers>
@@ -534,7 +534,7 @@
                             </StackPanel>
                         </Button>
 
-                        <Button x:Name="btnDisconnectAll" Grid.Row="2" Grid.Column="2" IsEnabled="{Binding CanDisconnectAll}" Tag="SG_DISCONNECT_ALL_095" Style="{StaticResource SgStopAllButton}" ToolTip="Остановить TUN, System Proxy, Local Proxy и снять аварийную блокировку">
+                        <Button x:Name="btnDisconnectAll" Grid.Row="2" Grid.Column="2" IsEnabled="{Binding CanDisconnectAll}" Tag="SG_RECOVERY_HARD_STOP_109" Style="{StaticResource SgStopAllButton}" ToolTip="Аварийно остановить все режимы, ядра и незавершённое подключение">
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Width="20" Height="20" Margin="0,0,11,0" VerticalAlignment="Center" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Kind="Power" />
                                 <TextBlock x:Name="txtDisconnectAllButtonText" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Text="Отключить всё" />

@@ -5,6 +5,7 @@ public class ProcessService : IDisposable
     private readonly Process _process;
     private readonly Func<bool, string, Task>? _updateFunc;
     private bool _isDisposed;
+    private readonly string? _cleanupDirectory;
 
     public int Id => _process.Id;
     public IntPtr Handle => _process.Handle;
@@ -17,9 +18,11 @@ public class ProcessService : IDisposable
         bool displayLog,
         bool redirectInput,
         Dictionary<string, string>? environmentVars,
-        Func<bool, string, Task>? updateFunc)
+        Func<bool, string, Task>? updateFunc,
+        string? cleanupDirectory = null)
     {
         _updateFunc = updateFunc;
+        _cleanupDirectory = cleanupDirectory;
 
         _process = new Process
         {
@@ -70,13 +73,15 @@ public class ProcessService : IDisposable
         }
     }
 
-    public async Task StopAsync()
+    public async Task StopAsync(TimeSpan? timeout = null)
     {
         if (_process.HasExited)
         {
+            TryCleanupDirectory();
             return;
         }
 
+        var stopTimeout = timeout ?? TimeSpan.FromSeconds(3);
         try
         {
             if (_process.StartInfo.RedirectStandardOutput)
@@ -93,26 +98,73 @@ public class ProcessService : IDisposable
                 catch { }
             }
 
+            // SG_RECOVERY_109: a VPN core may spawn helper/transport processes.
+            // Kill the complete tree on every OS; a plain Kill() on Windows can
+            // leave descendants alive and make the next connect/disconnect hang.
             try
             {
-                if (Utils.IsNonWindows())
+                _process.Kill(entireProcessTree: true);
+            }
+            catch (Exception ex)
+            {
+                Logging.SaveLog($"Process tree kill failed: pid={Id}", ex);
+                try
                 {
-                    _process.Kill(true);
+                    _process.Kill();
+                }
+                catch (Exception fallbackEx)
+                {
+                    Logging.SaveLog($"Process kill fallback failed: pid={Id}", fallbackEx);
                 }
             }
-            catch { }
 
-            try
+            if (!_process.HasExited)
             {
-                _process.Kill();
+                try
+                {
+                    await _process.WaitForExitAsync().WaitAsync(stopTimeout);
+                }
+                catch (TimeoutException)
+                {
+                    Logging.SaveLog($"Process stop timeout: pid={Id}; timeout={stopTimeout.TotalSeconds:0.0}s");
+                }
             }
-            catch { }
-
-            await Task.Delay(100);
         }
         catch (Exception ex)
         {
-            await _updateFunc?.Invoke(true, ex.Message);
+            Logging.SaveLog($"Process stop failed: pid={Id}", ex);
+            if (_updateFunc is not null)
+            {
+                await _updateFunc.Invoke(true, ex.Message);
+            }
+        }
+        finally
+        {
+            TryCleanupDirectory();
+        }
+    }
+
+    private void TryCleanupDirectory()
+    {
+        if (_cleanupDirectory.IsNullOrEmpty())
+        {
+            return;
+        }
+
+        try
+        {
+            if (!_process.HasExited)
+            {
+                return;
+            }
+            if (Directory.Exists(_cleanupDirectory))
+            {
+                Directory.Delete(_cleanupDirectory, recursive: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog($"Temporary process directory cleanup failed: {_cleanupDirectory}", ex);
         }
     }
 
@@ -164,9 +216,21 @@ public class ProcessService : IDisposable
                 }
                 catch { }
 
-                _process.Kill();
+                try
+                {
+                    _process.Kill(entireProcessTree: true);
+                }
+                catch
+                {
+                    try
+                    {
+                        _process.Kill();
+                    }
+                    catch { }
+                }
             }
 
+            TryCleanupDirectory();
             _process.Dispose();
         }
         catch (Exception ex)

@@ -287,7 +287,7 @@ TLS + ШУМ
 Экспериментальный режим. Используйте только после проверки автоматического и обычного дробления.
 
 HYSTERIA2 И AMNEZIAWG
-Обычное Xray-дробление TLS к Hysteria2 не применяется. AmneziaWG использует параметры маскировки Jc/Jmin/Jmax, S1-S4 и H1-H4 из профиля.
+Обычное Xray-дробление TLS к Hysteria2 не применяется. AmneziaWG использует параметры профиля: AWG2 Jc/Jmin/Jmax, S1-S4, H1-H4/I1-I5 и AWG3 HeaderProtectionKey, ContentPaddingAddition и временные параметры.
 
 ПОЛЬЗОВАТЕЛЬСКИЙ JSON
 Порядок работы: «Редактировать» → изменить JSON → «Проверить» → тест временного config.json ядром → «Применить».
@@ -444,7 +444,9 @@ SG Client принимает файл .conf или полный текст ко�
 • AllowedIPs;
 • DNS;
 • MTU;
-• параметры маскировки Jc/Jmin/Jmax, S1-S4, H1-H4.
+• AWG2: Jc/Jmin/Jmax, S1-S4, H1-H4, I1-I5;
+• AWG3: HeaderProtectionKey, ContentPaddingAddition, RekeyAfterTime, RekeyTimeout, RejectAfterTime, KeepaliveTimeout, MaxHandshakeAttempts;
+• PersistentKeepalive, включая диапазон AWG3, сохраняется из профиля.
 
 ВАЖНО
 Не придумывайте параметры маскировки самостоятельно, если сервер не настроен на соответствующую схему.
