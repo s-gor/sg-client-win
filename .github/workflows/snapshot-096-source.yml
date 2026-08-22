@@ -1,0 +1,31 @@
+name: Temporary 096 source snapshot
+
+on:
+  push:
+    branches:
+      - release/099f-publication
+    paths:
+      - '.github/workflows/snapshot-096-source.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout public 096 main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+      - name: Pack source
+        shell: bash
+        run: tar -czf sg-client-096-source.tar.gz v2rayN
+      - name: Upload snapshot
+        uses: actions/upload-artifact@v5
+        with:
+          name: SG-CLIENT-096-SOURCE-SNAPSHOT
+          path: sg-client-096-source.tar.gz
+          if-no-files-found: error
+          retention-days: 1
