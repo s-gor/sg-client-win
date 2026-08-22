@@ -1,11 +1,9 @@
 name: Temporary 096 source snapshot
 
 on:
-  push:
+  pull_request:
     branches:
-      - release/099f-publication
-    paths:
-      - '.github/workflows/snapshot-096-source.yml'
+      - main
 
 permissions:
   contents: read
