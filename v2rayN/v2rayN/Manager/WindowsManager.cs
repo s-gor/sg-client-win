@@ -112,8 +112,7 @@ public sealed class WindowsManager
 
     public void RegisterGlobalHotkey(Config config, Action<EGlobalHotkey> handler, Action<bool, string>? update)
     {
-        HotkeyManager.Instance.UpdateViewEvent += update;
-        HotkeyManager.Instance.HotkeyTriggerEvent += handler;
-        HotkeyManager.Instance.Load();
+        // Diagnostic build: deliberately skip all system-wide hotkey registration.
+        // VPN/AWG/TUN logic is unchanged.
     }
 }
