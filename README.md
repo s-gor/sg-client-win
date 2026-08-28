@@ -1,116 +1,89 @@
-# SG Client 096
+# SG Client 099K
 
 <p align="center">
-  <strong>Современный Windows-клиент для защищённых подключений SG</strong>
+  <strong>Windows-клиент SG с реальной проверкой VPN через TUN и автоматическим переключением профилей</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/s-gor/sg-client-win/releases/tag/v0.0.96">
-    <img alt="Release" src="https://img.shields.io/badge/Release-v0.0.96-456F5C?style=for-the-badge">
-  </a>
+  <img alt="Release candidate" src="https://img.shields.io/badge/Status-Release%20Candidate-B88A45?style=for-the-badge">
   <img alt="Windows" src="https://img.shields.io/badge/Windows-10%20%7C%2011-2F6B57?style=for-the-badge">
-  <img alt="Portable" src="https://img.shields.io/badge/Portable-Yes-B88A45?style=for-the-badge">
+  <img alt="Portable" src="https://img.shields.io/badge/Portable-Yes-456F5C?style=for-the-badge">
 </p>
 
 ---
 
-## Скачать
+## Статус
 
-### [⬇ Скачать SG Client 096 Portable](https://github.com/s-gor/sg-client-win/releases/download/v0.0.96/SG-CLIENT-096-PORTABLE.zip)
+**099K сейчас оформляется как release candidate.** Финальный GitHub Release и готовый Portable будут опубликованы после подтверждённой Windows-сборки и контрольной проверки архива.
 
-> Portable не требует установки. Распакуйте архив в отдельную папку и запустите `SG-Client.exe`.
-
----
-
-## SG Client
-
-**SG Client** — единый Windows-клиент для современных VPN и proxy-подключений с несколькими сетевыми движками и единым интерфейсом.
-
-### Поддерживаемые движки
-
-| Движок | Назначение |
-|---|---|
-| **Xray** | VLESS, REALITY, XHTTP |
-| **sing-box** | дополнительные совместимые профили |
-| **Mihomo** | современные proxy-конфигурации |
-| **Mieru** | отдельный transport/engine |
-| **AmneziaWG** | Amnezia WireGuard |
-| **Wintun** | TUN-режим Windows |
+Полное описание изменений: [RELEASE-NOTES-099K.md](RELEASE-NOTES-099K.md).
 
 ---
 
-## Возможности
+## Главное в 099K
 
+- реальная DNS- и HTTPS-проверка через TUN перед зелёным статусом подключения;
+- автоматическое переключение между профилями и группами протоколов;
+- готовые шаблоны политик и пошаговый мастер;
+- SMART для SG-подписок по протоколам без ping;
+- SMART для остальных подписок по ping с последующей DNS/HTTPS-проверкой;
+- Kill Switch во время проверки и переключения;
+- понятные состояния: запуск, проверка, работает, нестабилен, переключение, ошибка;
+- отдельная поддержка AWG 3.1 рядом с AWG 2.0/3.0;
+- множественный выбор и пакетное удаление профилей;
+- обновлённая справка и диагностика.
+
+---
+
+## Как работает проверка
+
+SG Client больше не считает запуск ядра или создание TUN доказательством рабочего VPN.
+
+```text
+Запуск ядра
+→ появление TUN
+→ DNS через TUN
+→ HTTPS через TUN
+→ подтверждённое подключение
+```
+
+Если серверный пользователь удалён или профиль отозван, TUN может создаться, но клиент не покажет ложное состояние «Подключено».
+
+---
+
+## SMART-политики
+
+### SG-подписки
+
+Пользователь выбирает до трёх протоколов по приоритету. Ping не применяется.
+
+### Остальные подписки
+
+Клиент выбирает до трёх ответивших нод по ping, после чего каждое фактическое подключение проверяется через DNS и HTTPS через TUN.
+
+---
+
+## Поддерживаемые движки и режимы
+
+- Xray
+- sing-box
+- Mihomo
+- Mieru
+- AmneziaWG 2.0 / 3.0 / 3.1
+- Wintun
 - TUN Mode
 - System Proxy
 - Local Proxy
-- импорт ссылок и профилей
-- Xray / VLESS / REALITY
-- XHTTP
-- Mihomo
-- Mieru
-- AmneziaWG
-- встроенные GeoFiles
-- SRS-наборы маршрутизации
-- диагностика и журналы
-- статистика трафика
-- несколько визуальных тем
-
----
-
-## Luxury Jade
-
-SG Client 096 включает новую светлую тему **Luxury Jade**:
-
-- тёплый ivory-фон;
-- спокойные jade-акценты;
-- champagne-детали;
-- мягкие градиенты;
-- многоуровневые карточки;
-- аккуратные тени.
-
-Также сохранены тёмные темы **Графит** и **Север**.
-
----
-
-## Быстрый старт
-
-1. Скачайте Portable.
-2. Распакуйте ZIP в новую папку.
-3. Запустите `SG-Client.exe`.
-4. Импортируйте ссылку или профиль.
-5. Выберите режим подключения.
-6. Нажмите **Подключить**.
-
----
-
-## Файлы релиза
-
-На странице GitHub Release публикуются отдельно:
-
-- `SG-CLIENT-096-PORTABLE.zip` — готовая Portable-версия;
-- `SG-CLIENT-096-SOURCE.zip` — исходный код;
-- `SG-CLIENT-096-FULL-BUILD-KIT.zip` — полный комплект для сборки;
-- `SHA256SUMS.txt` — контрольные суммы;
-- `SG-CLIENT-096-PUBLICATION-AUDIT.txt` — технический аудит.
-
-> Автоматический GitHub-файл `Source code.zip` не является готовым Portable.
-
----
-
-## Проверка целостности
-
-[SHA256SUMS.txt](https://github.com/s-gor/sg-client-win/releases/download/v0.0.96/SHA256SUMS.txt)
 
 ---
 
 ## Конфиденциальность
 
-Публичный Portable не должен содержать пользовательские профили, UUID, токены, subscription URL, рабочие конфигурации, журналы, резервные копии и локальную историю трафика.
+Публичные архивы не должны содержать пользовательские профили, UUID, токены, subscription URL, рабочие конфигурации, журналы, резервные копии и локальную историю трафика.
 
 ---
 
 <p align="center">
-  <strong>SG Client 096</strong><br>
-  Windows · Portable · Xray · sing-box · Mihomo · Mieru · AmneziaWG
+  <strong>SG Client 099K</strong><br>
+  Windows · Portable · Failover · SMART Policy · DNS/HTTPS through TUN
 </p>
