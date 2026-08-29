@@ -1,116 +1,123 @@
-# SG Client 096
+# SG Client 099K
 
 <p align="center">
-  <strong>Современный Windows-клиент для защищённых подключений SG</strong>
+  <strong>Windows-клиент SG с проверкой реального доступа, SMART-политиками и автоматическим резервированием</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/s-gor/sg-client-win/releases/tag/v0.0.96">
-    <img alt="Release" src="https://img.shields.io/badge/Release-v0.0.96-456F5C?style=for-the-badge">
-  </a>
+  <img alt="Release candidate" src="https://img.shields.io/badge/Status-Release%20Candidate-B88A45?style=for-the-badge">
+  <img alt="FIX16" src="https://img.shields.io/badge/Build-099K%20FIX16-456F5C?style=for-the-badge">
   <img alt="Windows" src="https://img.shields.io/badge/Windows-10%20%7C%2011-2F6B57?style=for-the-badge">
-  <img alt="Portable" src="https://img.shields.io/badge/Portable-Yes-B88A45?style=for-the-badge">
+  <img alt="Portable" src="https://img.shields.io/badge/Portable-pending%20Windows%20build-6D6875?style=for-the-badge">
 </p>
 
----
+> [!IMPORTANT]
+> Ветка `release/099k` содержит оформление release candidate. Готовый Portable будет опубликован только после чистой Windows-сборки, запуска тестов и проверки итогового архива.
 
-## Скачать
+## Что изменилось в 099K
 
-### [⬇ Скачать SG Client 096 Portable](https://github.com/s-gor/sg-client-win/releases/download/v0.0.96/SG-CLIENT-096-PORTABLE.zip)
+SG Client больше не считает запущенное ядро или появившийся TUN доказательством рабочего VPN. Обычная нода сначала проходит короткую предварительную проверку без системного TUN. Затем созданный туннель подтверждается реальными DNS- и HTTPS-запросами.
 
-> Portable не требует установки. Распакуйте архив в отдельную папку и запустите `SG-Client.exe`.
+```mermaid
+flowchart LR
+    A[Выбран профиль] --> B[Предварительная проверка через временный SOCKS]
+    B -->|сервер отвечает| C[Создание TUN]
+    B -->|сервер не отвечает| D{Есть активная политика?}
+    D -->|нет| E[Off · Сервер не отвечает]
+    D -->|да| F[Следующий кандидат]
+    F --> B
+    C --> G[DNS + HTTPS через TUN]
+    G -->|успех| H[Подключено · активная нода сверху]
+    G -->|ошибка| F
+```
 
----
+Для AmneziaWG применяется отдельный строгий путь: запуск службы, handshake, DNS и HTTPS. Ложный зелёный статус недопустим.
 
-## SG Client
+## Основные возможности
 
-**SG Client** — единый Windows-клиент для современных VPN и proxy-подключений с несколькими сетевыми движками и единым интерфейсом.
-
-### Поддерживаемые движки
-
-| Движок | Назначение |
+| Область | Что доступно в 099K |
 |---|---|
-| **Xray** | VLESS, REALITY, XHTTP |
-| **sing-box** | дополнительные совместимые профили |
-| **Mihomo** | современные proxy-конфигурации |
-| **Mieru** | отдельный transport/engine |
-| **AmneziaWG** | Amnezia WireGuard |
-| **Wintun** | TUN-режим Windows |
+| Подключение | Предварительная проверка сервера до создания TUN; строгая DNS + HTTPS проверка после запуска |
+| Failover | Именованные политики, конкретные профили и группы протоколов, cooldown, лимит переходов, возврат на основной профиль |
+| SMART | Отдельная логика для SG-подписок и обычных подписок |
+| Видимость | После failover рабочая нода становится первой, выделяется и прокручивается в видимую область |
+| Сортировка | Исходный порядок, задержка, название, источник, протокол и страна |
+| Безопасность | Kill Switch во время проверки и переключения; повторяемая аварийная команда «Отключить всё» |
+| AmneziaWG | Независимая поддержка AWG 2.0, AWG 3.0 и AWG 3.1 |
+| Интерфейс | Пошаговый мастер политик, понятный редактор, компактная индикация задержки, пять тем |
+| Профили | Множественный выбор и пакетное удаление профилей и нод |
+| Импорт | Новый AWG-профиль выделяется для следующего подключения; SG-Gateway `.conf` очищается от невидимых символов перед разбором |
 
----
+## Что вошло в FIX9–FIX16
 
-## Возможности
+- **FIX9:** аварийное отключение больше не блокируется зависшей операцией; накладка задержки стала компактнее.
+- **FIX10:** восстановлена сортировка во всех режимах; быстрые ответившие ноды поднимаются во время проверки.
+- **FIX11:** обычный сервер проверяется до создания системного TUN; политика перебирает кандидатов без создания нерабочих туннелей.
+- **FIX12:** фактически подключённая нода поднимается на первое место и становится видимой после ручного подключения или failover.
+- **FIX13:** переработан редактор политик: русские подписи, явная активная политика, предупреждения, видимый порядок и переход к профилям после сохранения.
+- **FIX14:** импортированный AWG-профиль становится целью следующего подключения, не разрывая уже работающую ноду; кнопка использует зафиксированный ID выбранной строки.
+- **FIX14 BUILD1:** исправлена Windows-компиляция: `ConfigHandler` передаёт запрос выделения через `AppEvents.ProfileRevealRequested`, без прямой зависимости от `ProfilesViewModel`.
+- **FIX15:** нормализован импорт SG-Gateway AmneziaWG: управляющие и Unicode format-символы удаляются до разбора, а конфигурации с `[Interface]`, `[Peer]` и маркерами J/S/H не уходят в общий импортёр URI.
+- **FIX16:** восстановлен переход из общего preflight в создание AWG-туннеля для AWG 2.0/3.0/3.1; ошибки службы, handshake и DNS/HTTPS теперь различаются.
 
+## Документация
+
+- [Полное описание релиза](RELEASE-NOTES-099K.md)
+- [Политики, шаблоны, SMART и failover](docs/099K-POLICIES-GUIDE.md)
+- [Предварительная проверка до создания TUN](docs/099K-PREFLIGHT-GUIDE.md)
+- [Аварийная остановка](docs/099K-EMERGENCY-STOP-GUIDE.md)
+- [Сортировка профилей](docs/099K-PROFILE-SORTING-GUIDE.md)
+- [Активная нода после failover](docs/099K-ACTIVE-NODE-GUIDE.md)
+- [Редактор политик FIX13](docs/099K-POLICY-EDITOR-GUIDE.md)
+- [Импорт и переключение на новый профиль — FIX14](docs/099K-IMPORT-SELECTION-GUIDE.md)
+- [Исправление компиляции — FIX14 BUILD1](docs/099K-FIX14-BUILD1-COMPILE-FIX.md)
+- [Импорт SG-Gateway AmneziaWG — FIX15](docs/099K-AWG-IMPORT-NORMALIZATION-RU.md)
+- [Запуск AWG 2.0/3.0/3.1 — FIX16](docs/099K-AWG-STARTUP-GUIDE.md)
+- [Проверка задержки](docs/099K-LATENCY-GUIDE.md)
+- [Темы «Пепел» и «Сталь»](docs/099K-THEMES-GUIDE.md)
+- [Чек-лист публикации](docs/099K-RELEASE-CHECKLIST.md)
+
+## Release candidate FIX16
+
+Исходно-сборочный пакет:
+
+```text
+SG-CLIENT-099K-STEP-WIZARD-CMD-FIX16.zip
+SHA-256: 4c503608ecd981d3a64930d21f7b7e9089ec1bb15bfb45f78288c5368986c57b
+Размер: 104 410 072 байт
+```
+
+Проверка самого ZIP подтверждает:
+
+- 902 файла;
+- 901 запись SHA-256 в манифесте;
+- 0 ошибок манифеста;
+- 0 ошибок CRC;
+- 0 дубликатов путей;
+- 0 небезопасных путей.
+
+> [!NOTE]
+> Это пакет для сборки на Windows, а не готовый Portable. Он запускается через `START-099K.cmd`. Компиляция WPF и фактические сетевые сценарии должны быть подтверждены на Windows до публикации Release.
+
+## Поддерживаемые движки и режимы
+
+- Xray
+- sing-box
+- Mihomo
+- Mieru
+- AmneziaWG 2.0 / 3.0 / 3.1
+- Wintun
 - TUN Mode
 - System Proxy
 - Local Proxy
-- импорт ссылок и профилей
-- Xray / VLESS / REALITY
-- XHTTP
-- Mihomo
-- Mieru
-- AmneziaWG
-- встроенные GeoFiles
-- SRS-наборы маршрутизации
-- диагностика и журналы
-- статистика трафика
-- несколько визуальных тем
 
----
+## Конфиденциальность публикации
 
-## Luxury Jade
-
-SG Client 096 включает новую светлую тему **Luxury Jade**:
-
-- тёплый ivory-фон;
-- спокойные jade-акценты;
-- champagne-детали;
-- мягкие градиенты;
-- многоуровневые карточки;
-- аккуратные тени.
-
-Также сохранены тёмные темы **Графит** и **Север**.
-
----
-
-## Быстрый старт
-
-1. Скачайте Portable.
-2. Распакуйте ZIP в новую папку.
-3. Запустите `SG-Client.exe`.
-4. Импортируйте ссылку или профиль.
-5. Выберите режим подключения.
-6. Нажмите **Подключить**.
-
----
-
-## Файлы релиза
-
-На странице GitHub Release публикуются отдельно:
-
-- `SG-CLIENT-096-PORTABLE.zip` — готовая Portable-версия;
-- `SG-CLIENT-096-SOURCE.zip` — исходный код;
-- `SG-CLIENT-096-FULL-BUILD-KIT.zip` — полный комплект для сборки;
-- `SHA256SUMS.txt` — контрольные суммы;
-- `SG-CLIENT-096-PUBLICATION-AUDIT.txt` — технический аудит.
-
-> Автоматический GitHub-файл `Source code.zip` не является готовым Portable.
-
----
-
-## Проверка целостности
-
-[SHA256SUMS.txt](https://github.com/s-gor/sg-client-win/releases/download/v0.0.96/SHA256SUMS.txt)
-
----
-
-## Конфиденциальность
-
-Публичный Portable не должен содержать пользовательские профили, UUID, токены, subscription URL, рабочие конфигурации, журналы, резервные копии и локальную историю трафика.
+Публичный Portable не должен содержать профили, UUID, токены, URL подписок, рабочие конфигурации, журналы, резервные копии или локальную историю трафика.
 
 ---
 
 <p align="center">
-  <strong>SG Client 096</strong><br>
-  Windows · Portable · Xray · sing-box · Mihomo · Mieru · AmneziaWG
+  <strong>SG Client 099K</strong><br>
+  Windows · Preflight · Verified TUN · Failover · SMART · AWG 3.1
 </p>
