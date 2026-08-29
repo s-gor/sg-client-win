@@ -6,7 +6,7 @@
 
 <p align="center">
   <img alt="Release candidate" src="https://img.shields.io/badge/Status-Release%20Candidate-B88A45?style=for-the-badge">
-  <img alt="FIX14" src="https://img.shields.io/badge/Build-099K%20FIX14-456F5C?style=for-the-badge">
+  <img alt="FIX14 BUILD1" src="https://img.shields.io/badge/Build-099K%20FIX14%20BUILD1-456F5C?style=for-the-badge">
   <img alt="Windows" src="https://img.shields.io/badge/Windows-10%20%7C%2011-2F6B57?style=for-the-badge">
   <img alt="Portable" src="https://img.shields.io/badge/Portable-pending%20Windows%20build-6D6875?style=for-the-badge">
 </p>
@@ -56,31 +56,37 @@ flowchart LR
 - **FIX12:** фактически подключённая нода поднимается на первое место и становится видимой после ручного подключения или failover.
 - **FIX13:** переработан редактор политик: русские подписи, явная активная политика, предупреждения, видимый порядок и переход к профилям после сохранения.
 - **FIX14:** импортированный AWG-профиль становится целью следующего подключения, не разрывая уже работающую ноду; кнопка использует зафиксированный ID выбранной строки.
+- **FIX14 BUILD1:** исправлена Windows-компиляция: `ConfigHandler` передаёт запрос выделения через `AppEvents.ProfileRevealRequested`, без прямой зависимости от `ProfilesViewModel`.
 
 ## Документация
 
 - [Полное описание релиза](RELEASE-NOTES-099K.md)
 - [Политики, шаблоны, SMART и failover](docs/099K-POLICIES-GUIDE.md)
-- [Исправления FIX9–FIX13](docs/099K-FIX9-FIX13-GUIDE.md)
+- [Предварительная проверка до создания TUN](docs/099K-PREFLIGHT-GUIDE.md)
+- [Аварийная остановка](docs/099K-EMERGENCY-STOP-GUIDE.md)
+- [Сортировка профилей](docs/099K-PROFILE-SORTING-GUIDE.md)
+- [Активная нода после failover](docs/099K-ACTIVE-NODE-GUIDE.md)
+- [Редактор политик FIX13](docs/099K-POLICY-EDITOR-GUIDE.md)
 - [Импорт и переключение на новый профиль — FIX14](docs/099K-IMPORT-SELECTION-GUIDE.md)
+- [Исправление компиляции — FIX14 BUILD1](docs/099K-FIX14-BUILD1-COMPILE-FIX.md)
 - [Проверка задержки](docs/099K-LATENCY-GUIDE.md)
 - [Темы «Пепел» и «Сталь»](docs/099K-THEMES-GUIDE.md)
 - [Чек-лист публикации](docs/099K-RELEASE-CHECKLIST.md)
 
-## Release candidate FIX14
+## Release candidate FIX14 BUILD1
 
 Исходно-сборочный пакет:
 
 ```text
-SG-CLIENT-099K-STEP-WIZARD-CMD-FIX14.zip
-SHA-256: 220d3c18c8b36a2f7c1a3679345580ab5429a1b5088c89b4bba672f860f8da71
-Размер: 104 393 426 байт
+SG-CLIENT-099K-STEP-WIZARD-CMD-FIX14-BUILD1.zip
+SHA-256: e1f0f6ca733913e03b45ae4013134e55622d3d78eeadaadb6bfcc189fee3f93f
+Размер: 104 410 008 байт
 ```
 
 Проверка самого ZIP подтверждает:
 
-- 892 файла;
-- 891 запись SHA-256 в манифесте;
+- 893 файла;
+- 892 записи SHA-256 в манифесте;
 - 0 ошибок манифеста;
 - 0 ошибок CRC;
 - 0 дубликатов путей;
