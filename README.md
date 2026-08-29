@@ -6,7 +6,7 @@
 
 <p align="center">
   <img alt="Release candidate" src="https://img.shields.io/badge/Status-Release%20Candidate-B88A45?style=for-the-badge">
-  <img alt="FIX14 BUILD1" src="https://img.shields.io/badge/Build-099K%20FIX14%20BUILD1-456F5C?style=for-the-badge">
+  <img alt="FIX16" src="https://img.shields.io/badge/Build-099K%20FIX16-456F5C?style=for-the-badge">
   <img alt="Windows" src="https://img.shields.io/badge/Windows-10%20%7C%2011-2F6B57?style=for-the-badge">
   <img alt="Portable" src="https://img.shields.io/badge/Portable-pending%20Windows%20build-6D6875?style=for-the-badge">
 </p>
@@ -46,9 +46,9 @@ flowchart LR
 | AmneziaWG | Независимая поддержка AWG 2.0, AWG 3.0 и AWG 3.1 |
 | Интерфейс | Пошаговый мастер политик, понятный редактор, компактная индикация задержки, пять тем |
 | Профили | Множественный выбор и пакетное удаление профилей и нод |
-| Импорт | Новый AWG-профиль выделяется для следующего подключения; текущее соединение не прерывается |
+| Импорт | Новый AWG-профиль выделяется для следующего подключения; SG-Gateway `.conf` очищается от невидимых символов перед разбором |
 
-## Что вошло в FIX9–FIX14
+## Что вошло в FIX9–FIX16
 
 - **FIX9:** аварийное отключение больше не блокируется зависшей операцией; накладка задержки стала компактнее.
 - **FIX10:** восстановлена сортировка во всех режимах; быстрые ответившие ноды поднимаются во время проверки.
@@ -57,6 +57,8 @@ flowchart LR
 - **FIX13:** переработан редактор политик: русские подписи, явная активная политика, предупреждения, видимый порядок и переход к профилям после сохранения.
 - **FIX14:** импортированный AWG-профиль становится целью следующего подключения, не разрывая уже работающую ноду; кнопка использует зафиксированный ID выбранной строки.
 - **FIX14 BUILD1:** исправлена Windows-компиляция: `ConfigHandler` передаёт запрос выделения через `AppEvents.ProfileRevealRequested`, без прямой зависимости от `ProfilesViewModel`.
+- **FIX15:** нормализован импорт SG-Gateway AmneziaWG: управляющие и Unicode format-символы удаляются до разбора, а конфигурации с `[Interface]`, `[Peer]` и маркерами J/S/H не уходят в общий импортёр URI.
+- **FIX16:** восстановлен переход из общего preflight в создание AWG-туннеля для AWG 2.0/3.0/3.1; ошибки службы, handshake и DNS/HTTPS теперь различаются.
 
 ## Документация
 
@@ -69,24 +71,26 @@ flowchart LR
 - [Редактор политик FIX13](docs/099K-POLICY-EDITOR-GUIDE.md)
 - [Импорт и переключение на новый профиль — FIX14](docs/099K-IMPORT-SELECTION-GUIDE.md)
 - [Исправление компиляции — FIX14 BUILD1](docs/099K-FIX14-BUILD1-COMPILE-FIX.md)
+- [Импорт SG-Gateway AmneziaWG — FIX15](docs/099K-AWG-IMPORT-NORMALIZATION-RU.md)
+- [Запуск AWG 2.0/3.0/3.1 — FIX16](docs/099K-AWG-STARTUP-GUIDE.md)
 - [Проверка задержки](docs/099K-LATENCY-GUIDE.md)
 - [Темы «Пепел» и «Сталь»](docs/099K-THEMES-GUIDE.md)
 - [Чек-лист публикации](docs/099K-RELEASE-CHECKLIST.md)
 
-## Release candidate FIX14 BUILD1
+## Release candidate FIX16
 
 Исходно-сборочный пакет:
 
 ```text
-SG-CLIENT-099K-STEP-WIZARD-CMD-FIX14-BUILD1.zip
-SHA-256: e1f0f6ca733913e03b45ae4013134e55622d3d78eeadaadb6bfcc189fee3f93f
-Размер: 104 410 008 байт
+SG-CLIENT-099K-STEP-WIZARD-CMD-FIX16.zip
+SHA-256: 4c503608ecd981d3a64930d21f7b7e9089ec1bb15bfb45f78288c5368986c57b
+Размер: 104 410 072 байт
 ```
 
 Проверка самого ZIP подтверждает:
 
-- 893 файла;
-- 892 записи SHA-256 в манифесте;
+- 902 файла;
+- 901 запись SHA-256 в манифесте;
 - 0 ошибок манифеста;
 - 0 ошибок CRC;
 - 0 дубликатов путей;
