@@ -17,5 +17,3 @@ Recommended order in release notes:
 `20 → 18 → 19 → 06 → 17 → 13 → 14`
 
 The hashes above were calculated from the files extracted from the user-supplied screenshot ZIP and verified against the corresponding entries in that ZIP.
-
-Release assets policy: do not attach a separate source archive. The manually uploaded release asset is the final SG Client 099 Portable ZIP only; its SHA-256 is published in the release description.
