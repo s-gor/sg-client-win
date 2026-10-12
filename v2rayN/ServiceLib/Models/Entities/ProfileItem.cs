@@ -111,6 +111,12 @@ public class ProfileItem
 
                 break;
 
+            case EConfigType.SGNet:
+                if (Username.IsNullOrEmpty() || Password.IsNullOrEmpty()
+                    || Convert.TryFromBase64String(Password, new byte[1024], out var secretLength) == false
+                    || secretLength < 32 || Sni.IsNullOrEmpty()) return false;
+                break;
+
             case EConfigType.Mieru:
                 var mieruExtra = GetProtocolExtra();
                 if (Username.IsNullOrEmpty() || Password.IsNullOrEmpty()
