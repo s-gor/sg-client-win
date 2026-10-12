@@ -39,6 +39,12 @@ jobs:
           "SOURCE_ZIP=$name" >> $env:GITHUB_ENV
           "RELEASE_TAG=sg-client-102-sgnet-$short" >> $env:GITHUB_ENV
           Get-FileHash $name -Algorithm SHA256 | ForEach-Object { "$($_.Hash)  $name" } | Set-Content SHA256SUMS
+      - name: Upload complete source ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: SG-CLIENT-102-SOURCE-ZIP
+          path: ${{ env.SOURCE_ZIP }}
+          if-no-files-found: error
       - name: Publish source archive
         shell: pwsh
         env:
