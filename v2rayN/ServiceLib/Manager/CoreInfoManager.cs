@@ -268,6 +268,15 @@ public sealed class CoreInfoManager
 
                 new CoreInfo
                 {
+                    CoreType = ECoreType.sgnet,
+                    CoreExes = ["sgnet-client-windows-amd64"],
+                    Arguments = "-config {0}",
+                    Url = GetCoreUrl(ECoreType.sgnet),
+                    AbsolutePath = false,
+                },
+
+                new CoreInfo
+                {
                     CoreType = ECoreType.mieru,
                     CoreExes = [ "mieru" ],
                     Arguments = "run",
