@@ -169,6 +169,23 @@ public class FmtHandlerTests
         uri.Should().BeNull();
     }
 
+
+    [Fact]
+    public void SGNet_ImportExport_AndInvalidSecrets()
+    {
+        var secret = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes("0123456789abcdef0123456789abcdef"));
+        var uri = $"sgnet://dc1.casacam.net:443?device_id=test-windows-01&secret={Uri.EscapeDataString(secret)}&sni=dc1.casacam.net&v=1#Google";
+        var node = FmtHandler.ResolveConfig(uri, out var message);
+        node.Should().NotBeNull(message);
+        node!.ConfigType.Should().Be(EConfigType.SGNet);
+        node.CoreType.Should().Be(ECoreType.sgnet);
+        node.Sni.Should().Be("dc1.casacam.net");
+        node.Username.Should().Be("test-windows-01");
+        node.IsValid().Should().BeTrue();
+        FmtHandler.ResolveConfig(FmtHandler.GetShareUri(node)!, out message)!.Password.Should().Be(secret);
+        FmtHandler.ResolveConfig("sgnet://dc1.casacam.net:443?device_id=d&secret=abcd&sni=dc1.casacam.net", out _).Should().BeNull();
+    }
+
     private static ProfileItem ExportThenImport(ProfileItem source)
     {
         var uri = FmtHandler.GetShareUri(source);
