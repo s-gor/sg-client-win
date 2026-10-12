@@ -13,7 +13,23 @@ public static class CoreConfigHandler
         var result = new RetResult();
         var node = context.Node;
 
-        if (node.ConfigType == EConfigType.Custom)
+        if (node.ConfigType == EConfigType.SGNet)
+        {
+            if (context.IsTunEnabled)
+            {
+                return new RetResult { Msg = "SG-Net TEST: TUN пока не поддерживается; отключите TUN и используйте SOCKS/System Proxy." };
+            }
+            var settings = new
+            {
+                listen = $"127.0.0.1:{AppManager.Instance.GetLocalPort(EInboundProtocol.socks)}",
+                server = $"{node.Address}:{node.Port}",
+                server_name = node.Sni,
+                device_id = node.Username,
+                secret_base64 = node.Password
+            };
+            result = new RetResult { Success = true, Data = JsonSerializer.Serialize(settings) };
+        }
+        else if (node.ConfigType == EConfigType.Custom)
         {
             result = node.CoreType switch
             {
