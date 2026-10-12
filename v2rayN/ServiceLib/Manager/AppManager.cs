@@ -784,6 +784,7 @@ public sealed class AppManager
 
     public ECoreType GetCoreType(ProfileItem profileItem, EConfigType eConfigType)
     {
+        if (eConfigType == EConfigType.SGNet) return ECoreType.sgnet;
         if (profileItem?.CoreType != null)
         {
             return (ECoreType)profileItem.CoreType;
