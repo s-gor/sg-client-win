@@ -15,6 +15,7 @@ public enum EConfigType
     Anytls = 11,
     Naive = 12,
     Mieru = 13,
+    SGNet = 14,
     PolicyGroup = 101,
     ProxyChain = 102,
 }
