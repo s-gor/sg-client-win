@@ -1469,12 +1469,11 @@ public class ProfilesViewModel : MyReactiveObject
             ? Math.Min(100d, summary.Tested * 100d / LatencyTestTotal)
             : (LatencyTestTotal > 0 ? 100d : 0d);
         LatencyTestProgressText = $"{LatencyTestProgress:0}%";
-        // Untested protocols are neutral, not failed connections.
-        LatencyTestProblemCount = summary.Unavailable + summary.Errors;
+        LatencyTestProblemCount = summary.Unavailable + summary.Errors + summary.Cancelled + summary.NotTested;
         LatencyTestProblemsVisible = LatencyTestProblemCount > 0;
         LatencyTestProblemButtonText = $"Проблемные: {LatencyTestProblemCount}";
         LatencyTestStatus = summary.WasCancelled
-            ? $"Тест остановлен: успешно {summary.Available} · недоступно {summary.Unavailable} · ошибок {summary.Errors} · отменено {summary.Cancelled} · без замера {summary.NotTested}"
+            ? $"Тест остановлен: успешно {summary.Available} · недоступно {summary.Unavailable} · ошибок {summary.Errors} · отменено {summary.Cancelled} · не проверено {summary.NotTested}"
             : $"Тест завершён: успешно {summary.Available} · недоступно {summary.Unavailable} · ошибок {summary.Errors} · не проверено {summary.NotTested}";
         LatencyTestRunning = false;
         LatencyTestPanelVisible = false;
