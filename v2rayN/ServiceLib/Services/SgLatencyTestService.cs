@@ -12,7 +12,8 @@ public sealed class SgLatencyTestService
     public const string UnavailableText = "Недоступна";
     public const string ErrorText = "Ошибка";
     public const string CancelledText = "Отменено";
-    public const string NotTestedText = "Не проверено";
+    // A missing latency sample is not evidence that the tunnel is broken.
+    public const string NotTestedText = "—";
 
     public const int UnavailableDelay = -1;
     public const int ErrorDelay = -2;
